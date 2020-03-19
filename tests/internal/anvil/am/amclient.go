@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
-	"gopkg.in/ForgeRock/go-jose.v2"
+	"gopkg.in/square/go-jose.v2"
 )
 
 const (
