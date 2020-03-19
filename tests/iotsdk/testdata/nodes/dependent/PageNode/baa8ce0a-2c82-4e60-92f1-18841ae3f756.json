@@ -1,0 +1,4 @@
+{"pageHeader":{},"pageDescription":{},"nodes":[{"_id":"27e6dc74-3385-4145-9d71-dfc33976f3d6",
+  "displayName":"Username Collector","nodeType":"UsernameCollectorNode","x":129,"y":246.5},{"_id":
+"d6f89f12-d2ea-4dc8-b008-55db55d7e433","displayName":"Password Collector","nodeType":
+"PasswordCollectorNode","x":402,"y":161.375}],"_id":"baa8ce0a-2c82-4e60-92f1-18841ae3f756"}
