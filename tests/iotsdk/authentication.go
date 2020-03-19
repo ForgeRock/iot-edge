@@ -22,7 +22,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
-	"gopkg.in/ForgeRock/go-jose.v2"
+	"gopkg.in/square/go-jose.v2"
 )
 
 func initialiseSDK(id am.IdAttributes) error {

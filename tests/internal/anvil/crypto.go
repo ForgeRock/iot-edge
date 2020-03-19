@@ -21,7 +21,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 
-	"gopkg.in/ForgeRock/go-jose.v2"
+	"gopkg.in/square/go-jose.v2"
 )
 
 // GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
