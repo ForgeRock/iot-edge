@@ -20,7 +20,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+)
+
+const (
+	execDir     = "./tests/iotsdk"
+	testdataDir = execDir + "/testdata"
+	debugDir    = execDir + "/debug"
 )
 
 // define the full test set
@@ -42,18 +49,21 @@ func runTests() (err error) {
 	//things.DebugLogger = anvil.DebugLogger
 
 	// create test realm
-	if err := anvil.CreatePrimaryRealm("./tests/iotsdk/testdata"); err != nil {
+	if err := anvil.CreatePrimaryRealm(testdataDir); err != nil {
 		return err
 	}
 	defer func() {
 		//_ = anvil.DeletePrimaryRealm()
 	}()
 
+	var logfile *os.File
 	allPass := true
 	for _, test := range tests {
+		things.DebugLogger, logfile = anvil.NewFileDebugger(debugDir, anvil.TestName(test))
 		if !anvil.RunTest(test) {
 			allPass = false
 		}
+		_ = logfile.Close()
 	}
 	if !allPass {
 		return fmt.Errorf("test FAILURE")

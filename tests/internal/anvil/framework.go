@@ -19,7 +19,6 @@ package anvil
 
 import (
 	"fmt"
-	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -31,6 +30,7 @@ import (
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
+	"gopkg.in/square/go-jose.v2"
 )
 
 const (
@@ -177,6 +177,20 @@ func TestName(t interface{}) string {
 	return nameSlice[len(nameSlice)-1]
 }
 
+// NewFileDebugger creates a new Anvil logger that logs to file with the given test name
+func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
+	err := os.MkdirAll(directory, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	file, err := os.Create(filepath.Join(directory, testName+".log"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	DebugLogger = log.New(file, "", log.Ltime|log.Lshortfile)
+	return DebugLogger, file
+}
+
 // RunTest runs the given SDKTest
 func RunTest(t SDKTest) (pass bool) {
 	name := TestName(t)
@@ -188,7 +202,9 @@ func RunTest(t SDKTest) (pass bool) {
 	if pass = t.Setup(); !pass {
 		return
 	}
+	DebugLogger.Println("*** STARTING TEST RUN")
 	pass = t.Run()
+	DebugLogger.Printf("*** RUN RESULT: %v", pass)
 	t.Cleanup()
 	return
 }
