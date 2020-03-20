@@ -19,6 +19,7 @@ package anvil
 
 import (
 	"fmt"
+	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -100,6 +101,11 @@ func TreeURL(treeName string) string {
 	return am.URLAuthenticate(PrimaryRealm(), treeName)
 }
 
+// IoTURL returns the URL for the IoT endpoint in the given realm
+func IoTURL() string {
+	return am.URLIoT(PrimaryRealm())
+}
+
 // SDKTest defines the interface required by a SDK API test
 type SDKTest interface {
 	Setup() bool // setup actions before the test starts
@@ -122,8 +128,10 @@ func (t NopSetupCleanup) Cleanup() {
 
 // represents the minimum amount of setup to create an identity for use in a test
 type BaseSDKTest struct {
-	Realm string
-	Id    am.IdAttributes
+	Realm         string
+	Id            am.IdAttributes
+	CNFPrivateJWK *jose.JSONWebKey
+	CNFPublicJWK  *jose.JSONWebKey
 }
 
 // Setup the base test

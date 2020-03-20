@@ -27,6 +27,7 @@ import (
 var tests = []anvil.SDKTest{
 	&AuthenticateWithUsernameAndPassword{},
 	&AuthenticateWithoutConfirmationKey{},
+	&SendTestCommand{},
 }
 
 func runTests() (err error) {
@@ -35,6 +36,10 @@ func runTests() (err error) {
 	fmt.Println("-- IoT SDK Tests  --")
 	fmt.Println("====================")
 	fmt.Println()
+
+	// TODO redirect the debug output to a file
+	//anvil.DebugLogger = log.New(os.Stdout, "", 0)
+	//things.DebugLogger = anvil.DebugLogger
 
 	// create test realm
 	if err := anvil.CreatePrimaryRealm("./tests/iotsdk/testdata"); err != nil {

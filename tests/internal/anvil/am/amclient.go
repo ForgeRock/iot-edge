@@ -66,6 +66,11 @@ func URLAuthenticate(realm, tree string) string {
 	return fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=%s", AMURL, realm, tree)
 }
 
+// URLIoT returns the URL for the IoT endpoint in the given realm
+func URLIoT(realm string) string {
+	return fmt.Sprintf("%s/json/realms/root/realms/%s/iot", AMURL, realm)
+}
+
 // crestCreate makes an HTTP POST request with the CREST 'create' action appended to the given endpoint.
 func crestCreate(endpoint string, version string, payload io.Reader) (reply []byte, err error) {
 	// get SSO token
