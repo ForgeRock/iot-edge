@@ -18,24 +18,28 @@ package main
 
 import (
 	"context"
+	"strings"
 
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 )
 
-func initialiseSDK(id am.IdAttributes) error {
+func initialiseSDK(test anvil.BaseSDKTest) (*things.Thing, error) {
 	thing := things.Thing{
-		Client: things.AMClient{AuthURL: anvil.TreeURL("Anvil-User-Pwd")},
+		Client: things.AMClient{
+			AuthURL:         anvil.TreeURL("Anvil-User-Pwd"),
+			IoTURL:          anvil.IoTURL(),
+			ConfirmationKey: test.CNFPrivateJWK,
+		},
 		Handlers: []things.CallbackHandler{
-			things.NameCallbackHandler{Name: id.Name},
-			things.PasswordCallbackHandler{Password: id.Password},
+			things.NameCallbackHandler{Name: test.Id.Name},
+			things.PasswordCallbackHandler{Password: test.Id.Password},
 		},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), anvil.StdTimeOut)
 	defer cancel()
-	return thing.Initialise(ctx)
+	return &thing, thing.Initialise(ctx)
 }
 
 // AuthenticateWithUsernameAndPassword tests the authentication of a pre-registered device
@@ -55,7 +59,7 @@ func (t *AuthenticateWithUsernameAndPassword) Setup() bool {
 }
 
 func (t *AuthenticateWithUsernameAndPassword) Run() bool {
-	err := initialiseSDK(t.Id)
+	_, err := initialiseSDK(t.BaseSDKTest)
 	if err != nil {
 		return false
 	}
@@ -74,8 +78,48 @@ func (t *AuthenticateWithoutConfirmationKey) Setup() bool {
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Run() bool {
-	err := initialiseSDK(t.Id)
+	_, err := initialiseSDK(t.BaseSDKTest)
 	if err == nil {
+		return false
+	}
+	return true
+}
+
+// SendTestCommand sends a test command request to AM
+// TODO replace with specific command tests when thing.SendCommand has been removed
+type SendTestCommand struct {
+	anvil.BaseSDKTest
+	thing *things.Thing
+}
+
+func (t *SendTestCommand) Setup() bool {
+	privateJWK, publicJWK, err := anvil.GenerateConfirmationKey()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return false
+	}
+	t.BaseSDKTest.CNFPrivateJWK = privateJWK
+	t.Id.ThingType = "Device"
+	t.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{*publicJWK}}
+	if result := t.BaseSDKTest.Setup(); !result {
+		return false
+	}
+	if t.thing, err = initialiseSDK(t.BaseSDKTest); err != nil {
+		return false
+	}
+	return true
+}
+
+func (t *SendTestCommand) Run() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), anvil.StdTimeOut)
+	defer cancel()
+	response, err := t.thing.SendCommand(ctx)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to send command", err)
+		return false
+	}
+	if !strings.Contains(response, "TEST") {
+		anvil.DebugLogger.Println("unexpected response: ", response)
 		return false
 	}
 	return true

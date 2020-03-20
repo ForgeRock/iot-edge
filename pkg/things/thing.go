@@ -22,15 +22,41 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/debug"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 )
+
+// All SDK debug information is written to this Logger. The logger is muted by default. To see the debug output assign
+// your own logger (or a new one) to this variable.
+var DebugLogger = log.New(ioutil.Discard, "", 0)
+
+const (
+	acceptAPIVersion       = "Accept-API-Version"
+	authNEndpointVersion   = "protocol=1.0,resource=2.1"
+	commandEndpointVersion = "protocol=2.0,resource=1.0"
+	contentType            = "Content-Type"
+	applicationJson        = "application/json"
+	applicationJose        = "application/jose"
+)
+
+// TODO call server info (I think) to find the cookie name or make configurable
+const cookieName = "iPlanetDirectoryPro"
 
 // authenticatePayload represents the outbound and inbound data during an authentication request
 type authenticatePayload struct {
 	TokenID   string     `json:"tokenId,omitempty"`
 	AuthID    string     `json:"authId,omitempty"`
 	Callbacks []Callback `json:"callbacks,omitempty"`
+}
+
+// commandRequestPayload represents the outbound data during a command request
+type commandRequestPayload struct {
+	Command string `json:"command"`
 }
 
 func (p authenticatePayload) String() string {
@@ -51,11 +77,17 @@ func (p authenticatePayload) String() string {
 type Client interface {
 	// authenticate sends an authenticate request to the ForgeRock platform
 	authenticate(ctx context.Context, request authenticatePayload) (response authenticatePayload, err error)
+
+	// sendCommand sends a command request to the ForgeRock platform
+	sendCommand(tokenID string, request commandRequestPayload) (response string, err error)
 }
 
 // AMClient contains information for connecting directly to AM
 type AMClient struct {
 	AuthURL string
+	IoTURL  string
+	// TODO we should use a Signer here instead of the user exposing their private key.
+	ConfirmationKey *jose.JSONWebKey
 }
 
 func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (reply authenticatePayload, err error) {
@@ -66,26 +98,85 @@ func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (
 	}
 	request, err := http.NewRequest(http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
 	if err != nil {
+		debug.WriteRequest(DebugLogger, request, nil)
 		return reply, err
 	}
-	request.Header.Add("Accept-API-Version", "protocol=1.0,resource=2.1")
-	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
+	request.Header.Add(contentType, applicationJson)
 	response, err := client.Do(request)
 	if err != nil {
+		debug.WriteRequest(DebugLogger, request, response)
 		return reply, err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
+		debug.WriteRequest(DebugLogger, request, response)
 		return reply, err
 	}
 	if response.StatusCode != http.StatusOK {
-		return reply, fmt.Errorf("received %v, %s", response.StatusCode, string(responseBody))
+		debug.WriteRequest(DebugLogger, request, response)
+		return reply, fmt.Errorf("authentication request failed")
 	}
 	if err = json.Unmarshal(responseBody, &reply); err != nil {
+		debug.WriteRequest(DebugLogger, request, response)
 		return reply, err
 	}
 	return reply, err
+}
+
+func (c AMClient) sendCommand(tokenID string, payload commandRequestPayload) (string, error) {
+	client := &http.Client{}
+	url := c.IoTURL + "?_action=command"
+	requestBody, err := signedJWTBody(url, commandEndpointVersion, tokenID, payload, c.ConfirmationKey)
+	DebugLogger.Println("Signed command request body: ", requestBody)
+	if err != nil {
+		return "", err
+	}
+	request, err := http.NewRequest(http.MethodPost, url, strings.NewReader(requestBody))
+	if err != nil {
+		debug.WriteRequest(DebugLogger, request, nil)
+		return "", err
+	}
+	request.Header.Set(acceptAPIVersion, commandEndpointVersion)
+	request.Header.Set(contentType, applicationJose)
+	request.AddCookie(&http.Cookie{Name: cookieName, Value: tokenID})
+	response, err := client.Do(request)
+	if err != nil {
+		debug.WriteRequest(DebugLogger, request, response)
+		return "", err
+	}
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		debug.WriteRequest(DebugLogger, request, response)
+		return "", err
+	}
+	if response.StatusCode != http.StatusOK {
+		debug.WriteRequest(DebugLogger, request, response)
+		return "", fmt.Errorf("request for command %s failed", payload.Command)
+	}
+	return string(responseBody), err
+}
+
+func signedJWTBody(url, version, tokenID string, body interface{}, jwk *jose.JSONWebKey) (string, error) {
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("aud", url)
+	opts.WithHeader("api", version)
+	// Note: nonce can be 0 as long as we create a new session for each request. If we reuse the token we need
+	// to increment the nonce between requests
+	opts.WithHeader("nonce", 0)
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: jwk}, opts)
+	if err != nil {
+		return "", err
+	}
+	builder := jwt.Signed(sig).Claims(struct {
+		Csrf string `json:"csrf"`
+	}{Csrf: tokenID})
+	if body != nil {
+		builder = builder.Claims(body)
+	}
+	return builder.CompactSerialize()
 }
 
 // Thing represents an AM Thing identity
@@ -117,7 +208,18 @@ func (t Thing) authenticate(ctx context.Context) (tokenID string, err error) {
 }
 
 // Initialise the Thing
+// TODO can we make the context optional with a default so that it does not have to be passed to every SDK call
 func (t Thing) Initialise(ctx context.Context) (err error) {
 	_, err = t.authenticate(ctx)
 	return err
+}
+
+// SendCommand to AM via the iot endpoint
+// TODO remove once specific commands have been added
+func (t Thing) SendCommand(ctx context.Context) (string, error) {
+	tokenID, err := t.authenticate(ctx)
+	if err != nil {
+		return "", err
+	}
+	return t.Client.sendCommand(tokenID, commandRequestPayload{Command: "TEST"})
 }
