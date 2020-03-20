@@ -9,25 +9,23 @@
 package debug
 
 import (
-	"log"
 	"net/http"
 	"net/http/httputil"
 )
 
-// WriteRequest will dump the given request and response and prints the result to the configured writer
-func WriteRequest(logger *log.Logger, req *http.Request, res *http.Response) {
+// DumpRoundTrip will dump the given request and response
+func DumpRoundTrip(req *http.Request, res *http.Response) (message string) {
 	if req != nil {
 		dump, err := httputil.DumpRequest(req, true)
 		if err != nil {
 			dump, err = httputil.DumpRequest(req, false)
 		}
-		message := "*** HTTP Request ***\n"
+		message = "*** HTTP Request ***\n"
 		if err == nil {
 			message += string(dump)
 		} else {
 			message += "Failed to dump request: " + err.Error()
 		}
-		logger.Println(message)
 	}
 
 	if res != nil {
@@ -35,12 +33,12 @@ func WriteRequest(logger *log.Logger, req *http.Request, res *http.Response) {
 		if err != nil {
 			dump, err = httputil.DumpResponse(res, false)
 		}
-		message := "*** HTTP Response ***\n"
+		message += "*** HTTP Response ***\n"
 		if err == nil {
 			message += string(dump)
 		} else {
 			message += "Failed to dump response: " + err.Error()
 		}
-		logger.Println(message)
 	}
+	return message
 }

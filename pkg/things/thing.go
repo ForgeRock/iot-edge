@@ -22,13 +22,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/debug"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/ForgeRock/iot-edge/internal/debug"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 // All SDK debug information is written to this Logger. The logger is muted by default. To see the debug output assign
@@ -98,28 +99,28 @@ func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (
 	}
 	request, err := http.NewRequest(http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
 	if err != nil {
-		debug.WriteRequest(DebugLogger, request, nil)
+		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return reply, err
 	}
 	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
 	request.Header.Add(contentType, applicationJson)
 	response, err := client.Do(request)
 	if err != nil {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return reply, err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return reply, err
 	}
 	if response.StatusCode != http.StatusOK {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return reply, fmt.Errorf("authentication request failed")
 	}
 	if err = json.Unmarshal(responseBody, &reply); err != nil {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return reply, err
 	}
 	return reply, err
@@ -135,7 +136,7 @@ func (c AMClient) sendCommand(tokenID string, payload commandRequestPayload) (st
 	}
 	request, err := http.NewRequest(http.MethodPost, url, strings.NewReader(requestBody))
 	if err != nil {
-		debug.WriteRequest(DebugLogger, request, nil)
+		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return "", err
 	}
 	request.Header.Set(acceptAPIVersion, commandEndpointVersion)
@@ -143,17 +144,17 @@ func (c AMClient) sendCommand(tokenID string, payload commandRequestPayload) (st
 	request.AddCookie(&http.Cookie{Name: cookieName, Value: tokenID})
 	response, err := client.Do(request)
 	if err != nil {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return "", err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return "", err
 	}
 	if response.StatusCode != http.StatusOK {
-		debug.WriteRequest(DebugLogger, request, response)
+		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return "", fmt.Errorf("request for command %s failed", payload.Command)
 	}
 	return string(responseBody), err
