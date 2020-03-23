@@ -30,6 +30,7 @@ import (
 
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
@@ -175,7 +176,10 @@ func (c AMClient) signedJWTBody(url, version, tokenID string, body interface{}) 
 		return "", err
 	}
 
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: joseSigner{alg: alg, signer: c.Signer}}, opts)
+	// create a jose.OpaqueSigner from the crypto.Signer
+	opaque := cryptosigner.Opaque(c.Signer)
+
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
 		return "", err
 	}
