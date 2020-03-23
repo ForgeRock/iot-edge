@@ -18,6 +18,7 @@
 package anvil
 
 import (
+	"crypto"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -30,7 +31,6 @@ import (
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
-	"gopkg.in/square/go-jose.v2"
 )
 
 const (
@@ -128,10 +128,9 @@ func (t NopSetupCleanup) Cleanup() {
 
 // represents the minimum amount of setup to create an identity for use in a test
 type BaseSDKTest struct {
-	Realm         string
-	Id            am.IdAttributes
-	CNFPrivateJWK *jose.JSONWebKey
-	CNFPublicJWK  *jose.JSONWebKey
+	Realm  string
+	Id     am.IdAttributes
+	Signer crypto.Signer
 }
 
 // Setup the base test

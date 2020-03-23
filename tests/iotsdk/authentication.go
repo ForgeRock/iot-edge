@@ -22,15 +22,14 @@ import (
 
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
-	"gopkg.in/square/go-jose.v2"
 )
 
 func initialiseSDK(test anvil.BaseSDKTest) (*things.Thing, error) {
 	thing := things.Thing{
 		Client: things.AMClient{
-			AuthURL:         anvil.TreeURL("Anvil-User-Pwd"),
-			IoTURL:          anvil.IoTURL(),
-			ConfirmationKey: test.CNFPrivateJWK,
+			AuthURL: anvil.TreeURL("Anvil-User-Pwd"),
+			IoTURL:  anvil.IoTURL(),
+			Signer:  test.Signer,
 		},
 		Handlers: []things.CallbackHandler{
 			things.NameCallbackHandler{Name: test.Id.Name},
@@ -48,13 +47,13 @@ type AuthenticateWithUsernameAndPassword struct {
 }
 
 func (t *AuthenticateWithUsernameAndPassword) Setup() bool {
-	_, publicJWK, err := anvil.GenerateConfirmationKey()
+	var err error
+	t.Id.ThingKeys, t.Signer, err = anvil.GenerateConfirmationKey()
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return false
 	}
 	t.Id.ThingType = "Device"
-	t.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{*publicJWK}}
 	return t.BaseSDKTest.Setup()
 }
 
@@ -93,14 +92,13 @@ type SendTestCommand struct {
 }
 
 func (t *SendTestCommand) Setup() bool {
-	privateJWK, publicJWK, err := anvil.GenerateConfirmationKey()
+	var err error
+	t.Id.ThingKeys, t.Signer, err = anvil.GenerateConfirmationKey()
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return false
 	}
-	t.BaseSDKTest.CNFPrivateJWK = privateJWK
 	t.Id.ThingType = "Device"
-	t.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{*publicJWK}}
 	if result := t.BaseSDKTest.Setup(); !result {
 		return false
 	}

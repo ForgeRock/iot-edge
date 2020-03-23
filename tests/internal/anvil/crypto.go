@@ -17,22 +17,19 @@
 package anvil
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 
-	"gopkg.in/square/go-jose.v2"
+	jose "gopkg.in/square/go-jose.v2"
 )
 
 // GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
-func GenerateConfirmationKey() (privateJWK *jose.JSONWebKey, publicJWK *jose.JSONWebKey, err error) {
+func GenerateConfirmationKey() (public jose.JSONWebKeySet, private crypto.Signer, err error) {
 	// create a new key
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	// convert public key to JWK
-	publicJWK = &jose.JSONWebKey{KeyID: "pop.cnf", Key: key.Public(), Algorithm: string(jose.ES256), Use: "sig"}
-	privateJWK = &jose.JSONWebKey{Key: key, Algorithm: string(jose.ES256), Use: "sig"}
-	return
+	private, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	return jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{{KeyID: "pop.cnf", Key: private.Public(), Algorithm: string(jose.ES256), Use: "sig"}},
+	}, private, err
 }
