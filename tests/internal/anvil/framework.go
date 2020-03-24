@@ -96,14 +96,9 @@ func PrimaryRealm() string {
 	return primaryRealm.name
 }
 
-// TreeURL return the URL for the given tree in the primary test realm
-func TreeURL(treeName string) string {
-	return am.URLAuthenticate(PrimaryRealm(), treeName)
-}
-
-// IoTURL returns the URL for the IoT endpoint in the given realm
-func IoTURL() string {
-	return am.URLIoT(PrimaryRealm())
+// BaseURL returns the base URL for the test AM
+func BaseURL() string {
+	return am.AMURL
 }
 
 // SDKTest defines the interface required by a SDK API test
