@@ -26,11 +26,12 @@ import (
 
 func initialiseSDK(test anvil.BaseSDKTest) (*things.Thing, error) {
 	thing := things.Thing{
-		Client: things.AMClient{
-			AuthURL: anvil.TreeURL("Anvil-User-Pwd"),
-			IoTURL:  anvil.IoTURL(),
-			Signer:  test.Signer,
-		},
+		Client: things.NewAMClient(
+			anvil.BaseURL(),
+			anvil.PrimaryRealm(),
+			"Anvil-User-Pwd",
+			test.Signer,
+		),
 		Handlers: []things.CallbackHandler{
 			things.NameCallbackHandler{Name: test.Id.Name},
 			things.PasswordCallbackHandler{Password: test.Id.Password},

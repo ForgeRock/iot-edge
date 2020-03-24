@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ForgeRock/iot-edge/internal/amurl"
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
@@ -82,7 +83,7 @@ type Client interface {
 	authenticate(ctx context.Context, request authenticatePayload) (response authenticatePayload, err error)
 
 	// sendCommand sends a command request to the ForgeRock platform
-	sendCommand(tokenID string, request commandRequestPayload) (response string, err error)
+	sendCommand(ctx context.Context, tokenID string, request commandRequestPayload) (response string, err error)
 }
 
 // AMClient contains information for connecting directly to AM
@@ -93,13 +94,24 @@ type AMClient struct {
 	Signer  crypto.Signer // see restrictions
 }
 
-func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (reply authenticatePayload, err error) {
+// NewAMClient returns a new client for connecting directly to AM
+// Restrictions: Signer uses ECDSA with a P-256 curve.
+func NewAMClient(baseURL, realm, authTree string, signer crypto.Signer) Client {
+	r := amurl.RealmFromString(realm)
+	return AMClient{
+		AuthURL: fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=%s", baseURL, r.Query(), authTree),
+		IoTURL:  fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, r.Path()),
+		Signer:  signer,
+	}
+}
+
+func (c AMClient) authenticate(ctx context.Context, payload authenticatePayload) (reply authenticatePayload, err error) {
 	client := &http.Client{}
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
 	}
-	request, err := http.NewRequest(http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return reply, err
@@ -128,15 +140,14 @@ func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (
 	return reply, err
 }
 
-func (c AMClient) sendCommand(tokenID string, payload commandRequestPayload) (string, error) {
+func (c AMClient) sendCommand(ctx context.Context, tokenID string, payload commandRequestPayload) (string, error) {
 	client := &http.Client{}
-	url := c.IoTURL + "?_action=command"
-	requestBody, err := c.signedJWTBody(url, commandEndpointVersion, tokenID, payload)
+	requestBody, err := c.signedJWTBody(c.IoTURL, commandEndpointVersion, tokenID, payload)
 	DebugLogger.Println("Signed command request body: ", requestBody)
 	if err != nil {
 		return "", err
 	}
-	request, err := http.NewRequest(http.MethodPost, url, strings.NewReader(requestBody))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.IoTURL, strings.NewReader(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return "", err
@@ -234,5 +245,5 @@ func (t Thing) SendCommand(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return t.Client.sendCommand(tokenID, commandRequestPayload{Command: "TEST"})
+	return t.Client.sendCommand(ctx, tokenID, commandRequestPayload{Command: "TEST"})
 }
