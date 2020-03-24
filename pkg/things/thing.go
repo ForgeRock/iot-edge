@@ -19,6 +19,7 @@ package things
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
@@ -84,11 +86,11 @@ type Client interface {
 }
 
 // AMClient contains information for connecting directly to AM
+// Restrictions: Signer uses ECDSA with a P-256 curve. Sign returns the signature ans1 encoded.
 type AMClient struct {
 	AuthURL string
 	IoTURL  string
-	// TODO we should use a Signer here instead of the user exposing their private key.
-	ConfirmationKey *jose.JSONWebKey
+	Signer  crypto.Signer // see restrictions
 }
 
 func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (reply authenticatePayload, err error) {
@@ -129,7 +131,7 @@ func (c AMClient) authenticate(_ context.Context, payload authenticatePayload) (
 func (c AMClient) sendCommand(tokenID string, payload commandRequestPayload) (string, error) {
 	client := &http.Client{}
 	url := c.IoTURL + "?_action=command"
-	requestBody, err := signedJWTBody(url, commandEndpointVersion, tokenID, payload, c.ConfirmationKey)
+	requestBody, err := c.signedJWTBody(url, commandEndpointVersion, tokenID, payload)
 	DebugLogger.Println("Signed command request body: ", requestBody)
 	if err != nil {
 		return "", err
@@ -160,14 +162,24 @@ func (c AMClient) sendCommand(tokenID string, payload commandRequestPayload) (st
 	return string(responseBody), err
 }
 
-func signedJWTBody(url, version, tokenID string, body interface{}, jwk *jose.JSONWebKey) (string, error) {
+func (c AMClient) signedJWTBody(url, version, tokenID string, body interface{}) (string, error) {
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("aud", url)
 	opts.WithHeader("api", version)
 	// Note: nonce can be 0 as long as we create a new session for each request. If we reuse the token we need
 	// to increment the nonce between requests
 	opts.WithHeader("nonce", 0)
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: jwk}, opts)
+
+	// check that the signer is supported
+	alg, err := signatureAlgorithm(c.Signer)
+	if err != nil {
+		return "", err
+	}
+
+	// create a jose.OpaqueSigner from the crypto.Signer
+	opaque := cryptosigner.Opaque(c.Signer)
+
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
 		return "", err
 	}

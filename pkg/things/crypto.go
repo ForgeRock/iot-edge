@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package anvil
+package things
 
 import (
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
+	"errors"
 
-	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2"
 )
 
-// GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
-func GenerateConfirmationKey() (public jose.JSONWebKeySet, private crypto.Signer, err error) {
-	// create a new key
-	private, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	return jose.JSONWebKeySet{
-		Keys: []jose.JSONWebKey{{KeyID: "pop.cnf", Key: private.Public(), Algorithm: string(jose.ES256), Use: "sig"}},
-	}, private, err
+// signatureAlgorithm attempts to deduce the signing algorithm by looking at the public key
+func signatureAlgorithm(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
+	if s == nil {
+		return alg, errors.New("no signer")
+	}
+	switch k := s.Public().(type) {
+	case *ecdsa.PublicKey:
+		if k.Curve.Params().Name == "P-256" {
+			return jose.ES256, nil
+		}
+	}
+	return alg, errors.New("unsupported algorithm")
 }
