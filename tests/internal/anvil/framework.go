@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ForgeRock/iot-edge/pkg/things"
+
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
@@ -96,9 +98,11 @@ func PrimaryRealm() string {
 	return primaryRealm.name
 }
 
-// BaseURL returns the base URL for the test AM
-func BaseURL() string {
-	return am.AMURL
+// TestAMClient creates an AM client that connects with the test AM instance
+func TestAMClient() *things.AMClient {
+	t := things.NewAMClient(am.AMURL, primaryRealm.name)
+	t.Timeout = StdTimeOut
+	return t
 }
 
 // SDKTest defines the interface required by a SDK API test
@@ -123,6 +127,7 @@ func (t NopSetupCleanup) Cleanup() {
 
 // represents the minimum amount of setup to create an identity for use in a test
 type BaseSDKTest struct {
+	Client things.Client
 	Realm  string
 	Id     am.IdAttributes
 	Signer crypto.Signer
@@ -140,7 +145,12 @@ func (t *BaseSDKTest) Setup() bool {
 	if t.Realm == "" {
 		t.Realm = PrimaryRealm()
 	}
-	err := am.CreateIdentity(t.Realm, t.Id)
+	var err error
+	t.Client, err = TestAMClient().Initialise()
+	if err != nil {
+		return false
+	}
+	err = am.CreateIdentity(t.Realm, t.Id)
 	return err == nil
 }
 

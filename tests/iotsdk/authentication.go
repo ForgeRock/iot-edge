@@ -17,7 +17,6 @@
 package main
 
 import (
-	"context"
 	"strings"
 
 	"github.com/ForgeRock/iot-edge/pkg/things"
@@ -25,21 +24,20 @@ import (
 )
 
 func initialiseSDK(test anvil.BaseSDKTest) (*things.Thing, error) {
+	var err error
+	test.Client, err = anvil.TestAMClient().Initialise()
+	if err != nil {
+		return nil, err
+	}
 	thing := things.Thing{
-		Client: things.NewAMClient(
-			anvil.BaseURL(),
-			anvil.PrimaryRealm(),
-			"Anvil-User-Pwd",
-			test.Signer,
-		),
+		AuthTree: "Anvil-User-Pwd",
+		Signer:   test.Signer,
 		Handlers: []things.CallbackHandler{
 			things.NameCallbackHandler{Name: test.Id.Name},
 			things.PasswordCallbackHandler{Password: test.Id.Password},
 		},
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), anvil.StdTimeOut)
-	defer cancel()
-	return &thing, thing.Initialise(ctx)
+	return &thing, thing.Initialise(test.Client)
 }
 
 // AuthenticateWithUsernameAndPassword tests the authentication of a pre-registered device
@@ -110,9 +108,7 @@ func (t *SendTestCommand) Setup() bool {
 }
 
 func (t *SendTestCommand) Run() bool {
-	ctx, cancel := context.WithTimeout(context.Background(), anvil.StdTimeOut)
-	defer cancel()
-	response, err := t.thing.SendCommand(ctx)
+	response, err := t.thing.SendCommand(t.Client)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to send command", err)
 		return false

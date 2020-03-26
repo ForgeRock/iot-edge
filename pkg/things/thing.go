@@ -18,15 +18,14 @@ package things
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ForgeRock/iot-edge/internal/amurl"
 	"github.com/ForgeRock/iot-edge/internal/debug"
@@ -47,10 +46,12 @@ const (
 	contentType               = "Content-Type"
 	applicationJson           = "application/json"
 	applicationJose           = "application/jose"
+
+	defaultTimeout = 5 * time.Second
 )
 
-// authenticatePayload represents the outbound and inbound data during an authentication request
-type authenticatePayload struct {
+// AuthenticatePayload represents the outbound and inbound data during an authentication request
+type AuthenticatePayload struct {
 	TokenID   string     `json:"tokenId,omitempty"`
 	AuthID    string     `json:"authId,omitempty"`
 	Callbacks []Callback `json:"callbacks,omitempty"`
@@ -61,7 +62,7 @@ type commandRequestPayload struct {
 	Command string `json:"command"`
 }
 
-func (p authenticatePayload) String() string {
+func (p AuthenticatePayload) String() string {
 	b, err := json.Marshal(p)
 	if err != nil {
 		return ""
@@ -77,62 +78,61 @@ func (p authenticatePayload) String() string {
 
 // Client is an interface that describes the connection to the ForgeRock platform
 type Client interface {
-	// initialise the client
-	initialise(ctx context.Context) error
+	// Initialise the client. Must be called before the Client is used by a Thing
+	Initialise() (Client, error)
 
-	// authenticate sends an authenticate request to the ForgeRock platform
-	authenticate(ctx context.Context, request authenticatePayload) (response authenticatePayload, err error)
+	// Authenticate sends an Authenticate request to the ForgeRock platform
+	Authenticate(authTree string, payload AuthenticatePayload) (reply AuthenticatePayload, err error)
 
 	// sendCommand sends a command request to the ForgeRock platform
-	sendCommand(ctx context.Context, tokenID string, request commandRequestPayload) (response string, err error)
+	sendCommand(signer crypto.Signer, tokenID string, payload commandRequestPayload) (reply string, err error)
 }
 
 // AMClient contains information for connecting directly to AM
-// Restrictions: Signer uses ECDSA with a P-256 curve. Sign returns the signature ans1 encoded.
 type AMClient struct {
+	http.Client
 	ServerInfoURL string
 	AuthURL       string
 	IoTURL        string
-	Signer        crypto.Signer // see restrictions
 	cookieName    string
 }
 
 // NewAMClient returns a new client for connecting directly to AM
-// Restrictions: Signer uses ECDSA with a P-256 curve.
-func NewAMClient(baseURL, realm, authTree string, signer crypto.Signer) Client {
+func NewAMClient(baseURL, realm string) *AMClient {
 	r := amurl.RealmFromString(realm)
 	return &AMClient{
+		Client:        http.Client{Timeout: defaultTimeout},
 		ServerInfoURL: fmt.Sprintf("%s/json/serverinfo/*", baseURL),
-		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=%s", baseURL, r.Query(), authTree),
+		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=", baseURL, r.Query()),
 		IoTURL:        fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, r.Path()),
-		Signer:        signer,
 	}
 }
 
-var httpClient = &http.Client{}
-
-func (c *AMClient) initialise(ctx context.Context) (err error) {
-	var info serverInfo
-	if info, err = c.getServerInfo(ctx); err != nil {
-		return
+// Initialise the AM client
+func (c *AMClient) Initialise() (Client, error) {
+	info, err := c.getServerInfo()
+	if err != nil {
+		return c, err
 	}
 	c.cookieName = info.CookieName
-	return nil
+	return c, nil
 }
 
-func (c *AMClient) authenticate(ctx context.Context, payload authenticatePayload) (reply authenticatePayload, err error) {
+// Authenticate with the AM authTree using the given payload
+// This is a single round trip
+func (c *AMClient) Authenticate(authTree string, payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest(http.MethodPost, c.AuthURL+authTree, bytes.NewBuffer(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return reply, err
 	}
 	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
 	request.Header.Add(contentType, applicationJson)
-	response, err := httpClient.Do(request)
+	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return reply, err
@@ -160,16 +160,16 @@ type serverInfo struct {
 }
 
 // getServerInfo makes a server information request to AM
-func (c *AMClient) getServerInfo(ctx context.Context) (info serverInfo, err error) {
+func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	url := c.ServerInfoURL + "?_fields=cookieName"
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return info, err
 	}
 	request.Header.Add(acceptAPIVersion, serverInfoEndpointVersion)
 	request.Header.Add(contentType, applicationJson)
-	response, err := httpClient.Do(request)
+	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return info, err
@@ -191,13 +191,13 @@ func (c *AMClient) getServerInfo(ctx context.Context) (info serverInfo, err erro
 	return info, err
 }
 
-func (c *AMClient) sendCommand(ctx context.Context, tokenID string, payload commandRequestPayload) (string, error) {
-	requestBody, err := c.signedJWTBody(c.IoTURL, commandEndpointVersion, tokenID, payload)
+func (c *AMClient) sendCommand(signer crypto.Signer, tokenID string, payload commandRequestPayload) (string, error) {
+	requestBody, err := signedJWTBody(signer, c.IoTURL, commandEndpointVersion, tokenID, payload)
 	DebugLogger.Println("Signed command request body: ", requestBody)
 	if err != nil {
 		return "", err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.IoTURL, strings.NewReader(requestBody))
+	request, err := http.NewRequest(http.MethodPost, c.IoTURL, strings.NewReader(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, nil))
 		return "", err
@@ -205,7 +205,7 @@ func (c *AMClient) sendCommand(ctx context.Context, tokenID string, payload comm
 	request.Header.Set(acceptAPIVersion, commandEndpointVersion)
 	request.Header.Set(contentType, applicationJose)
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
-	response, err := httpClient.Do(request)
+	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpRoundTrip(request, response))
 		return "", err
@@ -223,7 +223,7 @@ func (c *AMClient) sendCommand(ctx context.Context, tokenID string, payload comm
 	return string(responseBody), err
 }
 
-func (c AMClient) signedJWTBody(url, version, tokenID string, body interface{}) (string, error) {
+func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body interface{}) (string, error) {
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("aud", url)
 	opts.WithHeader("api", version)
@@ -232,13 +232,13 @@ func (c AMClient) signedJWTBody(url, version, tokenID string, body interface{}) 
 	opts.WithHeader("nonce", 0)
 
 	// check that the signer is supported
-	alg, err := signatureAlgorithm(c.Signer)
+	alg, err := signatureAlgorithm(signer)
 	if err != nil {
 		return "", err
 	}
 
 	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(c.Signer)
+	opaque := cryptosigner.Opaque(signer)
 
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
@@ -254,49 +254,42 @@ func (c AMClient) signedJWTBody(url, version, tokenID string, body interface{}) 
 }
 
 // Thing represents an AM Thing identity
+// Restrictions: Signer uses ECDSA with a P-256 curve. Sign returns the signature ans1 encoded.
 type Thing struct {
-	Client   Client
+	Signer   crypto.Signer // see restrictions
+	AuthTree string
 	Handlers []CallbackHandler
 }
 
 // authenticate the Thing
-func (t Thing) authenticate(ctx context.Context) (tokenID string, err error) {
-	payload := authenticatePayload{}
+func (t Thing) authenticate(client Client) (tokenID string, err error) {
+	payload := AuthenticatePayload{}
 	for {
-		select {
-		case <-ctx.Done():
-			return tokenID, errors.New("authenticate: context done")
-		default:
-			if payload, err = t.Client.authenticate(ctx, payload); err != nil {
-				return tokenID, err
-			}
+		if payload, err = client.Authenticate(t.AuthTree, payload); err != nil {
+			return tokenID, err
+		}
 
-			if payload.TokenID != "" {
-				return payload.TokenID, nil
-			}
-			if err = processCallbacks(payload.Callbacks, t.Handlers); err != nil {
-				return tokenID, err
-			}
+		if payload.TokenID != "" {
+			return payload.TokenID, nil
+		}
+		if err = processCallbacks(payload.Callbacks, t.Handlers); err != nil {
+			return tokenID, err
 		}
 	}
 }
 
 // Initialise the Thing
-// TODO can we make the context optional with a default so that it does not have to be passed to every SDK call
-func (t Thing) Initialise(ctx context.Context) (err error) {
-	if err = t.Client.initialise(ctx); err != nil {
-		return nil
-	}
-	_, err = t.authenticate(ctx)
+func (t Thing) Initialise(client Client) (err error) {
+	_, err = t.authenticate(client)
 	return err
 }
 
 // SendCommand to AM via the iot endpoint
 // TODO remove once specific commands have been added
-func (t Thing) SendCommand(ctx context.Context) (string, error) {
-	tokenID, err := t.authenticate(ctx)
+func (t Thing) SendCommand(client Client) (string, error) {
+	tokenID, err := t.authenticate(client)
 	if err != nil {
 		return "", err
 	}
-	return t.Client.sendCommand(ctx, tokenID, commandRequestPayload{Command: "TEST"})
+	return client.sendCommand(t.Signer, tokenID, commandRequestPayload{Command: "TEST"})
 }
