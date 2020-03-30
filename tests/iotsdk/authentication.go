@@ -23,41 +23,36 @@ import (
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 )
 
-func initialiseSDK(test anvil.BaseSDKTest) (*things.Thing, error) {
-	var err error
-	test.Client, err = anvil.TestAMClient().Initialise()
-	if err != nil {
-		return nil, err
-	}
-	thing := things.Thing{
+func userPwdThing(data anvil.ThingData) *things.Thing {
+	return &things.Thing{
 		AuthTree: "Anvil-User-Pwd",
-		Signer:   test.Signer,
+		Signer:   data.Signer,
 		Handlers: []things.CallbackHandler{
-			things.NameCallbackHandler{Name: test.Id.Name},
-			things.PasswordCallbackHandler{Password: test.Id.Password},
+			things.NameCallbackHandler{Name: data.Id.Name},
+			things.PasswordCallbackHandler{Password: data.Id.Password},
 		},
 	}
-	return &thing, thing.Initialise(test.Client)
 }
 
 // AuthenticateWithUsernameAndPassword tests the authentication of a pre-registered device
 type AuthenticateWithUsernameAndPassword struct {
-	anvil.BaseSDKTest
+	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Setup() bool {
+func (t *AuthenticateWithUsernameAndPassword) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	t.Id.ThingKeys, t.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return false
+		return data, false
 	}
-	t.Id.ThingType = "Device"
-	return t.BaseSDKTest.Setup()
+	data.Id.ThingType = "Device"
+	return anvil.CreateIdentity(data)
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Run() bool {
-	_, err := initialiseSDK(t.BaseSDKTest)
+func (t *AuthenticateWithUsernameAndPassword) Run(client things.Client, data anvil.ThingData) bool {
+	thing := userPwdThing(data)
+	err := thing.Initialise(client)
 	if err != nil {
 		return false
 	}
@@ -67,16 +62,17 @@ func (t *AuthenticateWithUsernameAndPassword) Run() bool {
 // AuthenticateWithoutConfirmationKey tests the authentication of a pre-registered device that has no confirmation key
 // configured, which is expected to fail.
 type AuthenticateWithoutConfirmationKey struct {
-	anvil.BaseSDKTest
+	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithoutConfirmationKey) Setup() bool {
-	t.Id.ThingType = "Device"
-	return t.BaseSDKTest.Setup()
+func (t *AuthenticateWithoutConfirmationKey) Setup() (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = "Device"
+	return anvil.CreateIdentity(data)
 }
 
-func (t *AuthenticateWithoutConfirmationKey) Run() bool {
-	_, err := initialiseSDK(t.BaseSDKTest)
+func (t *AuthenticateWithoutConfirmationKey) Run(client things.Client, data anvil.ThingData) bool {
+	thing := userPwdThing(data)
+	err := thing.Initialise(client)
 	if err == nil {
 		return false
 	}
@@ -86,29 +82,27 @@ func (t *AuthenticateWithoutConfirmationKey) Run() bool {
 // SendTestCommand sends a test command request to AM
 // TODO replace with specific command tests when thing.SendCommand has been removed
 type SendTestCommand struct {
-	anvil.BaseSDKTest
-	thing *things.Thing
+	anvil.NopSetupCleanup
 }
 
-func (t *SendTestCommand) Setup() bool {
+func (t *SendTestCommand) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	t.Id.ThingKeys, t.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return false
+		return data, false
 	}
-	t.Id.ThingType = "Device"
-	if result := t.BaseSDKTest.Setup(); !result {
-		return false
-	}
-	if t.thing, err = initialiseSDK(t.BaseSDKTest); err != nil {
-		return false
-	}
-	return true
+	data.Id.ThingType = "Device"
+	return anvil.CreateIdentity(data)
 }
 
-func (t *SendTestCommand) Run() bool {
-	response, err := t.thing.SendCommand(t.Client)
+func (t *SendTestCommand) Run(client things.Client, data anvil.ThingData) bool {
+	thing := userPwdThing(data)
+	err := thing.Initialise(client)
+	if err != nil {
+		return false
+	}
+	response, err := thing.SendCommand(client)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to send command", err)
 		return false
