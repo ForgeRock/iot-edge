@@ -105,11 +105,18 @@ func TestAMClient() *things.AMClient {
 	return t
 }
 
+// ThingData holds information about a Thing used in a test
+type ThingData struct {
+	Realm  string
+	Id     am.IdAttributes
+	Signer crypto.Signer
+}
+
 // SDKTest defines the interface required by a SDK API test
 type SDKTest interface {
-	Setup() bool // setup actions before the test starts
-	Run() bool   // function that runs and validates the test
-	Cleanup()    // cleanup actions after the test has finished
+	Setup() (data ThingData, ok bool)              // setup actions before the test starts
+	Run(client things.Client, data ThingData) bool // function that runs and validates the test
+	Cleanup(data ThingData)                        // cleanup actions after the test has finished
 }
 
 // NopSetupCleanup defines a struct with no-op Setup and Cleanup methods
@@ -122,41 +129,22 @@ func (t NopSetupCleanup) Setup() bool {
 }
 
 // Cleanup is a no op function
-func (t NopSetupCleanup) Cleanup() {
+func (t NopSetupCleanup) Cleanup(ThingData) {
 }
 
-// represents the minimum amount of setup to create an identity for use in a test
-type BaseSDKTest struct {
-	Client things.Client
-	Realm  string
-	Id     am.IdAttributes
-	Signer crypto.Signer
-}
-
-// Setup the base test
+// Create an identity in AM from the supplied data
 // uses sensible defaults for certain fields if none have been set
-func (t *BaseSDKTest) Setup() bool {
-	if t.Id.Name == "" {
-		t.Id.Name = RandomName()
+func CreateIdentity(data ThingData) (ThingData, bool) {
+	if data.Id.Name == "" {
+		data.Id.Name = RandomName()
 	}
-	if t.Id.Password == "" {
-		t.Id.Password = RandomName()
+	if data.Id.Password == "" {
+		data.Id.Password = RandomName()
 	}
-	if t.Realm == "" {
-		t.Realm = PrimaryRealm()
+	if data.Realm == "" {
+		data.Realm = PrimaryRealm()
 	}
-	var err error
-	t.Client, err = TestAMClient().Initialise()
-	if err != nil {
-		return false
-	}
-	err = am.CreateIdentity(t.Realm, t.Id)
-	return err == nil
-}
-
-// Cleanup the base test
-func (t *BaseSDKTest) Cleanup() {
-	//_ = am.DeleteIdentity(t.Realm, t.Id.Name)
+	return data, am.CreateIdentity(data.Realm, data.Id) == nil
 }
 
 // resultSprint formats the result string output for a test
@@ -196,19 +184,20 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 }
 
 // RunTest runs the given SDKTest
-func RunTest(t SDKTest) (pass bool) {
+func RunTest(client things.Client, t SDKTest) (pass bool) {
 	name := TestName(t)
 	ProgressLogger.Printf("%-10s%s\n", runStr, name)
 	start := time.Now()
 	defer func() {
 		ProgressLogger.Print(resultSprint(pass, name, start))
 	}()
-	if pass = t.Setup(); !pass {
-		return
+	var data ThingData
+	if data, pass = t.Setup(); !pass {
+		return false
 	}
 	DebugLogger.Println("*** STARTING TEST RUN")
-	pass = t.Run()
+	pass = t.Run(client, data)
 	DebugLogger.Printf("*** RUN RESULT: %v", pass)
-	t.Cleanup()
+	t.Cleanup(data)
 	return
 }

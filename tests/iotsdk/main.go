@@ -44,10 +44,6 @@ func runTests() (err error) {
 	fmt.Println("====================")
 	fmt.Println()
 
-	// TODO redirect the debug output to a file
-	//anvil.DebugLogger = log.New(os.Stdout, "", 0)
-	//things.DebugLogger = anvil.DebugLogger
-
 	// create test realm
 	if err := anvil.CreatePrimaryRealm(testdataDir); err != nil {
 		return err
@@ -56,11 +52,16 @@ func runTests() (err error) {
 		//_ = anvil.DeletePrimaryRealm()
 	}()
 
+	// create AM Client
+	amClient, err := anvil.TestAMClient().Initialise()
+	if err != nil {
+		return err
+	}
 	var logfile *os.File
 	allPass := true
 	for _, test := range tests {
 		things.DebugLogger, logfile = anvil.NewFileDebugger(debugDir, anvil.TestName(test))
-		if !anvil.RunTest(test) {
+		if !anvil.RunTest(amClient, test) {
 			allPass = false
 		}
 		_ = logfile.Close()
