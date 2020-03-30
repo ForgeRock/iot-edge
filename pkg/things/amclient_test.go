@@ -46,8 +46,12 @@ func TestAMClient_Authenticate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = c.Authenticate(amtest.SimpleTestAuthTree, AuthenticatePayload{})
+	reply, err := c.Authenticate(amtest.SimpleTestAuthTree, AuthenticatePayload{})
 	if err != nil {
 		t.Fatal(err)
+	}
+	// check that the reply has a token
+	if reply.TokenID == "" {
+		t.Errorf("Expected an token in reply: %v", reply)
 	}
 }
