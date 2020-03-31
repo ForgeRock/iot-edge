@@ -46,7 +46,7 @@ func TestAMClient_Authenticate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reply, err := c.Authenticate(amtest.SimpleTestAuthTree, AuthenticatePayload{})
+	reply, err := c.Authenticate(amtest.SimpleTestAuthTree, amtest.SimpleAuthPayload)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -17,8 +17,11 @@
 package amtest
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -27,6 +30,16 @@ const (
 	SimpleTestRealm    = "testRealm"
 	SimpleTestAuthTree = "testTree"
 )
+
+var SimpleAuthPayload = message.AuthenticatePayload{
+	Callbacks: []message.Callback{
+		{
+			Type:   message.TypeNameCallback,
+			Output: []message.Entry{{Value: "simple-thing"}},
+			Input:  nil,
+		},
+	},
+}
 
 // Server mocks the endpoints of AM used by iot edge
 type Server struct {
@@ -51,8 +64,24 @@ func NewSimpleServer() Server {
 			if authType, ok := request.URL.Query()["authIndexType"]; !ok || len(authType) != 1 || authType[0] != "service" {
 				http.Error(writer, "incorrect auth type query", http.StatusBadRequest)
 			}
-			// write a "token"
-			writer.Write([]byte(`{"tokenId":"12345"}`))
+			// expect that the username has been provided
+			body, err := ioutil.ReadAll(request.Body)
+			if err != nil {
+				http.Error(writer, "unable to read request body", http.StatusBadRequest)
+			}
+			var payload message.AuthenticatePayload
+			if err := json.Unmarshal(body, &payload); err != nil {
+				http.Error(writer, "unable to decode request body", http.StatusBadRequest)
+			}
+			for _, cb := range payload.Callbacks {
+				if cb.Type == message.TypeNameCallback && len(cb.Output) > 0 && cb.Output[0].Value != "" {
+					// write a "token"
+					writer.Write([]byte(`{"tokenId":"12345"}`))
+					return
+				}
+			}
+			// fail as no username has been provided
+			http.Error(writer, "no username provided", http.StatusBadRequest)
 		},
 	}
 }

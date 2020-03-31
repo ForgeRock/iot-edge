@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package message
 
 import (
 	"crypto"
@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	ErrNoInput  = errors.New("no input entry to put response")
-	ErrNoOutput = errors.New("no output entry for response")
+	ErrNoInput  = errors.New("no input Entry to put response")
+	ErrNoOutput = errors.New("no output Entry for response")
 )
 
 const (
@@ -38,21 +38,21 @@ const (
 	PromptProofOfPossessionCallback = "challenge"
 )
 
-// entry represents an Input or Output entry in a Callback
-type entry struct {
+// Entry represents an Input or Output Entry in a Callback
+type Entry struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-func (e entry) String() string {
+func (e Entry) String() string {
 	return fmt.Sprintf("{Name:%v Value:%v}", e.Name, e.Value)
 }
 
 // Callback describes an AM callback request and response structure
 type Callback struct {
 	Type   string  `json:"type,omitempty"`
-	Output []entry `json:"output,omitempty"`
-	Input  []entry `json:"input,omitempty"`
+	Output []Entry `json:"output,omitempty"`
+	Input  []Entry `json:"input,omitempty"`
 }
 
 func (c Callback) String() string {
@@ -76,8 +76,8 @@ func (e ErrMissingHandler) Error() string {
 	return fmt.Sprintf("can not respond to %v", e.callback)
 }
 
-// processCallbacks attempts to respond to the callbacks with the given callback handlers
-func processCallbacks(callbacks []Callback, handlers []CallbackHandler) error {
+// ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
+func ProcessCallbacks(callbacks []Callback, handlers []CallbackHandler) error {
 	for _, cb := range callbacks {
 		matched := false
 	handlerLoop:
