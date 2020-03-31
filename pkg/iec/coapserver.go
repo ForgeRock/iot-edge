@@ -49,14 +49,14 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	reply, err := c.Authenticate(query[0], payload)
 	if err != nil {
 		DebugLogger.Printf("Error connecting to AM; %s", err)
-		w.SetCode(codes.InternalServerError)
+		w.SetCode(codes.Unauthorized)
 		w.Write([]byte(err.Error()))
 		return
 	}
 	b, err := json.Marshal(reply)
 	if err != nil {
 		DebugLogger.Printf("Error marshalling Auth Payload; %s", err)
-		w.SetCode(codes.InternalServerError)
+		w.SetCode(codes.Unauthorized)
 		w.Write([]byte(err.Error()))
 		return
 	}
