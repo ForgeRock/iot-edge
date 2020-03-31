@@ -40,6 +40,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 	var payload message.AuthenticatePayload
 	if err := json.Unmarshal(r.Msg.Payload(), &payload); err != nil {
+		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte("Unable to unmarshall payload"))
 		return
@@ -63,7 +64,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	w.Write(b)
 }
 
-// StartCOAPServer starts a COAP within the IEC
+// StartCOAPServer starts a COAP server within the IEC
 func (c *IEC) StartCOAPServer(net string, address string) error {
 	if c.coapServer != nil {
 		return ErrCOAPServerAlreadyStarted

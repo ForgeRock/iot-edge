@@ -19,8 +19,6 @@ package iec
 import (
 	"github.com/ForgeRock/iot-edge/internal/amtest"
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"io/ioutil"
-	"os"
 	"testing"
 )
 
@@ -29,17 +27,7 @@ const (
 	testTree = "testTree"
 )
 
-func TestMain(m *testing.M) {
-	DebugLogger.SetOutput(os.Stdout)
-	things.DebugLogger.SetOutput(os.Stdout)
-	defer func() {
-		DebugLogger.SetOutput(ioutil.Discard)
-		things.DebugLogger.SetOutput(ioutil.Discard)
-	}()
-	os.Exit(m.Run())
-}
-
-func TestServer_Initialise(t *testing.T) {
+func TestCOAPServer_Initialise(t *testing.T) {
 	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
 	if err := iec.StartCOAPServer("udp", address); err != nil {
 		t.Fatal(err)
@@ -52,7 +40,7 @@ func TestServer_Initialise(t *testing.T) {
 	}
 }
 
-func TestServer_Authenticate(t *testing.T) {
+func TestCOAPServer_Authenticate(t *testing.T) {
 	am := amtest.NewSimpleServer().Start("127.0.0.1:8008")
 	defer am.Close()
 
