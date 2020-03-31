@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/amurl"
 	"github.com/ForgeRock/iot-edge/internal/debug"
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -72,7 +73,7 @@ func (c *AMClient) Initialise() (Client, error) {
 
 // Authenticate with the AM authTree using the given payload
 // This is a single round trip
-func (c *AMClient) Authenticate(authTree string, payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+func (c *AMClient) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
@@ -143,7 +144,7 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
-func (c *AMClient) sendCommand(signer crypto.Signer, tokenID string, payload commandRequestPayload) (string, error) {
+func (c *AMClient) sendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (string, error) {
 	requestBody, err := signedJWTBody(signer, c.IoTURL, commandEndpointVersion, tokenID, payload)
 	DebugLogger.Println("Signed command request body: ", requestBody)
 	if err != nil {

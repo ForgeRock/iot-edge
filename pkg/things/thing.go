@@ -17,10 +17,9 @@
 package things
 
 import (
-	"bytes"
 	"crypto"
-	"encoding/json"
 	"errors"
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"io/ioutil"
 	"log"
 )
@@ -33,42 +32,16 @@ var (
 	errAuthRequest = errors.New("authentication request failed")
 )
 
-// AuthenticatePayload represents the outbound and inbound data during an authentication request
-type AuthenticatePayload struct {
-	TokenID   string     `json:"tokenId,omitempty"`
-	AuthID    string     `json:"authId,omitempty"`
-	Callbacks []Callback `json:"callbacks,omitempty"`
-}
-
-// commandRequestPayload represents the outbound data during a command request
-type commandRequestPayload struct {
-	Command string `json:"command"`
-}
-
-func (p AuthenticatePayload) String() string {
-	b, err := json.Marshal(p)
-	if err != nil {
-		return ""
-	}
-
-	var out bytes.Buffer
-	err = json.Indent(&out, b, "", "\t")
-	if err != nil {
-		return ""
-	}
-	return out.String()
-}
-
 // Client is an interface that describes the connection to the ForgeRock platform
 type Client interface {
 	// Initialise the client. Must be called before the Client is used by a Thing
 	Initialise() (Client, error)
 
 	// Authenticate sends an Authenticate request to the ForgeRock platform
-	Authenticate(authTree string, payload AuthenticatePayload) (reply AuthenticatePayload, err error)
+	Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error)
 
 	// sendCommand sends a command request to the ForgeRock platform
-	sendCommand(signer crypto.Signer, tokenID string, payload commandRequestPayload) (reply string, err error)
+	sendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error)
 }
 
 // Thing represents an AM Thing identity
@@ -76,12 +49,12 @@ type Client interface {
 type Thing struct {
 	Signer   crypto.Signer // see restrictions
 	AuthTree string
-	Handlers []CallbackHandler
+	Handlers []message.CallbackHandler
 }
 
 // authenticate the Thing
 func (t Thing) authenticate(client Client) (tokenID string, err error) {
-	payload := AuthenticatePayload{}
+	payload := message.AuthenticatePayload{}
 	for {
 		if payload, err = client.Authenticate(t.AuthTree, payload); err != nil {
 			return tokenID, err
@@ -90,7 +63,7 @@ func (t Thing) authenticate(client Client) (tokenID string, err error) {
 		if payload.TokenID != "" {
 			return payload.TokenID, nil
 		}
-		if err = processCallbacks(payload.Callbacks, t.Handlers); err != nil {
+		if err = message.ProcessCallbacks(payload.Callbacks, t.Handlers); err != nil {
 			return tokenID, err
 		}
 	}
@@ -109,5 +82,5 @@ func (t Thing) SendCommand(client Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return client.sendCommand(t.Signer, tokenID, commandRequestPayload{Command: "TEST"})
+	return client.sendCommand(t.Signer, tokenID, message.CommandRequestPayload{Command: "TEST"})
 }

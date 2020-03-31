@@ -17,6 +17,7 @@
 package things
 
 import (
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"io/ioutil"
@@ -76,7 +77,7 @@ func TestCOAPClient_Authenticate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	payload := AuthenticatePayload{
+	payload := message.AuthenticatePayload{
 		TokenID:   "",
 		AuthID:    "12345",
 		Callbacks: nil,

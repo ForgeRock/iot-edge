@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package message
 
 import (
 	"crypto"
@@ -35,8 +35,8 @@ func dummyCB(callbackType string, prompts ...string) Callback {
 	}
 	cb := Callback{
 		Type:   callbackType,
-		Output: make([]entry, l),
-		Input:  make([]entry, l),
+		Output: make([]Entry, l),
+		Input:  make([]Entry, l),
 	}
 	for i, p := range prompts {
 		cb.Output[i].Value = p
@@ -121,8 +121,8 @@ func TestPoPCallbackHandler_Respond_MissingEntries(t *testing.T) {
 		name string
 		cb   Callback
 	}{
-		{name: "NoInput", cb: Callback{Type: TypeTextInputCallback, Output: make([]entry, 2)}},
-		{name: "NoOutput", cb: Callback{Type: TypeTextInputCallback, Input: make([]entry, 2)}},
+		{name: "NoInput", cb: Callback{Type: TypeTextInputCallback, Output: make([]Entry, 2)}},
+		{name: "NoOutput", cb: Callback{Type: TypeTextInputCallback, Input: make([]Entry, 2)}},
 	}
 	handler := PoPCallbackHandler{Hash: crypto.SHA256, Signer: key}
 	for _, subtest := range tests {
@@ -230,7 +230,7 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := processCallbacks(subtest.callbacks, subtest.handlers)
+			err := ProcessCallbacks(subtest.callbacks, subtest.handlers)
 			if subtest.ok && err != nil {
 				t.Errorf("unexpected error but got: %v", err)
 

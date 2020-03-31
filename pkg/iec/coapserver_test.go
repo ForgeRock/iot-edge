@@ -14,38 +14,47 @@
  * limitations under the License.
  */
 
-package things
+package iec
 
 import (
 	"github.com/ForgeRock/iot-edge/internal/amtest"
+	"github.com/ForgeRock/iot-edge/pkg/things"
 	"testing"
 )
 
 const (
-	testAddress = "127.0.0.1:8008"
-	testURL     = "http://" + testAddress
+	address  = "127.0.0.1:5688"
+	testTree = "testTree"
 )
 
-func TestAMClient_Initialise(t *testing.T) {
-	server := amtest.NewSimpleServer().Start(testAddress)
-	defer server.Close()
-	c, err := NewAMClient(testURL, amtest.SimpleTestRealm).Initialise()
-	if err != nil {
+func TestCOAPServer_Initialise(t *testing.T) {
+	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
+	if err := iec.StartCOAPServer("udp", address); err != nil {
 		t.Fatal(err)
 	}
-	// check that the cookName has been set on the struct
-	if c.(*AMClient).cookieName != amtest.CookieName {
-		t.Error("Cookie name has not been set")
+	defer iec.ShutdownCOAPServer()
+
+	_, err := things.NewCOAPClient(address).Initialise()
+	if err != nil {
+		t.Error(err)
 	}
 }
 
-func TestAMClient_Authenticate(t *testing.T) {
-	server := amtest.NewSimpleServer().Start(testAddress)
-	defer server.Close()
-	c, err := NewAMClient(testURL, amtest.SimpleTestRealm).Initialise()
+func TestCOAPServer_Authenticate(t *testing.T) {
+	am := amtest.NewSimpleServer().Start("127.0.0.1:8008")
+	defer am.Close()
+
+	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
+	if err := iec.StartCOAPServer("udp", address); err != nil {
+		t.Fatal(err)
+	}
+	defer iec.ShutdownCOAPServer()
+
+	c, err := things.NewCOAPClient(address).Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	reply, err := c.Authenticate(amtest.SimpleTestAuthTree, amtest.SimpleAuthPayload)
 	if err != nil {
 		t.Fatal(err)

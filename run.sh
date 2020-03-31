@@ -28,7 +28,7 @@ anvil)
 	;;
 test)
   # Run the IoT unit tests
-  go test -v github.com/ForgeRock/iot-edge/...
+  go test -v -p 1 github.com/ForgeRock/iot-edge/...
 	;;
 *)
   echo "unknown script option: $1"

@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"strings"
 
 	"github.com/ForgeRock/iot-edge/pkg/things"
@@ -27,9 +28,9 @@ func userPwdThing(data anvil.ThingData) *things.Thing {
 	return &things.Thing{
 		AuthTree: "Anvil-User-Pwd",
 		Signer:   data.Signer,
-		Handlers: []things.CallbackHandler{
-			things.NameCallbackHandler{Name: data.Id.Name},
-			things.PasswordCallbackHandler{Password: data.Id.Password},
+		Handlers: []message.CallbackHandler{
+			message.NameCallbackHandler{Name: data.Id.Name},
+			message.PasswordCallbackHandler{Password: data.Id.Password},
 		},
 	}
 }

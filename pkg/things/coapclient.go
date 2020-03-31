@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"time"
@@ -59,7 +60,7 @@ func (c COAPClient) Initialise() (Client, error) {
 }
 
 // Authenticate with the AM authTree using the given payload
-func (c COAPClient) Authenticate(authTree string, payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+func (c COAPClient) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
 	conn, err := c.Dial(c.Address)
 	if err != nil {
 		return reply, err
@@ -100,6 +101,6 @@ func (c COAPClient) Authenticate(authTree string, payload AuthenticatePayload) (
 	return reply, nil
 }
 
-func (c COAPClient) sendCommand(signer crypto.Signer, tokenID string, payload commandRequestPayload) (reply string, err error) {
+func (c COAPClient) sendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error) {
 	return reply, fmt.Errorf("not implemented")
 }
