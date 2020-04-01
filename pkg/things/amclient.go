@@ -98,7 +98,7 @@ func (c *AMClient) Authenticate(authTree string, payload message.AuthenticatePay
 	}
 	if response.StatusCode != http.StatusOK {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return reply, errAuthRequest
+		return reply, ErrUnauthorised
 	}
 	if err = json.Unmarshal(responseBody, &reply); err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))

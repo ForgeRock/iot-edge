@@ -32,6 +32,7 @@ type IEC struct {
 	// coap server
 	coapServer *coap.Server
 	coapChan   chan error
+	Net        string // which protocol for COAP to use, "" defaults to UDP
 }
 
 // NewIEC creates a new IEC

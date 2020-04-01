@@ -18,10 +18,11 @@ package main
 
 import (
 	"fmt"
-	"os"
-
+	"github.com/ForgeRock/iot-edge/pkg/iec"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -34,7 +35,25 @@ const (
 var tests = []anvil.SDKTest{
 	&AuthenticateWithUsernameAndPassword{},
 	&AuthenticateWithoutConfirmationKey{},
-	&SendTestCommand{},
+	//&SendTestCommand{},
+}
+
+// run the full test set for a single client
+func runAllTestsForClient(client things.Client) (result bool) {
+	// put the debug for the client in its own subdirectory
+	subDir := filepath.Join(debugDir, anvil.TypeName(client))
+
+	result = true
+	var logfile *os.File
+	for _, test := range tests {
+		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TypeName(test))
+		iec.DebugLogger = things.DebugLogger
+		if !anvil.RunTest(client, test) {
+			result = false
+		}
+		_ = logfile.Close()
+	}
+	return result
 }
 
 func runTests() (err error) {
@@ -52,20 +71,33 @@ func runTests() (err error) {
 		//_ = anvil.DeletePrimaryRealm()
 	}()
 
+	allPass := true
+
+	fmt.Printf("-- Running AM Client Tests --\n\n")
 	// create AM Client
 	amClient, err := anvil.TestAMClient().Initialise()
 	if err != nil {
 		return err
 	}
-	var logfile *os.File
-	allPass := true
-	for _, test := range tests {
-		things.DebugLogger, logfile = anvil.NewFileDebugger(debugDir, anvil.TestName(test))
-		if !anvil.RunTest(amClient, test) {
-			allPass = false
-		}
-		_ = logfile.Close()
+	allPass = runAllTestsForClient(amClient)
+
+	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
+
+	// run the IEC
+	controller := anvil.TestIEC()
+	err = controller.StartCOAPServer(anvil.COAPAddress)
+	if err != nil {
+		return err
 	}
+	defer controller.ShutdownCOAPServer()
+
+	// create IEC Client
+	iecClient, err := anvil.TestCOAPClient().Initialise()
+	if err != nil {
+		return err
+	}
+	allPass = runAllTestsForClient(iecClient) && allPass
+
 	if !allPass {
 		return fmt.Errorf("test FAILURE")
 	}

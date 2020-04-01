@@ -29,7 +29,7 @@ import (
 var DebugLogger = log.New(ioutil.Discard, "", 0)
 
 var (
-	errAuthRequest = errors.New("authentication request failed")
+	ErrUnauthorised = errors.New("unauthorised")
 )
 
 // Client is an interface that describes the connection to the ForgeRock platform
