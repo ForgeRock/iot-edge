@@ -30,6 +30,10 @@ test)
   # Run the IoT unit tests
   go test -v -p 1 github.com/ForgeRock/iot-edge/...
 	;;
+example)
+  # Run the example program
+  go run github.com/ForgeRock/iot-edge/examples/"$2"
+	;;
 *)
   echo "unknown script option: $1"
   exit 1
