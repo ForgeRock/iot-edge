@@ -29,7 +29,7 @@ const (
 
 func TestCOAPServer_Initialise(t *testing.T) {
 	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
-	if err := iec.StartCOAPServer("udp", address); err != nil {
+	if err := iec.StartCOAPServer(address); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()
@@ -45,7 +45,7 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 	defer am.Close()
 
 	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
-	if err := iec.StartCOAPServer("udp", address); err != nil {
+	if err := iec.StartCOAPServer(address); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()

@@ -20,6 +20,7 @@ package anvil
 import (
 	"crypto"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/iec"
 	"io/ioutil"
 	"log"
 	"os"
@@ -105,6 +106,23 @@ func TestAMClient() *things.AMClient {
 	return t
 }
 
+// COAPAddress is the address served by the COAP server run by the test IEC
+const COAPAddress = "127.0.0.1:5688"
+
+// TestCOAPClient creates an COAP client that connects with the test IEC instance
+func TestCOAPClient() *things.COAPClient {
+	c := things.NewCOAPClient(COAPAddress)
+	c.Timeout = StdTimeOut
+	return c
+}
+
+// TestIEC creates a test IEC
+func TestIEC() *iec.IEC {
+	c := iec.NewIEC(am.AMURL, PrimaryRealm())
+	c.Client.Timeout = StdTimeOut
+	return c
+}
+
 // ThingData holds information about a Thing used in a test
 type ThingData struct {
 	Realm  string
@@ -163,8 +181,8 @@ func RandomName() string {
 	return uniuri.New()
 }
 
-// TestName creates a test name based on the name of the type used to define the test
-func TestName(t interface{}) string {
+// TypeName returns the name of the type after removing the package prefix
+func TypeName(t interface{}) string {
 	nameSlice := strings.Split(reflect.TypeOf(t).String(), ".")
 	return nameSlice[len(nameSlice)-1]
 }
@@ -179,13 +197,13 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	DebugLogger = log.New(file, "", log.Ltime|log.Lshortfile)
+	DebugLogger = log.New(file, "", log.Ltime|log.Lmicroseconds|log.Lshortfile)
 	return DebugLogger, file
 }
 
 // RunTest runs the given SDKTest
 func RunTest(client things.Client, t SDKTest) (pass bool) {
-	name := TestName(t)
+	name := TypeName(t)
 	ProgressLogger.Printf("%-10s%s\n", runStr, name)
 	start := time.Now()
 	defer func() {

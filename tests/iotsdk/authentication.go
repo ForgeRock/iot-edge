@@ -74,7 +74,7 @@ func (t *AuthenticateWithoutConfirmationKey) Setup() (data anvil.ThingData, ok b
 func (t *AuthenticateWithoutConfirmationKey) Run(client things.Client, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
 	err := thing.Initialise(client)
-	if err == nil {
+	if err != things.ErrUnauthorised {
 		return false
 	}
 	return true

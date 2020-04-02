@@ -20,8 +20,6 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
-	"io/ioutil"
-	"os"
 	"testing"
 )
 
@@ -30,7 +28,7 @@ const (
 	testTree = "testTree"
 )
 
-func startTestServer() *coap.Server {
+func startTestServer() func() {
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", func(w coap.ResponseWriter, r *coap.Request) {
 		// check that the query is set to auth tree
@@ -44,26 +42,21 @@ func startTestServer() *coap.Server {
 		// just echo the payload back
 		w.Write(r.Msg.Payload())
 	})
+	c := make(chan error, 1)
 	server := &coap.Server{Addr: address, Net: "udp", Handler: mux}
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			panic(err)
-		}
+		c <- server.ListenAndServe()
 	}()
-	return server
-}
-
-func TestMain(m *testing.M) {
-	DebugLogger.SetOutput(os.Stdout)
-	defer func() {
-		DebugLogger.SetOutput(ioutil.Discard)
-	}()
-	server := startTestServer()
-	defer server.Shutdown()
-	os.Exit(m.Run())
+	return func() {
+		server.Shutdown()
+		<-c
+	}
 }
 
 func TestCOAPClient_Initialise(t *testing.T) {
+	cancel := startTestServer()
+	defer cancel()
+
 	client := NewCOAPClient(address)
 	_, err := client.Initialise()
 	if err != nil {
@@ -72,6 +65,9 @@ func TestCOAPClient_Initialise(t *testing.T) {
 }
 
 func TestCOAPClient_Authenticate(t *testing.T) {
+	cancel := startTestServer()
+	defer cancel()
+
 	client := NewCOAPClient(address)
 	_, err := client.Initialise()
 	if err != nil {

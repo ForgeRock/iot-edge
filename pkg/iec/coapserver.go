@@ -27,6 +27,9 @@ import (
 // ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the IEC
 var ErrCOAPServerAlreadyStarted = errors.New("COAP server has already been started")
 
+// temporary variable until IOTEDGE-908
+var authID string
+
 // authenticateHandler handles authentication requests
 func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler")
@@ -38,7 +41,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 		w.Write([]byte("Missing or incorrect auth tree"))
 		return
 	}
-	var payload message.AuthenticatePayload
+	payload := message.AuthenticatePayload{AuthID: authID}
 	if err := json.Unmarshal(r.Msg.Payload(), &payload); err != nil {
 		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)
@@ -53,6 +56,11 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+
+	// remove Auth ID as it is usually too big for a single UDP message
+	authID = reply.AuthID
+	reply.AuthID = ""
+
 	b, err := json.Marshal(reply)
 	if err != nil {
 		DebugLogger.Printf("Error marshalling Auth Payload; %s", err)
@@ -62,16 +70,22 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 	w.SetCode(codes.Valid)
 	w.Write(b)
+	DebugLogger.Println("authenticateHandler: success")
 }
 
 // StartCOAPServer starts a COAP server within the IEC
-func (c *IEC) StartCOAPServer(net string, address string) error {
+func (c *IEC) StartCOAPServer(address string) error {
 	if c.coapServer != nil {
 		return ErrCOAPServerAlreadyStarted
 	}
 	c.coapChan = make(chan error, 1)
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
+	// use UDP as default unless the protocol has been configured
+	net := "udp"
+	if c.Net != "" {
+		net = c.Net
+	}
 	c.coapServer = &coap.Server{Addr: address, Net: net, Handler: mux}
 	go func() {
 		c.coapChan <- c.coapServer.ListenAndServe()

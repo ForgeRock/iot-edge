@@ -92,7 +92,7 @@ func (c COAPClient) Authenticate(authTree string, payload message.AuthenticatePa
 	}
 	if response.Code() != codes.Valid {
 		DebugLogger.Println(debug.DumpCOAPRoundTrip(conn, message, response))
-		return reply, errAuthRequest
+		return reply, ErrUnauthorised
 	}
 	if err = json.Unmarshal(response.Payload(), &reply); err != nil {
 		DebugLogger.Println(debug.DumpCOAPRoundTrip(conn, message, response))
