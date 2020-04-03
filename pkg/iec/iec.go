@@ -26,6 +26,10 @@ import (
 
 var DebugLogger = log.New(ioutil.Discard, "", 0)
 
+func init() {
+	things.DebugLogger = DebugLogger
+}
+
 // IEC represents an Identity Edge Controller
 type IEC struct {
 	Client *things.AMClient

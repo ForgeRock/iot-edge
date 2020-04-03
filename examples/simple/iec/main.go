@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/iec"
-	"github.com/ForgeRock/iot-edge/pkg/things"
 	"log"
 	"os"
 )
@@ -49,7 +48,6 @@ func main() {
 	flag.Parse()
 
 	// pipe debug to standard out
-	things.DebugLogger.SetOutput(os.Stdout)
 	iec.DebugLogger.SetOutput(os.Stdout)
 
 	if err := simpleIEC(); err != nil {
