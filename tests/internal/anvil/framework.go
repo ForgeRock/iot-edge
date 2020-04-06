@@ -119,7 +119,6 @@ func TestCOAPClient() *things.COAPClient {
 // TestIEC creates a test IEC
 func TestIEC() *iec.IEC {
 	c := iec.NewIEC(am.AMURL, PrimaryRealm())
-	c.Client.Timeout = StdTimeOut
 	return c
 }
 

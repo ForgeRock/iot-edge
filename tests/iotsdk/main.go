@@ -75,7 +75,8 @@ func runTests() (err error) {
 
 	fmt.Printf("-- Running AM Client Tests --\n\n")
 	// create AM Client
-	amClient, err := anvil.TestAMClient().Initialise()
+	amClient := anvil.TestAMClient()
+	err = amClient.Initialise()
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,8 @@ func runTests() (err error) {
 	defer controller.ShutdownCOAPServer()
 
 	// create IEC Client
-	iecClient, err := anvil.TestCOAPClient().Initialise()
+	iecClient := anvil.TestCOAPClient()
+	err = iecClient.Initialise()
 	if err != nil {
 		return err
 	}

@@ -17,11 +17,16 @@
 package iec
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/go-ocf/go-coap"
 	"io/ioutil"
 	"log"
+	"time"
 )
 
 var DebugLogger = log.New(ioutil.Discard, "", 0)
@@ -32,7 +37,8 @@ func init() {
 
 // IEC represents an Identity Edge Controller
 type IEC struct {
-	Client *things.AMClient
+	Client    things.Client
+	authCache *tokencache.Cache
 	// coap server
 	coapServer *coap.Server
 	coapChan   chan error
@@ -42,11 +48,39 @@ type IEC struct {
 // NewIEC creates a new IEC
 func NewIEC(baseURL, realm string) *IEC {
 	return &IEC{
-		Client: things.NewAMClient(baseURL, realm),
+		Client:    things.NewAMClient(baseURL, realm),
+		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
 
 // Authenticate with the AM authTree using the given payload
 func (c *IEC) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
-	return c.Client.Authenticate(authTree, payload)
+	if payload.AuthIDKey != "" {
+		payload.AuthId, _ = c.authCache.Get(payload.AuthIDKey)
+	}
+	payload.AuthIDKey = ""
+
+	reply, err = c.Client.Authenticate(authTree, payload)
+	if err != nil {
+		return
+	}
+
+	// if reply has a token, authentication has successfully completed
+	if reply.HasSessionToken() {
+		return reply, nil
+	}
+
+	if reply.AuthId == "" {
+		return reply, fmt.Errorf("no Auth Id in reply")
+	}
+
+	// Auth ID as it is usually too big for a single UDP message.
+	// Instead, create a shorter key and cache the Auth Id, returning the key to the caller.
+	// Use the hash value of the id as its key
+	d := sha256.Sum256([]byte(reply.AuthId))
+	reply.AuthIDKey = base64.StdEncoding.EncodeToString(d[:])
+	c.authCache.Add(reply.AuthIDKey, reply.AuthId)
+	reply.AuthId = ""
+
+	return
 }

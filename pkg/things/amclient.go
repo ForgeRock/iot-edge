@@ -62,13 +62,13 @@ func NewAMClient(baseURL, realm string) *AMClient {
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c *AMClient) Initialise() (Client, error) {
+func (c *AMClient) Initialise() error {
 	info, err := c.getServerInfo()
 	if err != nil {
-		return c, err
+		return err
 	}
 	c.cookieName = info.CookieName
-	return c, nil
+	return nil
 }
 
 // Authenticate with the AM authTree using the given payload
@@ -144,7 +144,7 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
-func (c *AMClient) sendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (string, error) {
+func (c *AMClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (string, error) {
 	requestBody, err := signedJWTBody(signer, c.IoTURL, commandEndpointVersion, tokenID, payload)
 	DebugLogger.Println("Signed command request body: ", requestBody)
 	if err != nil {

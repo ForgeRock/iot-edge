@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package amtest
+package mock
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/dchest/uniuri"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -31,14 +33,14 @@ const (
 	SimpleTestAuthTree = "testTree"
 )
 
-var SimpleAuthPayload = message.AuthenticatePayload{
-	Callbacks: []message.Callback{
+func SimpleClientAuthResponse(payload *message.AuthenticatePayload, name string) {
+	payload.Callbacks = []message.Callback{
 		{
 			Type:   message.TypeNameCallback,
 			Output: []message.Entry{{Value: "simple-thing"}},
 			Input:  nil,
 		},
-	},
+	}
 }
 
 // Server mocks the endpoints of AM used by iot edge
@@ -47,7 +49,50 @@ type Server struct {
 	AuthenticateHandler http.HandlerFunc
 }
 
+// processAuthentication mocks a simple auth tree
+// On each call, the server responds by asking for the Thing's name
+// On the 2nd call and onwards, the server appends the Thing's name to the incoming auth id
+// If the Thing's name does not match the embedded name, then the authentication fails
+// On the 4th successful call, the authentication succeeds
+func processAuthentication(payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
+	stdCB := []message.Callback{
+		{Type: message.TypeNameCallback, Input: []message.Entry{{}}, Output: []message.Entry{{}}},
+	}
+	if payload.AuthId == "" {
+		reply.AuthId = uniuri.New()
+		reply.Callbacks = stdCB
+		return reply, nil
+	}
+	name := ""
+	for _, cb := range payload.Callbacks {
+		if cb.Type == message.TypeNameCallback && len(cb.Input) > 0 && cb.Input[0].Value != "" {
+			name = cb.Input[0].Value
+			break
+		}
+	}
+	if name == "" {
+		return reply, fmt.Errorf("no name provided")
+	}
+	count := 0
+	token := ""
+	for count, token = range strings.Split(payload.AuthId, ".") {
+		if count == 0 {
+			continue
+		}
+		if token != name {
+			return reply, fmt.Errorf("malformed token %s\n", payload.AuthId)
+		}
+	}
+	if count < 2 {
+		reply.AuthId += payload.AuthId + "." + name
+		reply.Callbacks = stdCB
+		return reply, nil
+	}
+	return message.AuthenticatePayload{TokenId: "12345"}, nil
+}
+
 // NewSimpleServer creates a test server that does the minimum to serve the iot endpoints
+// see processAuthentication for the authentication workflow
 func NewSimpleServer() Server {
 	return Server{
 		ServerInfoHandler: func(writer http.ResponseWriter, request *http.Request) {
@@ -73,15 +118,16 @@ func NewSimpleServer() Server {
 			if err := json.Unmarshal(body, &payload); err != nil {
 				http.Error(writer, "unable to decode request body", http.StatusBadRequest)
 			}
-			for _, cb := range payload.Callbacks {
-				if cb.Type == message.TypeNameCallback && len(cb.Output) > 0 && cb.Output[0].Value != "" {
-					// write a "token"
-					writer.Write([]byte(`{"tokenId":"12345"}`))
-					return
-				}
+			reply, err := processAuthentication(payload)
+			if err != nil {
+				fmt.Println(err)
+				http.Error(writer, err.Error(), http.StatusBadRequest)
 			}
-			// fail as no username has been provided
-			http.Error(writer, "no username provided", http.StatusBadRequest)
+			replyBytes, err := json.Marshal(reply)
+			if err != nil {
+				http.Error(writer, "unable to marshall response", http.StatusInternalServerError)
+			}
+			writer.Write(replyBytes)
 		},
 	}
 }

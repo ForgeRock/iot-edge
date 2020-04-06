@@ -35,13 +35,13 @@ var (
 // Client is an interface that describes the connection to the ForgeRock platform
 type Client interface {
 	// Initialise the client. Must be called before the Client is used by a Thing
-	Initialise() (Client, error)
+	Initialise() error
 
 	// Authenticate sends an Authenticate request to the ForgeRock platform
 	Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error)
 
-	// sendCommand sends a command request to the ForgeRock platform
-	sendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error)
+	// SendCommand sends a command request to the ForgeRock platform
+	SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error)
 }
 
 // Thing represents an AM Thing identity
@@ -60,8 +60,8 @@ func (t Thing) authenticate(client Client) (tokenID string, err error) {
 			return tokenID, err
 		}
 
-		if payload.TokenID != "" {
-			return payload.TokenID, nil
+		if payload.HasSessionToken() {
+			return payload.TokenId, nil
 		}
 		if err = message.ProcessCallbacks(payload.Callbacks, t.Handlers); err != nil {
 			return tokenID, err
@@ -82,5 +82,5 @@ func (t Thing) SendCommand(client Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return client.sendCommand(t.Signer, tokenID, message.CommandRequestPayload{Command: "TEST"})
+	return client.SendCommand(t.Signer, tokenID, message.CommandRequestPayload{Command: "TEST"})
 }
