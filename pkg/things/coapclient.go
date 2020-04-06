@@ -44,10 +44,10 @@ func NewCOAPClient(address string) *COAPClient {
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c COAPClient) Initialise() (Client, error) {
+func (c COAPClient) Initialise() error {
 	conn, err := c.Dial(c.Address)
 	if err != nil {
-		return c, err
+		return err
 	}
 	defer conn.Close()
 	timeout := c.Timeout
@@ -56,7 +56,7 @@ func (c COAPClient) Initialise() (Client, error) {
 		timeout = 3600 * time.Second
 	}
 	err = conn.Ping(timeout)
-	return c, err
+	return err
 }
 
 // Authenticate with the AM authTree using the given payload
@@ -101,6 +101,6 @@ func (c COAPClient) Authenticate(authTree string, payload message.AuthenticatePa
 	return reply, nil
 }
 
-func (c COAPClient) sendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error) {
+func (c COAPClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error) {
 	return reply, fmt.Errorf("not implemented")
 }

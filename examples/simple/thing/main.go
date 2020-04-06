@@ -54,7 +54,8 @@ func simpleThing() error {
 	// * AMCLient communicates directly with AM
 	// * COAPClient communicates with AM via the IEC. Run the example IEC by calling "./run.sh examples simple/iec"
 
-	client, err := things.NewAMClient(*amURL, *realm).Initialise()
+	client := things.NewAMClient(*amURL, *realm)
+	err := client.Initialise()
 	//client, err := things.NewCOAPClient("127.0.0.1:5688").Initialise()
 	if err != nil {
 		return err

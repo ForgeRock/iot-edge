@@ -17,8 +17,12 @@
 package iec
 
 import (
-	"github.com/ForgeRock/iot-edge/internal/amtest"
+	"context"
+	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/mock"
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"golang.org/x/sync/errgroup"
 	"testing"
 )
 
@@ -28,39 +32,82 @@ const (
 )
 
 func TestCOAPServer_Initialise(t *testing.T) {
-	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
+	iec := NewIEC("http://127.0.0.1:8008", mock.SimpleTestRealm)
 	if err := iec.StartCOAPServer(address); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()
 
-	_, err := things.NewCOAPClient(address).Initialise()
+	err := things.NewCOAPClient(address).Initialise()
 	if err != nil {
 		t.Error(err)
 	}
 }
 
+func authSimpleClient(name string) error {
+	c := things.NewCOAPClient(address)
+	err := c.Initialise()
+	if err != nil {
+		return fmt.Errorf("%s %s", name, err)
+	}
+
+	handlers := []message.CallbackHandler{message.NameCallbackHandler{Name: name}}
+	var payload message.AuthenticatePayload
+	for i := 0; i < 5; i++ {
+		payload, err = c.Authenticate(mock.SimpleTestAuthTree, payload)
+		if err != nil {
+			return fmt.Errorf("%s %s", name, err)
+		}
+
+		// check that the reply has a token
+		if payload.HasSessionToken() {
+			return nil
+		}
+
+		err = message.ProcessCallbacks(payload.Callbacks, handlers)
+		if err != nil {
+			return fmt.Errorf("%s %s", name, err)
+		}
+	}
+	return fmt.Errorf("%s got stuck in a loop", name)
+}
+
 func TestCOAPServer_Authenticate(t *testing.T) {
-	am := amtest.NewSimpleServer().Start("127.0.0.1:8008")
+	am := mock.NewSimpleServer().Start("127.0.0.1:8008")
 	defer am.Close()
 
-	iec := NewIEC("http://127.0.0.1:8008", amtest.SimpleTestRealm)
+	iec := NewIEC("http://127.0.0.1:8008", mock.SimpleTestRealm)
 	if err := iec.StartCOAPServer(address); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()
 
-	c, err := things.NewCOAPClient(address).Initialise()
+	err := authSimpleClient("test-client")
 	if err != nil {
 		t.Fatal(err)
 	}
+}
 
-	reply, err := c.Authenticate(amtest.SimpleTestAuthTree, amtest.SimpleAuthPayload)
-	if err != nil {
+// checks that the IEC can authenticate multiple client concurrently
+func TestCOAPServer_Authenticate_Multiple(t *testing.T) {
+	am := mock.NewSimpleServer().Start("127.0.0.1:8008")
+	defer am.Close()
+
+	iec := NewIEC("http://127.0.0.1:8008", mock.SimpleTestRealm)
+	if err := iec.StartCOAPServer(address); err != nil {
 		t.Fatal(err)
 	}
-	// check that the reply has a token
-	if reply.TokenID == "" {
-		t.Errorf("Expected an token in reply: %v", reply)
+	defer iec.ShutdownCOAPServer()
+
+	errGroup, _ := errgroup.WithContext(context.Background())
+	for i := 0; i < 5; i++ {
+		name := fmt.Sprintf("client%d", i)
+		errGroup.Go(func() error {
+			return authSimpleClient(name)
+		})
+	}
+	err := errGroup.Wait()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

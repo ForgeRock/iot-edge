@@ -58,7 +58,7 @@ func TestCOAPClient_Initialise(t *testing.T) {
 	defer cancel()
 
 	client := NewCOAPClient(address)
-	_, err := client.Initialise()
+	err := client.Initialise()
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,20 +69,20 @@ func TestCOAPClient_Authenticate(t *testing.T) {
 	defer cancel()
 
 	client := NewCOAPClient(address)
-	_, err := client.Initialise()
+	err := client.Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
 	payload := message.AuthenticatePayload{
-		TokenID:   "",
-		AuthID:    "12345",
+		TokenId:   "",
+		AuthId:    "12345",
 		Callbacks: nil,
 	}
 	reply, err := client.Authenticate(testTree, payload)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if payload.AuthID != reply.AuthID {
+	if payload.AuthId != reply.AuthId {
 		t.Error("Expected the authentication payload echoed back to the caller")
 	}
 }

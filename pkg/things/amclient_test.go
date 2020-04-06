@@ -17,7 +17,8 @@
 package things
 
 import (
-	"github.com/ForgeRock/iot-edge/internal/amtest"
+	"github.com/ForgeRock/iot-edge/internal/mock"
+	"github.com/ForgeRock/iot-edge/pkg/message"
 	"testing"
 )
 
@@ -27,31 +28,44 @@ const (
 )
 
 func TestAMClient_Initialise(t *testing.T) {
-	server := amtest.NewSimpleServer().Start(testAddress)
+	server := mock.NewSimpleServer().Start(testAddress)
 	defer server.Close()
-	c, err := NewAMClient(testURL, amtest.SimpleTestRealm).Initialise()
+	c := NewAMClient(testURL, mock.SimpleTestRealm)
+	err := c.Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
 	// check that the cookName has been set on the struct
-	if c.(*AMClient).cookieName != amtest.CookieName {
+	if c.cookieName != mock.CookieName {
 		t.Error("Cookie name has not been set")
 	}
 }
 
 func TestAMClient_Authenticate(t *testing.T) {
-	server := amtest.NewSimpleServer().Start(testAddress)
+	server := mock.NewSimpleServer().Start(testAddress)
 	defer server.Close()
-	c, err := NewAMClient(testURL, amtest.SimpleTestRealm).Initialise()
+	c := NewAMClient(testURL, mock.SimpleTestRealm)
+	err := c.Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
-	reply, err := c.Authenticate(amtest.SimpleTestAuthTree, amtest.SimpleAuthPayload)
-	if err != nil {
-		t.Fatal(err)
+
+	handlers := []message.CallbackHandler{message.NameCallbackHandler{Name: "test-thing"}}
+	var payload message.AuthenticatePayload
+	for i := 0; i < 5; i++ {
+		payload, err = c.Authenticate(mock.SimpleTestAuthTree, payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = message.ProcessCallbacks(payload.Callbacks, handlers)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// check that the reply has a token
+		if payload.HasSessionToken() {
+			return
+		}
 	}
-	// check that the reply has a token
-	if reply.TokenID == "" {
-		t.Errorf("Expected an token in reply: %v", reply)
-	}
+	t.Fatal("Got stuck in a loop")
 }
