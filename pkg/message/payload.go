@@ -19,6 +19,8 @@ package message
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 )
 
 // AuthenticatePayload represents the outbound and inbound data during an authentication request
@@ -36,11 +38,38 @@ func (p AuthenticatePayload) HasSessionToken() bool {
 }
 
 // CommandRequestPayload represents the outbound data during a command request
-type CommandRequestPayload struct {
-	Command string `json:"command"`
+type CommandRequestPayload interface {
+	// CommandID returns the unique ID of the command in this command request
+	CommandID() string
+}
+
+type getAccessTokenV1Payload struct {
+	Command string   `json:"command"`
+	Scope   []string `json:"scope"`
+}
+
+// CommandID returns the ID for the access token V1 command
+func (p getAccessTokenV1Payload) CommandID() string {
+	return p.Command
+}
+
+// NewGetAccessTokenV1Payload constructs a CommandRequestPayload for an access token V1 request
+func NewGetAccessTokenV1Payload(scope []string) CommandRequestPayload {
+	return getAccessTokenV1Payload{
+		Command: "GET_ACCESS_TOKEN_V1",
+		Scope:   scope,
+	}
 }
 
 func (p AuthenticatePayload) String() string {
+	return payloadToString(p)
+}
+
+func (p getAccessTokenV1Payload) String() string {
+	return payloadToString(p)
+}
+
+func payloadToString(p interface{}) string {
 	b, err := json.Marshal(p)
 	if err != nil {
 		return ""
@@ -52,4 +81,35 @@ func (p AuthenticatePayload) String() string {
 		return ""
 	}
 	return out.String()
+}
+
+// AccessTokenResponse contains the response received from AM after a successful access token request
+type AccessTokenResponse struct {
+	Content map[string]interface{}
+}
+
+// AccessToken returns the access token contained in an AccessTokenResponse
+func (a AccessTokenResponse) AccessToken() (string, error) {
+	return a.GetString("access_token")
+}
+
+// ExpiresIn returns the lifetime in seconds of the access token contained in an AccessTokenResponse
+func (a AccessTokenResponse) ExpiresIn() (int, error) {
+	return a.GetInt("expires_in")
+}
+
+// GetInt reads an integer from the AccessTokenResponse
+func (a AccessTokenResponse) GetInt(key string) (int, error) {
+	if value, ok := a.Content[key].(int); ok {
+		return value, nil
+	}
+	return 0, errors.New(fmt.Sprintf("failed to read `%s` from response", key))
+}
+
+// GetString reads a string from the AccessTokenResponse
+func (a AccessTokenResponse) GetString(key string) (string, error) {
+	if value, ok := a.Content[key].(string); ok {
+		return value, nil
+	}
+	return "", errors.New(fmt.Sprintf("failed to read `%s` from response", key))
 }

@@ -101,6 +101,6 @@ func (c COAPClient) Authenticate(authTree string, payload message.AuthenticatePa
 	return reply, nil
 }
 
-func (c COAPClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error) {
+func (c COAPClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply []byte, err error) {
 	return reply, fmt.Errorf("not implemented")
 }

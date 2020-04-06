@@ -1,0 +1,6 @@
+{
+  "oauthJwtIssuerName": "forgerock-iot-jwt-issuer",
+  "oauthClientName": "forgerock-iot-oauth2-client",
+  "createOAuthClient": true,
+  "createOAuthJwtIssuer": true
+}

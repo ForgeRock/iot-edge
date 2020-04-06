@@ -21,6 +21,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/iec"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"os"
 	"path/filepath"
 )
@@ -35,7 +36,11 @@ const (
 var tests = []anvil.SDKTest{
 	&AuthenticateWithUsernameAndPassword{},
 	&AuthenticateWithoutConfirmationKey{},
-	//&SendTestCommand{},
+	&AccessTokenWithExactScopes{},
+	&AccessTokenWithASubsetOfScopes{},
+	&AccessTokenWithUnsupportedScopes{},
+	&AccessTokenWithNoScopes{},
+	&AccessTokenFromCustomClient{},
 }
 
 // run the full test set for a single client
@@ -63,6 +68,8 @@ func runTests() (err error) {
 	fmt.Println("====================")
 	fmt.Println()
 
+	var logfile *os.File
+	am.DebugLogger, logfile = anvil.NewFileDebugger(debugDir, "am-config")
 	// create test realm
 	if err := anvil.CreatePrimaryRealm(testdataDir); err != nil {
 		return err
@@ -70,6 +77,7 @@ func runTests() (err error) {
 	defer func() {
 		//_ = anvil.DeletePrimaryRealm()
 	}()
+	_ = logfile.Close()
 
 	allPass := true
 
