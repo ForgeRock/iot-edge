@@ -51,6 +51,13 @@ type AMClient struct {
 	cookieName    string
 }
 
+// ErrorResponse is used to unmarshal an AM error response
+type ErrorResponse struct {
+	Code    int    `json:"code"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
+}
+
 // NewAMClient returns a new client for connecting directly to AM
 func NewAMClient(baseURL, realm string) *AMClient {
 	r := amurl.RealmFromString(realm)
@@ -144,16 +151,18 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
-func (c *AMClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (string, error) {
+func (c *AMClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) ([]byte, error) {
+	DebugLogger.Println("Preparing command request for", payload.CommandID())
+	DebugLogger.Println("Command request payload:", payload)
 	requestBody, err := signedJWTBody(signer, c.IoTURL, commandEndpointVersion, tokenID, payload)
-	DebugLogger.Println("Signed command request body: ", requestBody)
+	DebugLogger.Println("Signed command request body:", requestBody)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	request, err := http.NewRequest(http.MethodPost, c.IoTURL, strings.NewReader(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
-		return "", err
+		return nil, err
 	}
 	request.Header.Set(acceptAPIVersion, commandEndpointVersion)
 	request.Header.Set(contentType, applicationJose)
@@ -161,19 +170,20 @@ func (c *AMClient) SendCommand(signer crypto.Signer, tokenID string, payload mes
 	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return "", err
+		return nil, err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return "", err
+		return nil, err
 	}
 	if response.StatusCode != http.StatusOK {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return "", fmt.Errorf("request for command %s failed", payload.Command)
+		return responseBody, errorResponse(responseBody, response.StatusCode)
 	}
-	return string(responseBody), err
+	DebugLogger.Println("Command request completed successfully for", payload.CommandID())
+	return responseBody, err
 }
 
 func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body interface{}) (string, error) {
@@ -204,4 +214,12 @@ func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body inte
 		builder = builder.Claims(body)
 	}
 	return builder.CompactSerialize()
+}
+
+func errorResponse(response []byte, status int) error {
+	var amError ErrorResponse
+	if err := json.Unmarshal(response, &amError); err != nil {
+		return fmt.Errorf("request failed with status code %d", status)
+	}
+	return fmt.Errorf("%s: %s", amError.Reason, amError.Message)
 }

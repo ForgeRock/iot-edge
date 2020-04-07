@@ -20,19 +20,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"gopkg.in/square/go-jose.v2"
 )
 
 const (
 	// Base AM URL
-	AMURL = "http://openam.iectest.com:8080/openam"
+	AMURL = "http://am.localtest.me:8080/am"
 	// HTTP header keys
 	headerContentType = "Content-Type"
 	headerCookie      = "iPlanetDirectoryPro"
@@ -43,6 +45,8 @@ const (
 	adminPassword = "password"
 )
 
+var DebugLogger = log.New(ioutil.Discard, "", 0)
+
 var httpClient = http.Client{
 	Timeout: 30 * time.Second,
 }
@@ -50,6 +54,9 @@ var httpClient = http.Client{
 // url utility functions
 func urlGlobalConfig(path ...string) string {
 	return AMURL + "/json/global-config/" + strings.Join(path, "/")
+}
+func urlRealmConfig(realm string, path ...string) string {
+	return AMURL + "/json/realms/root/realms/" + realm + "/realm-config/" + strings.Join(path, "/")
 }
 func urlRealm(realm string, path ...string) string {
 	return AMURL + "/json/realms/root/realms/" + realm + "/" + strings.Join(path, "/")
@@ -88,11 +95,47 @@ func crestCreate(endpoint string, version string, payload io.Reader) (reply []by
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		dumpHTTPRoundTrip(req, res)
 		return reply, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
+		dumpHTTPRoundTrip(req, res)
+		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
+	}
+	reply, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return reply, err
+	}
+
+	return reply, nil
+}
+
+// crestUpdate makes an HTTP PUT request to the given endpoint as described in the CREST update protocol.
+func crestUpdate(endpoint string, version string, payload io.Reader) (reply []byte, err error) {
+	// get SSO token
+	ssoToken, err := getSSOToken()
+	if err != nil {
+		return reply, err
+	}
+	req, err := http.NewRequest(http.MethodPut, endpoint, payload)
+	if err != nil {
+		return reply, err
+	}
+	req.Header.Set(headerContentType, "application/json")
+	req.Header.Set(headerCookie, ssoToken)
+	req.Header.Set(headerAPIVersion, version)
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		dumpHTTPRoundTrip(req, res)
+		return reply, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 	reply, err = ioutil.ReadAll(res.Body)
@@ -120,11 +163,13 @@ func crestDelete(endpoint string, version string) (reply []byte, err error) {
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		dumpHTTPRoundTrip(req, res)
 		return reply, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
+		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 	reply, err = ioutil.ReadAll(res.Body)
@@ -152,6 +197,7 @@ func crestRead(endpoint string, version string) (reply []byte, err error) {
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		dumpHTTPRoundTrip(req, res)
 		return reply, err
 	}
 	defer res.Body.Close()
@@ -161,6 +207,7 @@ func crestRead(endpoint string, version string) (reply []byte, err error) {
 		return reply, err
 	}
 	if res.StatusCode != http.StatusOK {
+		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 	return reply, nil
@@ -184,10 +231,12 @@ func putCreate(endpoint string, version string, payload io.Reader) (reply []byte
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		dumpHTTPRoundTrip(req, res)
 		return reply, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
+		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 
@@ -211,10 +260,12 @@ func getSSOToken() (token string, err error) {
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		dumpHTTPRoundTrip(req, res)
 		return token, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		dumpHTTPRoundTrip(req, res)
 		return token, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 	body, err := ioutil.ReadAll(res.Body)
@@ -254,10 +305,11 @@ func DeleteRealm(realmId string) (err error) {
 
 // IdAttributes contains identity attributes
 type IdAttributes struct {
-	Name      string             `json:"username"`
-	Password  string             `json:"userPassword,omitempty"`
-	ThingType string             `json:"thingType,omitempty"`
-	ThingKeys jose.JSONWebKeySet `json:"thingKeys,omitempty"`
+	Name                  string             `json:"username"`
+	Password              string             `json:"userPassword,omitempty"`
+	ThingType             string             `json:"thingType,omitempty"`
+	ThingKeys             jose.JSONWebKeySet `json:"thingKeys,omitempty"`
+	ThingOAuth2ClientName string             `json:"thingOAuth2ClientName,omitempty"`
 }
 
 func (id IdAttributes) String() string {
@@ -302,4 +354,54 @@ func CreateTree(realmName string, tree trees.Tree) (err error) {
 		"resource=1.0, protocol=2.0",
 		bytes.NewReader(tree.Config))
 	return err
+}
+
+// CreateService creates a service in AM
+func CreateService(realmName, serviceName, payloadPath string) (err error) {
+	b, err := ioutil.ReadFile(payloadPath)
+	if err != nil {
+		return err
+	}
+	_, err = crestCreate(
+		urlRealmConfig(realmName, "services/"+serviceName),
+		"protocol=1.0,resource=1.0",
+		bytes.NewReader(b))
+	return err
+}
+
+// CreateAgent creates an agent (OAuth 2.0 Client, JWT Issuer etc) in AM
+func CreateAgent(realmName, agentName, payloadPath string) (err error) {
+	b, err := ioutil.ReadFile(payloadPath)
+	if err != nil {
+		return err
+	}
+	_, err = putCreate(
+		urlRealmConfig(realmName, "agents/"+agentName),
+		"protocol=2.0,resource=1.0",
+		bytes.NewReader(b))
+	return err
+}
+
+// UpdateAgent updates an agent's (OAuth 2.0 Client, JWT Issuer etc) configuration in AM
+func UpdateAgent(realmName, agentName, payloadPath string) (err error) {
+	b, err := ioutil.ReadFile(payloadPath)
+	if err != nil {
+		return err
+	}
+	_, err = crestUpdate(
+		urlRealmConfig(realmName, "agents/"+agentName),
+		"protocol=2.0,resource=1.0",
+		bytes.NewReader(b))
+	return err
+}
+
+func dumpHTTPRoundTrip(req *http.Request, res *http.Response) {
+	if req != nil {
+		dump, _ := httputil.DumpRequest(req, true)
+		DebugLogger.Println(string(dump))
+	}
+	if res != nil {
+		dump, _ := httputil.DumpResponse(res, true)
+		DebugLogger.Println(string(dump))
+	}
 }

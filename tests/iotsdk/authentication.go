@@ -18,8 +18,6 @@ package main
 
 import (
 	"github.com/ForgeRock/iot-edge/pkg/message"
-	"strings"
-
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 )
@@ -75,41 +73,6 @@ func (t *AuthenticateWithoutConfirmationKey) Run(client things.Client, data anvi
 	thing := userPwdThing(data)
 	err := thing.Initialise(client)
 	if err != things.ErrUnauthorised {
-		return false
-	}
-	return true
-}
-
-// SendTestCommand sends a test command request to AM
-// TODO replace with specific command tests when thing.SendCommand has been removed
-type SendTestCommand struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *SendTestCommand) Setup() (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
-}
-
-func (t *SendTestCommand) Run(client things.Client, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	err := thing.Initialise(client)
-	if err != nil {
-		return false
-	}
-	response, err := thing.SendCommand(client)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to send command", err)
-		return false
-	}
-	if !strings.Contains(response, "TEST") {
-		anvil.DebugLogger.Println("unexpected response: ", response)
 		return false
 	}
 	return true

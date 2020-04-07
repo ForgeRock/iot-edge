@@ -86,6 +86,29 @@ func CreatePrimaryRealm(testDataDir string) (err error) {
 		}
 	}
 
+	// add IoT Service
+	err = am.CreateService(PrimaryRealm(), "iot", filepath.Join(testDataDir, "services/iot.json"))
+	if err != nil {
+		return err
+	}
+	// add OAuth 2.0 Service
+	err = am.CreateService(PrimaryRealm(), "oauth-oidc", filepath.Join(testDataDir, "services/oauth2.json"))
+	if err != nil {
+		return err
+	}
+	// update the OAuth 2.0 Client with test specific config
+	err = am.UpdateAgent(PrimaryRealm(), "OAuth2Client/forgerock-iot-oauth2-client",
+		filepath.Join(testDataDir, "agents/forgerock-iot-oauth2-client.json"))
+	if err != nil {
+		return err
+	}
+	// create thing OAuth 2.0 Client for thing specific config
+	err = am.CreateAgent(PrimaryRealm(), "OAuth2Client/thing-oauth2-client",
+		filepath.Join(testDataDir, "agents/thing-oauth2-client.json"))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -18,6 +18,7 @@ package things
 
 import (
 	"crypto"
+	"encoding/json"
 	"errors"
 	"github.com/ForgeRock/iot-edge/pkg/message"
 	"io/ioutil"
@@ -41,7 +42,7 @@ type Client interface {
 	Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error)
 
 	// SendCommand sends a command request to the ForgeRock platform
-	SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error)
+	SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply []byte, err error)
 }
 
 // Thing represents an AM Thing identity
@@ -75,12 +76,21 @@ func (t Thing) Initialise(client Client) (err error) {
 	return err
 }
 
-// SendCommand to AM via the iot endpoint
-// TODO remove once specific commands have been added
-func (t Thing) SendCommand(client Client) (string, error) {
+// RequestAccessToken requests an OAuth 2.0 access token for a thing. The provided scopes will be included in the token
+// if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
+// will include the default scopes configured in the OAuth 2.0 Client.
+func (t Thing) RequestAccessToken(client Client, scopes ...string) (response message.AccessTokenResponse, err error) {
 	tokenID, err := t.authenticate(client)
 	if err != nil {
-		return "", err
+		return
 	}
-	return client.SendCommand(t.Signer, tokenID, message.CommandRequestPayload{Command: "TEST"})
+	reply, err := client.SendCommand(t.Signer, tokenID, message.NewGetAccessTokenV1Payload(scopes))
+	if reply != nil {
+		DebugLogger.Println("RequestAccessToken response: ", string(reply))
+	}
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(reply, &response.Content)
+	return
 }
