@@ -24,6 +24,11 @@ import (
 	"github.com/go-ocf/go-coap/codes"
 )
 
+// CoAP server design
+// CoAP method is taken from the HTTP method used to communicate with AM
+// The CoAP response status codes follow the CoAP-HTTP proxy guidance in the CoAP specification
+// https://tools.ietf.org/html/rfc7252#section-10.1
+
 // ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the IEC
 var ErrCOAPServerAlreadyStarted = errors.New("COAP server has already been started")
 
@@ -57,13 +62,56 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	b, err := json.Marshal(reply)
 	if err != nil {
 		DebugLogger.Printf("Error marshalling Auth Payload; %s", err)
-		w.SetCode(codes.Unauthorized)
+		w.SetCode(codes.BadGateway)
 		w.Write([]byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Valid)
 	w.Write(b)
 	DebugLogger.Println("authenticateHandler: success")
+}
+
+// iotEndpointInfoHandler handles IoT Endpoint Info requests
+func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
+	DebugLogger.Println("iotEndpointInfoHandler")
+	info, err := c.Client.IoTEndpointInfo()
+	if err != nil {
+		w.SetCode(codes.GatewayTimeout)
+		w.Write([]byte(""))
+		return
+	}
+	b, err := json.Marshal(info)
+	if err != nil {
+		DebugLogger.Printf("Error marshalling IoTEndpointInfo; %s", err)
+		w.SetCode(codes.BadGateway)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.SetCode(codes.Content)
+	w.Write(b)
+	DebugLogger.Println("iotEndpointInfoHandler: success")
+}
+
+// sendCommandHandler handles Send Command requests
+func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
+	DebugLogger.Println("sendCommandHandler")
+	// check that the query is set to the token
+	query := r.Msg.Query()
+	if len(query) != 1 {
+		DebugLogger.Println("Missing token")
+		w.SetCode(codes.BadRequest)
+		w.Write([]byte("Missing Token"))
+		return
+	}
+	b, err := c.Client.SendCommand(r.Msg.Query()[0], string(r.Msg.Payload()))
+	if err != nil {
+		w.SetCode(codes.GatewayTimeout)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.SetCode(codes.Changed)
+	w.Write(b)
+	DebugLogger.Println("sendCommandHandler: success")
 }
 
 // StartCOAPServer starts a COAP server within the IEC
@@ -74,6 +122,8 @@ func (c *IEC) StartCOAPServer(address string) error {
 	c.coapChan = make(chan error, 1)
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
+	mux.HandleFunc("/iotendpointinfo", c.iotEndpointInfoHandler)
+	mux.HandleFunc("/sendcommand", c.sendCommandHandler)
 	// use UDP as default unless the protocol has been configured
 	net := "udp"
 	if c.Net != "" {

@@ -18,15 +18,11 @@ package things
 
 import (
 	"bytes"
-	"crypto"
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/amurl"
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/pkg/message"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/cryptosigner"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -151,15 +147,17 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
-func (c *AMClient) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) ([]byte, error) {
-	DebugLogger.Println("Preparing command request for", payload.CommandID())
-	DebugLogger.Println("Command request payload:", payload)
-	requestBody, err := signedJWTBody(signer, c.IoTURL, commandEndpointVersion, tokenID, payload)
-	DebugLogger.Println("Signed command request body:", requestBody)
-	if err != nil {
-		return nil, err
-	}
-	request, err := http.NewRequest(http.MethodPost, c.IoTURL, strings.NewReader(requestBody))
+// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
+func (c *AMClient) IoTEndpointInfo() (info message.IoTEndpoint, err error) {
+	return message.IoTEndpoint{
+		URL:     c.IoTURL,
+		Version: commandEndpointVersion,
+	}, nil
+}
+
+// SendCommand sends the signed JWT to the IoT Command Endpoint
+func (c *AMClient) SendCommand(tokenID string, jws string) ([]byte, error) {
+	request, err := http.NewRequest(http.MethodPost, c.IoTURL, strings.NewReader(jws))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
@@ -182,38 +180,7 @@ func (c *AMClient) SendCommand(signer crypto.Signer, tokenID string, payload mes
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return responseBody, errorResponse(responseBody, response.StatusCode)
 	}
-	DebugLogger.Println("Command request completed successfully for", payload.CommandID())
 	return responseBody, err
-}
-
-func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body interface{}) (string, error) {
-	opts := &jose.SignerOptions{}
-	opts.WithHeader("aud", url)
-	opts.WithHeader("api", version)
-	// Note: nonce can be 0 as long as we create a new session for each request. If we reuse the token we need
-	// to increment the nonce between requests
-	opts.WithHeader("nonce", 0)
-
-	// check that the signer is supported
-	alg, err := signatureAlgorithm(signer)
-	if err != nil {
-		return "", err
-	}
-
-	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(signer)
-
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
-	if err != nil {
-		return "", err
-	}
-	builder := jwt.Signed(sig).Claims(struct {
-		Csrf string `json:"csrf"`
-	}{Csrf: tokenID})
-	if body != nil {
-		builder = builder.Claims(body)
-	}
-	return builder.CompactSerialize()
 }
 
 func errorResponse(response []byte, status int) error {

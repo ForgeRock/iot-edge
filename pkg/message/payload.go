@@ -23,6 +23,12 @@ import (
 	"fmt"
 )
 
+// IoTEndpoint contains the information used to securely connect to the IoT Endpoint
+type IoTEndpoint struct {
+	URL     string
+	Version string
+}
+
 // AuthenticatePayload represents the outbound and inbound data during an authentication request
 type AuthenticatePayload struct {
 	TokenId   string     `json:"tokenId,omitempty"`
