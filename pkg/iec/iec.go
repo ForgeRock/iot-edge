@@ -53,6 +53,11 @@ func NewIEC(baseURL, realm string) *IEC {
 	}
 }
 
+// Initialise the IEC
+func (c *IEC) Initialise() error {
+	return c.Client.Initialise()
+}
+
 // Authenticate with the AM authTree using the given payload
 func (c *IEC) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
 	if payload.AuthIDKey != "" {

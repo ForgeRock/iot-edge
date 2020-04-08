@@ -17,7 +17,6 @@
 package mock
 
 import (
-	"crypto"
 	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/dchest/uniuri"
 )
@@ -39,6 +38,10 @@ func (m *Client) Authenticate(authTree string, payload message.AuthenticatePaylo
 	return reply, nil
 }
 
-func (m *Client) SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply string, err error) {
+func (m *Client) IoTEndpointInfo() (info message.IoTEndpoint, err error) {
+	panic("implement me")
+}
+
+func (m *Client) SendCommand(tokenID string, jws string) (reply []byte, err error) {
 	panic("implement me")
 }

@@ -21,6 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/ForgeRock/iot-edge/pkg/message"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/cryptosigner"
+	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
 	"log"
 )
@@ -41,8 +44,11 @@ type Client interface {
 	// Authenticate sends an Authenticate request to the ForgeRock platform
 	Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error)
 
-	// SendCommand sends a command request to the ForgeRock platform
-	SendCommand(signer crypto.Signer, tokenID string, payload message.CommandRequestPayload) (reply []byte, err error)
+	// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
+	IoTEndpointInfo() (info message.IoTEndpoint, err error)
+
+	// SendCommand sends the signed JWT to the IoT Command Endpoint
+	SendCommand(tokenID string, jws string) (reply []byte, err error)
 }
 
 // Thing represents an AM Thing identity
@@ -76,6 +82,36 @@ func (t Thing) Initialise(client Client) (err error) {
 	return err
 }
 
+func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body interface{}) (string, error) {
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("aud", url)
+	opts.WithHeader("api", version)
+	// Note: nonce can be 0 as long as we create a new session for each request. If we reuse the token we need
+	// to increment the nonce between requests
+	opts.WithHeader("nonce", 0)
+
+	// check that the signer is supported
+	alg, err := signatureAlgorithm(signer)
+	if err != nil {
+		return "", err
+	}
+
+	// create a jose.OpaqueSigner from the crypto.Signer
+	opaque := cryptosigner.Opaque(signer)
+
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+	if err != nil {
+		return "", err
+	}
+	builder := jwt.Signed(sig).Claims(struct {
+		Csrf string `json:"csrf"`
+	}{Csrf: tokenID})
+	if body != nil {
+		builder = builder.Claims(body)
+	}
+	return builder.CompactSerialize()
+}
+
 // RequestAccessToken requests an OAuth 2.0 access token for a thing. The provided scopes will be included in the token
 // if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
 // will include the default scopes configured in the OAuth 2.0 Client.
@@ -84,7 +120,15 @@ func (t Thing) RequestAccessToken(client Client, scopes ...string) (response mes
 	if err != nil {
 		return
 	}
-	reply, err := client.SendCommand(t.Signer, tokenID, message.NewGetAccessTokenV1Payload(scopes))
+	iotInfo, err := client.IoTEndpointInfo()
+	if err != nil {
+		return
+	}
+	requestBody, err := signedJWTBody(t.Signer, iotInfo.URL, iotInfo.Version, tokenID, message.NewGetAccessTokenV1Payload(scopes))
+	if err != nil {
+		return
+	}
+	reply, err := client.SendCommand(tokenID, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}
@@ -92,5 +136,6 @@ func (t Thing) RequestAccessToken(client Client, scopes ...string) (response mes
 		return
 	}
 	err = json.Unmarshal(reply, &response.Content)
+	DebugLogger.Println("RequestAccessToken request completed successfully")
 	return
 }

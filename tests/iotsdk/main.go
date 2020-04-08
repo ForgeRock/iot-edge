@@ -94,6 +94,10 @@ func runTests() (err error) {
 
 	// run the IEC
 	controller := anvil.TestIEC()
+	err = controller.Initialise()
+	if err != nil {
+		return err
+	}
 	err = controller.StartCOAPServer(anvil.COAPAddress)
 	if err != nil {
 		return err
