@@ -100,13 +100,13 @@ func (a AccessTokenResponse) AccessToken() (string, error) {
 }
 
 // ExpiresIn returns the lifetime in seconds of the access token contained in an AccessTokenResponse
-func (a AccessTokenResponse) ExpiresIn() (int, error) {
-	return a.GetInt("expires_in")
+func (a AccessTokenResponse) ExpiresIn() (float64, error) {
+	return a.GetNumber("expires_in")
 }
 
-// GetInt reads an integer from the AccessTokenResponse
-func (a AccessTokenResponse) GetInt(key string) (int, error) {
-	if value, ok := a.Content[key].(int); ok {
+// GetNumber reads a number from the AccessTokenResponse
+func (a AccessTokenResponse) GetNumber(key string) (float64, error) {
+	if value, ok := a.Content[key].(float64); ok {
 		return value, nil
 	}
 	return 0, errors.New(fmt.Sprintf("failed to read `%s` from response", key))

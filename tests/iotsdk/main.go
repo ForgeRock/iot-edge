@@ -41,6 +41,7 @@ var tests = []anvil.SDKTest{
 	&AccessTokenWithUnsupportedScopes{},
 	&AccessTokenWithNoScopes{},
 	&AccessTokenFromCustomClient{},
+	&SimpleThingExample{},
 }
 
 // run the full test set for a single client
@@ -53,6 +54,7 @@ func runAllTestsForClient(client things.Client) (result bool) {
 	for _, test := range tests {
 		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TypeName(test))
 		iec.DebugLogger = things.DebugLogger
+		am.DebugLogger = things.DebugLogger
 		if !anvil.RunTest(client, test) {
 			result = false
 		}

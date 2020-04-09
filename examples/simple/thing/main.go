@@ -27,11 +27,12 @@ import (
 )
 
 var (
-	amURL     = flag.String("url", "http://openam.iectest.com:8080/openam", "AM URL")
+	amURL     = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
 	realm     = flag.String("realm", "example", "AM Realm")
 	authTree  = flag.String("tree", "iot-user-pwd", "Authentication tree")
 	thingName = flag.String("name", "simple-thing", "Thing name")
 	thingPwd  = flag.String("pwd", "password", "Thing password")
+	server    = flag.String("server", "am", "Server to connect to, am or iec")
 )
 
 // simpleThing initialises a Thing with AM.
@@ -54,9 +55,15 @@ func simpleThing() error {
 	// * AMCLient communicates directly with AM
 	// * COAPClient communicates with AM via the IEC. Run the example IEC by calling "./run.sh examples simple/iec"
 
-	client := things.NewAMClient(*amURL, *realm)
+	var client things.Client
+	if *server == "am" {
+		client = things.NewAMClient(*amURL, *realm)
+	} else if *server == "iec" {
+		client = things.NewCOAPClient("127.0.0.1:5688")
+	} else {
+		log.Fatal("server not supported")
+	}
 	err := client.Initialise()
-	//client, err := things.NewCOAPClient("127.0.0.1:5688").Initialise()
 	if err != nil {
 		return err
 	}
@@ -81,6 +88,28 @@ func simpleThing() error {
 		return err
 	}
 	fmt.Printf("Done\n")
+
+	fmt.Printf("Requesting access token... ")
+	tokenResponse, err := thing.RequestAccessToken(client, "publish")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Done")
+	token, err := tokenResponse.AccessToken()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Access token:", token)
+	expiresIn, err := tokenResponse.ExpiresIn()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Expires in:", expiresIn)
+	scopes, err := tokenResponse.GetString("scope")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Scope(s):", scopes)
 
 	return nil
 }
