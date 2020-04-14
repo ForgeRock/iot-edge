@@ -164,7 +164,6 @@ func (c COAPClient) SendCommand(tokenID string, jws string) (reply []byte, err e
 		if err != nil {
 			return
 		}
-		c.SetQueryString(tokenID)
 		return
 	}, func(c coap.Message) (i []byte, err error) {
 		if c.Code() != codes.Changed {

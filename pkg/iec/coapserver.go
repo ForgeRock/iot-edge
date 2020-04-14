@@ -19,6 +19,7 @@ package iec
 import (
 	"encoding/json"
 	"errors"
+	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
@@ -95,15 +96,17 @@ func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 // sendCommandHandler handles Send Command requests
 func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("sendCommandHandler")
-	// check that the query is set to the token
-	query := r.Msg.Query()
-	if len(query) != 1 {
-		DebugLogger.Println("Missing token")
+	payload := string(r.Msg.Payload())
+	// get SSO token from the CSRF claim in the JWT
+	var claims jws.SendCommandClaims
+	err := jws.ExtractPayload(payload, &claims)
+	if err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte("Missing Token"))
+		w.Write([]byte("Can't parse signed JWT"))
 		return
 	}
-	b, err := c.Client.SendCommand(r.Msg.Query()[0], string(r.Msg.Payload()))
+
+	b, err := c.Client.SendCommand(claims.CSRF, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))
