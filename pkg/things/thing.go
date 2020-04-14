@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"encoding/json"
 	"errors"
+	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/pkg/message"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
@@ -103,9 +104,7 @@ func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body inte
 	if err != nil {
 		return "", err
 	}
-	builder := jwt.Signed(sig).Claims(struct {
-		Csrf string `json:"csrf"`
-	}{Csrf: tokenID})
+	builder := jwt.Signed(sig).Claims(jws.SendCommandClaims{CSRF: tokenID})
 	if body != nil {
 		builder = builder.Claims(body)
 	}
