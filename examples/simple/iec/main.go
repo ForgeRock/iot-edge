@@ -20,7 +20,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/iec"
+	"github.com/ForgeRock/iot-edge/pkg/things"
 	"log"
 	"os"
 )
@@ -31,7 +31,7 @@ var (
 )
 
 func simpleIEC() error {
-	controller := iec.NewIEC(*amURL, *realm)
+	controller := things.NewIEC(*amURL, *realm)
 
 	err := controller.StartCOAPServer("127.0.0.1:5688")
 	if err != nil {
@@ -48,7 +48,7 @@ func main() {
 	flag.Parse()
 
 	// pipe debug to standard out
-	iec.DebugLogger.SetOutput(os.Stdout)
+	things.DebugLogger.SetOutput(os.Stdout)
 
 	if err := simpleIEC(); err != nil {
 		log.Fatal(err)

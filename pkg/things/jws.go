@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jws
+package things
 
 import (
 	"encoding/base64"
@@ -23,16 +23,16 @@ import (
 	"strings"
 )
 
-// SendCommandClaims defines the claims expected in the signed JWT provided with a Send Command request
-type SendCommandClaims struct {
+// sendCommandClaims defines the claims expected in the signed JWT provided with a Send Command request
+type sendCommandClaims struct {
 	CSRF string `json:"csrf"`
 }
 
-// ExtractPayload parses a signed JWT and unmarshals the payload into the supplied claims
+// extractJWTPayload parses a signed JWT and unmarshals the payload into the supplied claims
 // The signature is NOT checked so these claims are unverified.
 // This function exists because the JOSE library fails when parsing a signed token with a non-string nonce,
 // AM requires an integer nonce
-func ExtractPayload(token string, claims interface{}) error {
+func extractJWTPayload(token string, claims interface{}) error {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return fmt.Errorf("unexpected serialisation")

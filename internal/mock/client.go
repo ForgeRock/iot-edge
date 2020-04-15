@@ -17,20 +17,20 @@
 package mock
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/dchest/uniuri"
 )
 
 // Client mocks a thing.Client
 type Client struct {
-	AuthenticateFunc func(string, message.AuthenticatePayload) (message.AuthenticatePayload, error)
+	AuthenticateFunc func(string, payload.Authenticate) (payload.Authenticate, error)
 }
 
 func (m *Client) Initialise() error {
 	return nil
 }
 
-func (m *Client) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
+func (m *Client) Authenticate(authTree string, payload payload.Authenticate) (reply payload.Authenticate, err error) {
 	if m.AuthenticateFunc != nil {
 		return m.AuthenticateFunc(authTree, payload)
 	}
@@ -38,7 +38,7 @@ func (m *Client) Authenticate(authTree string, payload message.AuthenticatePaylo
 	return reply, nil
 }
 
-func (m *Client) IoTEndpointInfo() (info message.IoTEndpoint, err error) {
+func (m *Client) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
 	panic("implement me")
 }
 

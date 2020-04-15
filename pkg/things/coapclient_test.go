@@ -17,15 +17,10 @@
 package things
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"testing"
-)
-
-const (
-	address  = "127.0.0.1:5688"
-	testTree = "testTree"
 )
 
 func startTestServer() func() {
@@ -57,7 +52,7 @@ func TestCOAPClient_Initialise(t *testing.T) {
 	cancel := startTestServer()
 	defer cancel()
 
-	client := NewCOAPClient(address)
+	client := NewIECClient(address)
 	err := client.Initialise()
 	if err != nil {
 		t.Error(err)
@@ -68,21 +63,21 @@ func TestCOAPClient_Authenticate(t *testing.T) {
 	cancel := startTestServer()
 	defer cancel()
 
-	client := NewCOAPClient(address)
+	client := NewIECClient(address)
 	err := client.Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
-	payload := message.AuthenticatePayload{
+	auth := payload.Authenticate{
 		TokenId:   "",
 		AuthId:    "12345",
 		Callbacks: nil,
 	}
-	reply, err := client.Authenticate(testTree, payload)
+	reply, err := client.Authenticate(testTree, auth)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if payload.AuthId != reply.AuthId {
+	if auth.AuthId != reply.AuthId {
 		t.Error("Expected the authentication payload echoed back to the caller")
 	}
 }

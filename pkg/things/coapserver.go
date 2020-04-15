@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package iec
+package things
 
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ForgeRock/iot-edge/internal/jws"
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 )
@@ -44,15 +43,15 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 		w.Write([]byte("Missing or incorrect auth tree"))
 		return
 	}
-	var payload message.AuthenticatePayload
-	if err := json.Unmarshal(r.Msg.Payload(), &payload); err != nil {
+	var auth payload.Authenticate
+	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
 		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte("Unable to unmarshall payload"))
 		return
 	}
 
-	reply, err := c.Authenticate(query[0], payload)
+	reply, err := c.Authenticate(query[0], auth)
 	if err != nil {
 		DebugLogger.Printf("Error connecting to AM; %s", err)
 		w.SetCode(codes.Unauthorized)
@@ -98,8 +97,8 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("sendCommandHandler")
 	payload := string(r.Msg.Payload())
 	// get SSO token from the CSRF claim in the JWT
-	var claims jws.SendCommandClaims
-	err := jws.ExtractPayload(payload, &claims)
+	var claims sendCommandClaims
+	err := extractJWTPayload(payload, &claims)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte("Can't parse signed JWT"))

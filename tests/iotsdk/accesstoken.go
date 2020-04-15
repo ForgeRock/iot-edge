@@ -17,8 +17,8 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"reflect"
@@ -183,7 +183,7 @@ func (t *AccessTokenFromCustomClient) Run(client things.Client, data anvil.Thing
 	return verifyAccessTokenResponse(response, data.Id.Name, "create", "modify", "delete")
 }
 
-func verifyAccessTokenResponse(response message.AccessTokenResponse, subject string, requestedScopes ...string) bool {
+func verifyAccessTokenResponse(response payload.AccessTokenResponse, subject string, requestedScopes ...string) bool {
 	token, err := response.AccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println(err)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jws
+package things
 
 import (
 	"testing"
@@ -37,7 +37,7 @@ func TestExtractPayload_Failure(t *testing.T) {
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
 			claims := dummyClaims{}
-			if err := ExtractPayload(subtest.rawToken, &claims); err == nil {
+			if err := extractJWTPayload(subtest.rawToken, &claims); err == nil {
 				t.Errorf("expected an error")
 			}
 		})
@@ -55,7 +55,7 @@ func TestExtractPayload_Success(t *testing.T) {
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
 			claims := dummyClaims{}
-			if err := ExtractPayload(subtest.rawToken, &claims); err != nil {
+			if err := extractJWTPayload(subtest.rawToken, &claims); err != nil {
 				t.Error(err)
 			} else if claims != subtest.claims {
 				t.Errorf("Expected %s, got %s", subtest.claims, claims)
