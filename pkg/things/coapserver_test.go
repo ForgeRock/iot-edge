@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package iec
+package things
 
 import (
 	"context"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/mock"
-	"github.com/ForgeRock/iot-edge/pkg/message"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"golang.org/x/sync/errgroup"
 	"testing"
 )
@@ -38,33 +38,33 @@ func TestCOAPServer_Initialise(t *testing.T) {
 	}
 	defer iec.ShutdownCOAPServer()
 
-	err := things.NewCOAPClient(address).Initialise()
+	err := NewIECClient(address).Initialise()
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func authSimpleClient(name string) error {
-	c := things.NewCOAPClient(address)
+	c := NewIECClient(address)
 	err := c.Initialise()
 	if err != nil {
 		return fmt.Errorf("%s %s", name, err)
 	}
 
-	handlers := []message.CallbackHandler{message.NameCallbackHandler{Name: name}}
-	var payload message.AuthenticatePayload
+	handlers := []callback.Handler{callback.NameHandler{Name: name}}
+	var auth payload.Authenticate
 	for i := 0; i < 5; i++ {
-		payload, err = c.Authenticate(mock.SimpleTestAuthTree, payload)
+		auth, err = c.Authenticate(mock.SimpleTestAuthTree, auth)
 		if err != nil {
 			return fmt.Errorf("%s %s", name, err)
 		}
 
 		// check that the reply has a token
-		if payload.HasSessionToken() {
+		if auth.HasSessionToken() {
 			return nil
 		}
 
-		err = message.ProcessCallbacks(payload.Callbacks, handlers)
+		err = callback.ProcessCallbacks(auth.Callbacks, handlers)
 		if err != nil {
 			return fmt.Errorf("%s %s", name, err)
 		}

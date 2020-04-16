@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package message
+package callback
 
 import (
 	"crypto"
@@ -55,30 +55,30 @@ func TestCallbackHandler_Match(t *testing.T) {
 	tests := []struct {
 		name    string
 		cb      Callback
-		handler CallbackHandler
+		handler Handler
 		want    bool
 	}{
-		// NameCallbackHandler
-		{name: "Name/True", cb: dummyCB(TypeNameCallback), handler: NameCallbackHandler{Name: "Odysseus"}, want: true},
-		{name: "Name/False", cb: dummyCB(TypeTextInputCallback), handler: NameCallbackHandler{Name: "Odysseus"}, want: false},
-		// PasswordCallbackHandler
-		{name: "Password/True", cb: dummyCB(TypePasswordCallback), handler: PasswordCallbackHandler{Password: "password"}, want: true},
-		{name: "Password/False", cb: dummyCB(TypeTextInputCallback), handler: PasswordCallbackHandler{Password: "password"}, want: false},
-		// AttributeCallbackHandler
-		{name: "Attribute/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: AttributeCallbackHandler{Attributes: attributes}, want: false},
-		{name: "Attribute/False/WrongType", cb: dummyCB(TypeNameCallback), handler: AttributeCallbackHandler{Attributes: attributes}, want: false},
-		{name: "Attribute/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: AttributeCallbackHandler{Attributes: attributes}, want: false},
-		{name: "Attribute/True", cb: dummyCB(TypeTextInputCallback, "thingMode"), handler: AttributeCallbackHandler{Attributes: attributes}, want: true},
-		// X509CertCallbackHandler
-		{name: "X509Cert/False/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: X509CertCallbackHandler{Cert: []byte("12345")}, want: false},
-		{name: "X509Cert/False/WrongType", cb: dummyCB(TypeNameCallback, PromptX509CertCallback), handler: X509CertCallbackHandler{Cert: []byte("12345")}, want: false},
-		{name: "X509Cert/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: X509CertCallbackHandler{Cert: []byte("12345")}, want: false},
-		{name: "X509Cert/True", cb: dummyCB(TypeTextInputCallback, PromptX509CertCallback), handler: X509CertCallbackHandler{Cert: []byte("12345")}, want: true},
+		// NameHandler
+		{name: "Name/True", cb: dummyCB(TypeNameCallback), handler: NameHandler{Name: "Odysseus"}, want: true},
+		{name: "Name/False", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, want: false},
+		// PasswordHandler
+		{name: "Password/True", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, want: true},
+		{name: "Password/False", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, want: false},
+		// AttributeHandler
+		{name: "Attribute/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: AttributeHandler{Attributes: attributes}, want: false},
+		{name: "Attribute/False/WrongType", cb: dummyCB(TypeNameCallback), handler: AttributeHandler{Attributes: attributes}, want: false},
+		{name: "Attribute/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: AttributeHandler{Attributes: attributes}, want: false},
+		{name: "Attribute/True", cb: dummyCB(TypeTextInputCallback, "thingMode"), handler: AttributeHandler{Attributes: attributes}, want: true},
+		// X509CertificateHandler
+		{name: "X509Cert/False/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: X509CertificateHandler{Cert: []byte("12345")}, want: false},
+		{name: "X509Cert/False/WrongType", cb: dummyCB(TypeNameCallback, PromptX509CertCallback), handler: X509CertificateHandler{Cert: []byte("12345")}, want: false},
+		{name: "X509Cert/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: X509CertificateHandler{Cert: []byte("12345")}, want: false},
+		{name: "X509Cert/True", cb: dummyCB(TypeTextInputCallback, PromptX509CertCallback), handler: X509CertificateHandler{Cert: []byte("12345")}, want: true},
 		// ProofOfPossessionCallbackHandler
-		{name: "ProofOfPossession/False/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: PoPCallbackHandler{Hash: crypto.SHA256, Signer: key}, want: false},
-		{name: "ProofOfPossession/False/WrongType", cb: dummyCB(TypeNameCallback, PromptProofOfPossessionCallback), handler: PoPCallbackHandler{Hash: crypto.SHA256, Signer: key}, want: false},
-		{name: "ProofOfPossession/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: PoPCallbackHandler{Hash: crypto.SHA256, Signer: key}, want: false},
-		{name: "ProofOfPossession/True", cb: dummyCB(TypeTextInputCallback, PromptProofOfPossessionCallback), handler: PoPCallbackHandler{Hash: crypto.SHA256, Signer: key}, want: true},
+		{name: "ProofOfPossession/False/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: false},
+		{name: "ProofOfPossession/False/WrongType", cb: dummyCB(TypeNameCallback, PromptProofOfPossessionCallback), handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: false},
+		{name: "ProofOfPossession/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: false},
+		{name: "ProofOfPossession/True", cb: dummyCB(TypeTextInputCallback, PromptProofOfPossessionCallback), handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: true},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -95,12 +95,12 @@ func TestCallbackHandler_Respond_NoInput(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		handler CallbackHandler
+		handler Handler
 	}{
-		{name: "Name", handler: NameCallbackHandler{Name: "Odysseus"}},
-		{name: "Password", handler: PasswordCallbackHandler{Password: "password"}},
-		{name: "Attribute", handler: AttributeCallbackHandler{Attributes: attributes}},
-		{name: "X509Cert", handler: X509CertCallbackHandler{Cert: []byte("12345")}},
+		{name: "Name", handler: NameHandler{Name: "Odysseus"}},
+		{name: "Password", handler: PasswordHandler{Password: "password"}},
+		{name: "Attribute", handler: AttributeHandler{Attributes: attributes}},
+		{name: "X509Cert", handler: X509CertificateHandler{Cert: []byte("12345")}},
 	}
 	for _, subtest := range tests {
 		cb := Callback{}
@@ -124,7 +124,7 @@ func TestPoPCallbackHandler_Respond_MissingEntries(t *testing.T) {
 		{name: "NoInput", cb: Callback{Type: TypeTextInputCallback, Output: make([]Entry, 2)}},
 		{name: "NoOutput", cb: Callback{Type: TypeTextInputCallback, Input: make([]Entry, 2)}},
 	}
-	handler := PoPCallbackHandler{Hash: crypto.SHA256, Signer: key}
+	handler := PoPHandler{Hash: crypto.SHA256, Signer: key}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
 			if err := handler.Respond(subtest.cb); err == nil {
@@ -136,7 +136,7 @@ func TestPoPCallbackHandler_Respond_MissingEntries(t *testing.T) {
 
 func TestNameCallbackHandler_Respond(t *testing.T) {
 	name := "Odysseus"
-	handler := NameCallbackHandler{Name: name}
+	handler := NameHandler{Name: name}
 	cb := dummyCB(TypeNameCallback)
 	if err := handler.Respond(cb); err != nil {
 		t.Fatal(err)
@@ -148,7 +148,7 @@ func TestNameCallbackHandler_Respond(t *testing.T) {
 
 func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	p := "password"
-	handler := PasswordCallbackHandler{Password: p}
+	handler := PasswordHandler{Password: p}
 	cb := dummyCB(TypeNameCallback)
 	if err := handler.Respond(cb); err != nil {
 		t.Fatal(err)
@@ -160,7 +160,7 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 
 func TestX509CertCallbackHandler_Respond(t *testing.T) {
 	c := "12345"
-	handler := X509CertCallbackHandler{Cert: []byte(c)}
+	handler := X509CertificateHandler{Cert: []byte(c)}
 	cb := dummyCB(TypeNameCallback)
 	if err := handler.Respond(cb); err != nil {
 		t.Fatal(err)
@@ -175,7 +175,7 @@ func TestAttributeCallbackHandler_Respond(t *testing.T) {
 	v := "test"
 	attributes := make(map[string]string)
 	attributes[k] = v
-	handler := AttributeCallbackHandler{attributes}
+	handler := AttributeHandler{attributes}
 	cb := dummyCB(TypeNameCallback, k)
 	if err := handler.Respond(cb); err != nil {
 		t.Fatal(err)
@@ -191,7 +191,7 @@ func TestPoPCallbackHandler_Respond(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := PoPCallbackHandler{crypto.SHA256, key}
+	handler := PoPHandler{crypto.SHA256, key}
 	cb := dummyCB(TypeTextInputCallback, PromptProofOfPossessionCallback, challenge)
 	if err := handler.Respond(cb); err != nil {
 		t.Fatal(err)
@@ -216,17 +216,17 @@ func TestPoPCallbackHandler_Respond(t *testing.T) {
 
 func TestProcessCallbacks(t *testing.T) {
 	nameCB := dummyCB(TypeNameCallback)
-	nameHandler := NameCallbackHandler{Name: "Odysseus"}
+	nameHandler := NameHandler{Name: "Odysseus"}
 	pwdCB := dummyCB(TypePasswordCallback)
 
 	tests := []struct {
 		name      string
 		callbacks []Callback
-		handlers  []CallbackHandler
+		handlers  []Handler
 		ok        bool
 	}{
-		{"ok", []Callback{nameCB}, []CallbackHandler{nameHandler}, true},
-		{"error", []Callback{pwdCB}, []CallbackHandler{nameHandler}, false},
+		{"ok", []Callback{nameCB}, []Handler{nameHandler}, true},
+		{"error", []Callback{pwdCB}, []Handler{nameHandler}, false},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {

@@ -19,7 +19,8 @@ package mock
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/dchest/uniuri"
 	"github.com/gorilla/mux"
 	"io/ioutil"
@@ -33,11 +34,11 @@ const (
 	SimpleTestAuthTree = "testTree"
 )
 
-func SimpleClientAuthResponse(payload *message.AuthenticatePayload, name string) {
-	payload.Callbacks = []message.Callback{
+func SimpleClientAuthResponse(payload *payload.Authenticate, name string) {
+	payload.Callbacks = []callback.Callback{
 		{
-			Type:   message.TypeNameCallback,
-			Output: []message.Entry{{Value: "simple-thing"}},
+			Type:   callback.TypeNameCallback,
+			Output: []callback.Entry{{Value: "simple-thing"}},
 			Input:  nil,
 		},
 	}
@@ -54,18 +55,18 @@ type Server struct {
 // On the 2nd call and onwards, the server appends the Thing's name to the incoming auth id
 // If the Thing's name does not match the embedded name, then the authentication fails
 // On the 4th successful call, the authentication succeeds
-func processAuthentication(payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
-	stdCB := []message.Callback{
-		{Type: message.TypeNameCallback, Input: []message.Entry{{}}, Output: []message.Entry{{}}},
+func processAuthentication(authenticatePayload payload.Authenticate) (reply payload.Authenticate, err error) {
+	stdCB := []callback.Callback{
+		{Type: callback.TypeNameCallback, Input: []callback.Entry{{}}, Output: []callback.Entry{{}}},
 	}
-	if payload.AuthId == "" {
+	if authenticatePayload.AuthId == "" {
 		reply.AuthId = uniuri.New()
 		reply.Callbacks = stdCB
 		return reply, nil
 	}
 	name := ""
-	for _, cb := range payload.Callbacks {
-		if cb.Type == message.TypeNameCallback && len(cb.Input) > 0 && cb.Input[0].Value != "" {
+	for _, cb := range authenticatePayload.Callbacks {
+		if cb.Type == callback.TypeNameCallback && len(cb.Input) > 0 && cb.Input[0].Value != "" {
 			name = cb.Input[0].Value
 			break
 		}
@@ -75,20 +76,20 @@ func processAuthentication(payload message.AuthenticatePayload) (reply message.A
 	}
 	count := 0
 	token := ""
-	for count, token = range strings.Split(payload.AuthId, ".") {
+	for count, token = range strings.Split(authenticatePayload.AuthId, ".") {
 		if count == 0 {
 			continue
 		}
 		if token != name {
-			return reply, fmt.Errorf("malformed token %s\n", payload.AuthId)
+			return reply, fmt.Errorf("malformed token %s\n", authenticatePayload.AuthId)
 		}
 	}
 	if count < 2 {
-		reply.AuthId += payload.AuthId + "." + name
+		reply.AuthId += authenticatePayload.AuthId + "." + name
 		reply.Callbacks = stdCB
 		return reply, nil
 	}
-	return message.AuthenticatePayload{TokenId: "12345"}, nil
+	return payload.Authenticate{TokenId: "12345"}, nil
 }
 
 // NewSimpleServer creates a test server that does the minimum to serve the iot endpoints
@@ -114,7 +115,7 @@ func NewSimpleServer() Server {
 			if err != nil {
 				http.Error(writer, "unable to read request body", http.StatusBadRequest)
 			}
-			var payload message.AuthenticatePayload
+			var payload payload.Authenticate
 			if err := json.Unmarshal(body, &payload); err != nil {
 				http.Error(writer, "unable to decode request body", http.StatusBadRequest)
 			}

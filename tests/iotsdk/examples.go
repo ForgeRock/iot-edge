@@ -50,7 +50,7 @@ func (t *SimpleThingExample) Run(client things.Client, data anvil.ThingData) boo
 	switch client.(type) {
 	case *things.AMClient:
 		server = "am"
-	case *things.COAPClient:
+	case *things.IECClient:
 		server = "iec"
 	}
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/simple/thing",

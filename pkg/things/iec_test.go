@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package iec
+package things
 
 import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/mock"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"testing"
 	"time"
 )
@@ -29,7 +29,7 @@ import (
 func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 	authId := "12345"
 	mockClient := &mock.Client{
-		AuthenticateFunc: func(_ string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
+		AuthenticateFunc: func(_ string, payload payload.Authenticate) (reply payload.Authenticate, err error) {
 			if payload.AuthIDKey != "" {
 				return reply, fmt.Errorf("don't send auth id digest")
 			}
@@ -41,7 +41,7 @@ func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 		Client:    mockClient,
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
-	reply, err := controller.Authenticate("tree", message.AuthenticatePayload{})
+	reply, err := controller.Authenticate("tree", payload.Authenticate{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	authId := "12345"
 	mockClient := &mock.Client{
-		AuthenticateFunc: func(_ string, _ message.AuthenticatePayload) (reply message.AuthenticatePayload, _ error) {
+		AuthenticateFunc: func(_ string, _ payload.Authenticate) (reply payload.Authenticate, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
@@ -64,7 +64,7 @@ func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 		Client:    mockClient,
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
-	reply, _ := controller.Authenticate("tree", message.AuthenticatePayload{})
+	reply, _ := controller.Authenticate("tree", payload.Authenticate{})
 	if reply.AuthId != "" {
 		t.Fatal("AuthId has been returned")
 	}
@@ -74,7 +74,7 @@ func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 func TestIEC_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	authId := "12345"
 	mockClient := &mock.Client{
-		AuthenticateFunc: func(_ string, _ message.AuthenticatePayload) (reply message.AuthenticatePayload, _ error) {
+		AuthenticateFunc: func(_ string, _ payload.Authenticate) (reply payload.Authenticate, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
@@ -83,7 +83,7 @@ func TestIEC_Authenticate_AuthId_Is_Cached(t *testing.T) {
 		Client:    mockClient,
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
-	reply, _ := controller.Authenticate("tree", message.AuthenticatePayload{})
+	reply, _ := controller.Authenticate("tree", payload.Authenticate{})
 	id, ok := controller.authCache.Get(reply.AuthIDKey)
 	if !ok {
 		t.Fatal("The authId has not been stored")

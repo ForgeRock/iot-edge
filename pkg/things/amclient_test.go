@@ -18,7 +18,8 @@ package things
 
 import (
 	"github.com/ForgeRock/iot-edge/internal/mock"
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"testing"
 )
 
@@ -50,20 +51,20 @@ func TestAMClient_Authenticate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handlers := []message.CallbackHandler{message.NameCallbackHandler{Name: "test-thing"}}
-	var payload message.AuthenticatePayload
+	handlers := []callback.Handler{callback.NameHandler{Name: "test-thing"}}
+	var auth payload.Authenticate
 	for i := 0; i < 5; i++ {
-		payload, err = c.Authenticate(mock.SimpleTestAuthTree, payload)
+		auth, err = c.Authenticate(mock.SimpleTestAuthTree, auth)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = message.ProcessCallbacks(payload.Callbacks, handlers)
+		err = callback.ProcessCallbacks(auth.Callbacks, handlers)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// check that the reply has a token
-		if payload.HasSessionToken() {
+		if auth.HasSessionToken() {
 			return
 		}
 	}

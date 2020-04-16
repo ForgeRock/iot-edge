@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package message
+package callback
 
 import (
 	"crypto"
@@ -60,7 +60,7 @@ func (c Callback) String() string {
 }
 
 // CallbackHandler is an interface for an AM callback handler
-type CallbackHandler interface {
+type Handler interface {
 	// Match returns true if the handler should respond to the callback
 	Match(Callback) bool
 	// Respond by modifying the callback
@@ -77,7 +77,7 @@ func (e ErrMissingHandler) Error() string {
 }
 
 // ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
-func ProcessCallbacks(callbacks []Callback, handlers []CallbackHandler) error {
+func ProcessCallbacks(callbacks []Callback, handlers []Handler) error {
 	for _, cb := range callbacks {
 		matched := false
 	handlerLoop:
@@ -97,16 +97,16 @@ func ProcessCallbacks(callbacks []Callback, handlers []CallbackHandler) error {
 	return nil
 }
 
-// NameCallbackHandler handles an AM Username Collector callback
-type NameCallbackHandler struct {
+// NameHandler handles an AM Username Collector callback
+type NameHandler struct {
 	// Name\Username\ID for the identity
 	Name string
 }
 
-func (h NameCallbackHandler) Match(c Callback) bool {
+func (h NameHandler) Match(c Callback) bool {
 	return c.Type == TypeNameCallback
 }
-func (h NameCallbackHandler) Respond(c Callback) error {
+func (h NameHandler) Respond(c Callback) error {
 	if len(c.Input) == 0 {
 		return ErrNoInput
 	}
@@ -114,16 +114,16 @@ func (h NameCallbackHandler) Respond(c Callback) error {
 	return nil
 }
 
-// PasswordCallbackHandler handles an AM Password Collector callback
-type PasswordCallbackHandler struct {
+// PasswordHandler handles an AM Password Collector callback
+type PasswordHandler struct {
 	// Password for the identity
 	Password string
 }
 
-func (h PasswordCallbackHandler) Match(c Callback) bool {
+func (h PasswordHandler) Match(c Callback) bool {
 	return c.Type == TypePasswordCallback
 }
-func (h PasswordCallbackHandler) Respond(c Callback) error {
+func (h PasswordHandler) Respond(c Callback) error {
 	if len(c.Input) == 0 {
 		return ErrNoInput
 	}
@@ -131,20 +131,20 @@ func (h PasswordCallbackHandler) Respond(c Callback) error {
 	return nil
 }
 
-// AttributeCallbackHandler handles an AM attribute collector callback
-type AttributeCallbackHandler struct {
+// AttributeHandler handles an AM attribute collector callback
+type AttributeHandler struct {
 	// Attributes is a key-value map containing Thing attributes. Keys should match those requested by AM
 	Attributes map[string]string
 }
 
-func (h AttributeCallbackHandler) Match(c Callback) bool {
+func (h AttributeHandler) Match(c Callback) bool {
 	if c.Type != TypeTextInputCallback || len(c.Output) == 0 {
 		return false
 	}
 	_, ok := h.Attributes[c.Output[0].Value]
 	return ok
 }
-func (h AttributeCallbackHandler) Respond(c Callback) error {
+func (h AttributeHandler) Respond(c Callback) error {
 	if len(c.Input) == 0 {
 		return ErrNoInput
 	}
@@ -152,17 +152,17 @@ func (h AttributeCallbackHandler) Respond(c Callback) error {
 	return nil
 }
 
-// X509CertCallbackHandler handles an AM Certificate Collector callback
-type X509CertCallbackHandler struct {
+// X509CertificateHandler handles an AM Certificate Collector callback
+type X509CertificateHandler struct {
 	// Certificate
 	Cert []byte
 }
 
-func (h X509CertCallbackHandler) Match(c Callback) bool {
+func (h X509CertificateHandler) Match(c Callback) bool {
 	return c.Type == TypeTextInputCallback &&
 		len(c.Output) > 0 && c.Output[0].Value == PromptX509CertCallback
 }
-func (h X509CertCallbackHandler) Respond(c Callback) error {
+func (h X509CertificateHandler) Respond(c Callback) error {
 	if len(c.Input) == 0 {
 		return ErrNoInput
 	}
@@ -170,19 +170,19 @@ func (h X509CertCallbackHandler) Respond(c Callback) error {
 	return nil
 }
 
-// PoPCallbackHandler handles an AM private key proof of possession challenge
-type PoPCallbackHandler struct {
+// PoPHandler handles an AM private key proof of possession challenge
+type PoPHandler struct {
 	// Hash function used to hash the challenge
 	Hash crypto.Hash
 	// Signer function used to sign the challenge
 	Signer crypto.Signer
 }
 
-func (h PoPCallbackHandler) Match(c Callback) bool {
+func (h PoPHandler) Match(c Callback) bool {
 	return c.Type == TypeTextInputCallback &&
 		len(c.Output) > 0 && c.Output[0].Value == PromptProofOfPossessionCallback
 }
-func (h PoPCallbackHandler) Respond(c Callback) error {
+func (h PoPHandler) Respond(c Callback) error {
 	if len(c.Input) == 0 {
 		return ErrNoInput
 	}

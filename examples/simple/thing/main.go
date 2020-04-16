@@ -20,8 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/crypto"
-	"github.com/ForgeRock/iot-edge/pkg/message"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"log"
 	"os"
 )
@@ -53,13 +53,13 @@ func simpleThing() error {
 
 	// choose which client to use:
 	// * AMCLient communicates directly with AM
-	// * COAPClient communicates with AM via the IEC. Run the example IEC by calling "./run.sh examples simple/iec"
+	// * IECClient communicates with AM via the IEC. Run the example IEC by calling "./run.sh examples simple/iec"
 
 	var client things.Client
 	if *server == "am" {
 		client = things.NewAMClient(*amURL, *realm)
 	} else if *server == "iec" {
-		client = things.NewCOAPClient("127.0.0.1:5688")
+		client = things.NewIECClient("127.0.0.1:5688")
 	} else {
 		log.Fatal("server not supported")
 	}
@@ -78,9 +78,9 @@ func simpleThing() error {
 	thing := things.Thing{
 		Signer:   key,
 		AuthTree: *authTree,
-		Handlers: []message.CallbackHandler{
-			message.NameCallbackHandler{Name: *thingName},
-			message.PasswordCallbackHandler{Password: *thingPwd},
+		Handlers: []callback.Handler{
+			callback.NameHandler{Name: *thingName},
+			callback.PasswordHandler{Password: *thingPwd},
 		},
 	}
 	err = thing.Initialise(client)

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package message
+package payload
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 )
 
 // IoTEndpoint contains the information used to securely connect to the IoT Endpoint
@@ -29,17 +30,17 @@ type IoTEndpoint struct {
 	Version string
 }
 
-// AuthenticatePayload represents the outbound and inbound data during an authentication request
-type AuthenticatePayload struct {
-	TokenId   string     `json:"tokenId,omitempty"`
-	AuthId    string     `json:"authId,omitempty"`
-	AuthIDKey string     `json:"auth_id_digest,omitempty"`
-	Callbacks []Callback `json:"callbacks,omitempty"`
+// Authenticate represents the outbound and inbound data during an authentication request
+type Authenticate struct {
+	TokenId   string              `json:"tokenId,omitempty"`
+	AuthId    string              `json:"authId,omitempty"`
+	AuthIDKey string              `json:"auth_id_digest,omitempty"`
+	Callbacks []callback.Callback `json:"callbacks,omitempty"`
 }
 
 // HasSessionToken returns true if the payload contains a session token
 // Indicates that the authentication workflow has completed successfully
-func (p AuthenticatePayload) HasSessionToken() bool {
+func (p Authenticate) HasSessionToken() bool {
 	return p.TokenId != ""
 }
 
@@ -59,15 +60,15 @@ func (p getAccessTokenV1Payload) CommandID() string {
 	return p.Command
 }
 
-// NewGetAccessTokenV1Payload constructs a CommandRequestPayload for an access token V1 request
-func NewGetAccessTokenV1Payload(scope []string) CommandRequestPayload {
+// NewGetAccessTokenV1 constructs a CommandRequestPayload for an access token V1 request
+func NewGetAccessTokenV1(scope []string) CommandRequestPayload {
 	return getAccessTokenV1Payload{
 		Command: "GET_ACCESS_TOKEN_V1",
 		Scope:   scope,
 	}
 }
 
-func (p AuthenticatePayload) String() string {
+func (p Authenticate) String() string {
 	return payloadToString(p)
 }
 

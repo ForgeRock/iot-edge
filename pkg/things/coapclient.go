@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
-	"github.com/ForgeRock/iot-edge/pkg/message"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"strings"
@@ -42,22 +42,22 @@ func (e errCoAPStatusCode) Error() string {
 	return msg
 }
 
-// COAPClient contains information for connecting to the IEC via COAP
-type COAPClient struct {
+// IECClient contains information for connecting to the IEC via COAP
+type IECClient struct {
 	coap.Client
 	Address string
 	Timeout time.Duration
 }
 
-// NewCOAPClient returns a new client for connecting to the IEC
-func NewCOAPClient(address string) *COAPClient {
-	return &COAPClient{
+// NewIECClient returns a new client for connecting to the IEC
+func NewIECClient(address string) *IECClient {
+	return &IECClient{
 		Address: address,
 	}
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c COAPClient) Initialise() error {
+func (c IECClient) Initialise() error {
 	conn, err := c.Dial(c.Address)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ type requestFunc func(conn *coap.ClientConn) (coap.Message, error)
 type responseFunc func(coap.Message) ([]byte, error)
 
 // exchange performs a synchronous query
-func (c *COAPClient) exchange(msgFunc requestFunc, postFunc responseFunc) ([]byte, error) {
+func (c *IECClient) exchange(msgFunc requestFunc, postFunc responseFunc) ([]byte, error) {
 	conn, err := c.Dial(c.Address)
 	if err != nil {
 		return nil, err
@@ -104,8 +104,8 @@ func (c *COAPClient) exchange(msgFunc requestFunc, postFunc responseFunc) ([]byt
 }
 
 // Authenticate with the AM authTree using the given payload
-func (c COAPClient) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
-	requestBody, err := json.Marshal(payload)
+func (c IECClient) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+	requestBody, err := json.Marshal(auth)
 	if err != nil {
 		return reply, err
 	}
@@ -134,7 +134,7 @@ func (c COAPClient) Authenticate(authTree string, payload message.AuthenticatePa
 }
 
 // IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-func (c COAPClient) IoTEndpointInfo() (info message.IoTEndpoint, err error) {
+func (c IECClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
 	responseBody, err := c.exchange(func(conn *coap.ClientConn) (c coap.Message, err error) {
 		c, err = conn.NewGetRequest("/iotendpointinfo")
 		if err != nil {
@@ -158,7 +158,7 @@ func (c COAPClient) IoTEndpointInfo() (info message.IoTEndpoint, err error) {
 }
 
 // SendCommand sends the signed JWT to the IoT Command Endpoint
-func (c COAPClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
+func (c IECClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
 	return c.exchange(func(conn *coap.ClientConn) (c coap.Message, err error) {
 		c, err = conn.NewPostRequest("/sendcommand", coap.AppJSON, strings.NewReader(jws))
 		if err != nil {

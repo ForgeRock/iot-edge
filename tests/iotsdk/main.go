@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/iec"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
@@ -53,7 +52,6 @@ func runAllTestsForClient(client things.Client) (result bool) {
 	var logfile *os.File
 	for _, test := range tests {
 		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TypeName(test))
-		iec.DebugLogger = things.DebugLogger
 		am.DebugLogger = things.DebugLogger
 		if !anvil.RunTest(client, test) {
 			result = false
@@ -107,7 +105,7 @@ func runTests() (err error) {
 	defer controller.ShutdownCOAPServer()
 
 	// create IEC Client
-	iecClient := anvil.TestCOAPClient()
+	iecClient := anvil.TestIECClient()
 	err = iecClient.Initialise()
 	if err != nil {
 		return err

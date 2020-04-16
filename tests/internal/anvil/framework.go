@@ -20,7 +20,6 @@ package anvil
 import (
 	"crypto"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/iec"
 	"io/ioutil"
 	"log"
 	"os"
@@ -132,16 +131,16 @@ func TestAMClient() *things.AMClient {
 // COAPAddress is the address served by the COAP server run by the test IEC
 const COAPAddress = "127.0.0.1:5688"
 
-// TestCOAPClient creates an COAP client that connects with the test IEC instance
-func TestCOAPClient() *things.COAPClient {
-	c := things.NewCOAPClient(COAPAddress)
+// TestIECClient creates an COAP client that connects with the test IEC instance
+func TestIECClient() *things.IECClient {
+	c := things.NewIECClient(COAPAddress)
 	c.Timeout = StdTimeOut
 	return c
 }
 
 // TestIEC creates a test IEC
-func TestIEC() *iec.IEC {
-	c := iec.NewIEC(am.AMURL, PrimaryRealm())
+func TestIEC() *things.IEC {
+	c := things.NewIEC(am.AMURL, PrimaryRealm())
 	return c
 }
 

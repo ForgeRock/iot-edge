@@ -14,30 +14,21 @@
  * limitations under the License.
  */
 
-package iec
+package things
 
 import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
-	"github.com/ForgeRock/iot-edge/pkg/message"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
-	"io/ioutil"
-	"log"
 	"time"
 )
 
-var DebugLogger = log.New(ioutil.Discard, "", 0)
-
-func init() {
-	things.DebugLogger = DebugLogger
-}
-
 // IEC represents an Identity Edge Controller
 type IEC struct {
-	Client    things.Client
+	Client    Client
 	authCache *tokencache.Cache
 	// coap server
 	coapServer *coap.Server
@@ -48,7 +39,7 @@ type IEC struct {
 // NewIEC creates a new IEC
 func NewIEC(baseURL, realm string) *IEC {
 	return &IEC{
-		Client:    things.NewAMClient(baseURL, realm),
+		Client:    NewAMClient(baseURL, realm),
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
@@ -59,13 +50,13 @@ func (c *IEC) Initialise() error {
 }
 
 // Authenticate with the AM authTree using the given payload
-func (c *IEC) Authenticate(authTree string, payload message.AuthenticatePayload) (reply message.AuthenticatePayload, err error) {
-	if payload.AuthIDKey != "" {
-		payload.AuthId, _ = c.authCache.Get(payload.AuthIDKey)
+func (c *IEC) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+	if auth.AuthIDKey != "" {
+		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
-	payload.AuthIDKey = ""
+	auth.AuthIDKey = ""
 
-	reply, err = c.Client.Authenticate(authTree, payload)
+	reply, err = c.Client.Authenticate(authTree, auth)
 	if err != nil {
 		return
 	}
