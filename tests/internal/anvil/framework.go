@@ -19,6 +19,9 @@ package anvil
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -132,8 +135,9 @@ func TestAMClient() *things.AMClient {
 const COAPAddress = "127.0.0.1:5688"
 
 // TestIECClient creates an COAP client that connects with the test IEC instance
-func TestIECClient() *things.IECClient {
-	c := things.NewIECClient(COAPAddress)
+func TestIECClient(address string) *things.IECClient {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	c := things.NewIECClient(address, key)
 	c.Timeout = StdTimeOut
 	return c
 }

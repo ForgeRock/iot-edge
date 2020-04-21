@@ -17,13 +17,22 @@
 package things
 
 import (
+	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
+	"github.com/go-ocf/go-coap/net"
+	"github.com/pion/dtls/v2"
+	"golang.org/x/sync/errgroup"
 	"testing"
+	"time"
 )
 
-func startTestServer() func() {
+func startTestServer() (address string, cancel func(), err error) {
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", func(w coap.ResponseWriter, r *coap.Request) {
 		// check that the query is set to auth tree
@@ -38,33 +47,80 @@ func startTestServer() func() {
 		w.Write(r.Msg.Payload())
 	})
 	c := make(chan error, 1)
-	server := &coap.Server{Addr: address, Net: "udp", Handler: mux}
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	cert, _ := publicKeyCertificate(key)
+	l, err := net.NewDTLSListener("udp", ":0",
+		&dtls.Config{
+			Certificates:         []tls.Certificate{cert},
+			ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+		},
+		time.Millisecond*100)
+	if err != nil {
+		return "", func() {}, err
+	}
+	server := &coap.Server{
+		Listener: l,
+		Handler:  mux,
+	}
 	go func() {
-		c <- server.ListenAndServe()
+		c <- server.ActivateAndServe()
+		l.Close()
 	}()
-	return func() {
+	return l.Addr().String(), func() {
 		server.Shutdown()
 		<-c
-	}
+	}, nil
 }
 
 func TestCOAPClient_Initialise(t *testing.T) {
-	cancel := startTestServer()
+	addr, cancel, err := startTestServer()
 	defer cancel()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	client := NewIECClient(address)
-	err := client.Initialise()
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	client := NewIECClient(addr, key)
+	err = client.Initialise()
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func TestCOAPClient_Authenticate(t *testing.T) {
-	cancel := startTestServer()
+// checks that multiple IECClients can be initialised concurrently
+func TestCOAPClient_Initialise_Concurrent(t *testing.T) {
+	t.Skip("Concurrent DTLS handshakes fail")
+	addr, cancel, err := startTestServer()
 	defer cancel()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	client := NewIECClient(address)
-	err := client.Initialise()
+	errGroup, _ := errgroup.WithContext(context.Background())
+	const num = 5
+	for i := 0; i < num; i++ {
+		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		client := NewIECClient(addr, key)
+		errGroup.Go(func() error {
+			return client.Initialise()
+		})
+	}
+	err = errGroup.Wait()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCOAPClient_Authenticate(t *testing.T) {
+	addr, cancel, err := startTestServer()
+	defer cancel()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	client := NewIECClient(addr, key)
+	err = client.Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}

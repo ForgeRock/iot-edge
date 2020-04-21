@@ -18,6 +18,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
@@ -33,7 +36,11 @@ var (
 func simpleIEC() error {
 	controller := things.NewIEC(*amURL, *realm)
 
-	err := controller.StartCOAPServer("127.0.0.1:5688")
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return err
+	}
+	err = controller.StartCOAPServer("127.0.0.1:5688", key)
 	if err != nil {
 		return err
 	}

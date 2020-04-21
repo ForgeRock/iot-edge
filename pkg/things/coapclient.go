@@ -19,12 +19,15 @@ package things
 import (
 	"bytes"
 	"context"
+	"crypto"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
+	"github.com/pion/dtls/v2"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -44,25 +47,65 @@ func (e errCoAPStatusCode) Error() string {
 
 // IECClient contains information for connecting to the IEC via COAP
 type IECClient struct {
-	coap.Client
 	Address string
 	Timeout time.Duration
+	Key     crypto.Signer
+	client  *coap.Client
+	conn    *coap.ClientConn
 }
 
 // NewIECClient returns a new client for connecting to the IEC
-func NewIECClient(address string) *IECClient {
+func NewIECClient(address string, key crypto.Signer) *IECClient {
 	return &IECClient{
 		Address: address,
+		Key:     key,
+		client: &coap.Client{
+			Net: "udp-dtls",
+			DTLSConfig: &dtls.Config{
+				Certificates:         nil,
+				ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+				InsecureSkipVerify:   true,
+			},
+		},
 	}
 }
 
+// dial returns an existing connection or creates a new one
+func (c *IECClient) dial() (*coap.ClientConn, error) {
+	if c.conn != nil {
+		return c.conn, nil
+	}
+	var err error
+	c.client.DialTimeout = c.Timeout
+	c.conn, err = c.client.Dial(c.Address)
+	return c.conn, err
+}
+
+// context returns a context to be used with CoAP requests
+func (c *IECClient) context() (context.Context, context.CancelFunc) {
+	if c.Timeout > 0 {
+		return context.WithTimeout(context.Background(), c.Timeout)
+	}
+	return context.WithCancel(context.Background())
+}
+
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c IECClient) Initialise() error {
-	conn, err := c.Dial(c.Address)
+func (c *IECClient) Initialise() (err error) {
+	// create certificate
+	cert, err := publicKeyCertificate(c.Key)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	c.client.DTLSConfig.Certificates = []tls.Certificate{cert}
+
+	conn, err := c.dial()
+	if err != nil {
+		return err
+	}
+	runtime.SetFinalizer(c, func(c *IECClient) {
+		c.conn.Close()
+	})
+
 	timeout := c.Timeout
 	if timeout == 0 {
 		// default ping timeout to an hour
@@ -72,103 +115,80 @@ func (c IECClient) Initialise() error {
 	return err
 }
 
-type requestFunc func(conn *coap.ClientConn) (coap.Message, error)
-type responseFunc func(coap.Message) ([]byte, error)
-
-// exchange performs a synchronous query
-func (c *IECClient) exchange(msgFunc requestFunc, postFunc responseFunc) ([]byte, error) {
-	conn, err := c.Dial(c.Address)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	message, err := msgFunc(conn)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := context.Background()
-	if c.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), c.Timeout)
-		defer cancel()
-	}
-
-	response, err := conn.ExchangeWithContext(ctx, message)
-	if err != nil {
-		DebugLogger.Println(debug.DumpCOAPRoundTrip(conn, message, response))
-		return nil, err
-	}
-	return postFunc(response)
-}
-
 // Authenticate with the AM authTree using the given payload
-func (c IECClient) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+func (c *IECClient) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+	conn, err := c.dial()
+	if err != nil {
+		return reply, err
+	}
+
 	requestBody, err := json.Marshal(auth)
 	if err != nil {
 		return reply, err
 	}
 
-	responseBody, err := c.exchange(func(conn *coap.ClientConn) (c coap.Message, err error) {
-		c, err = conn.NewPostRequest("/authenticate", coap.AppJSON, bytes.NewReader(requestBody))
-		if err != nil {
-			return
-		}
-		c.SetQueryString(authTree)
-		return
-	}, func(c coap.Message) (i []byte, err error) {
-		if c.Code() != codes.Valid {
-			return nil, ErrUnauthorised
-		}
-		return c.Payload(), nil
-	})
+	msg, err := conn.NewPostRequest("/authenticate", coap.AppJSON, bytes.NewReader(requestBody))
 	if err != nil {
 		return reply, err
 	}
+	msg.SetQueryString(authTree)
 
-	if err = json.Unmarshal(responseBody, &reply); err != nil {
+	ctx, cancel := c.context()
+	defer cancel()
+
+	response, err := conn.ExchangeWithContext(ctx, msg)
+	if err != nil {
+		return reply, err
+	} else if response.Code() != codes.Valid {
+		return reply, ErrUnauthorised
+	}
+
+	if err = json.Unmarshal(response.Payload(), &reply); err != nil {
 		return reply, err
 	}
 	return reply, nil
 }
 
 // IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-func (c IECClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
-	responseBody, err := c.exchange(func(conn *coap.ClientConn) (c coap.Message, err error) {
-		c, err = conn.NewGetRequest("/iotendpointinfo")
-		if err != nil {
-			return
-		}
-		return
-	}, func(c coap.Message) (i []byte, err error) {
-		if c.Code() != codes.Content {
-			return nil, errCoAPStatusCode{c.Code(), c.Payload()}
-		}
-		return c.Payload(), nil
-	})
+func (c *IECClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
+	conn, err := c.dial()
 	if err != nil {
 		return info, err
 	}
 
-	if err = json.Unmarshal(responseBody, &info); err != nil {
+	ctx, cancel := c.context()
+	defer cancel()
+
+	response, err := conn.GetWithContext(ctx, "/iotendpointinfo")
+	if err != nil {
+		return info, err
+	} else if response.Code() != codes.Content {
+		return info, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
+
+	if err = json.Unmarshal(response.Payload(), &info); err != nil {
 		return info, err
 	}
 	return info, nil
 }
 
 // SendCommand sends the signed JWT to the IoT Command Endpoint
-func (c IECClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
-	return c.exchange(func(conn *coap.ClientConn) (c coap.Message, err error) {
-		c, err = conn.NewPostRequest("/sendcommand", coap.AppJSON, strings.NewReader(jws))
-		if err != nil {
-			return
-		}
-		return
-	}, func(c coap.Message) (i []byte, err error) {
-		if c.Code() != codes.Changed {
-			return nil, errCoAPStatusCode{c.Code(), c.Payload()}
-		}
-		return c.Payload(), nil
-	})
+func (c *IECClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
+	conn, err := c.dial()
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := c.context()
+	defer cancel()
+
+	response, err := conn.PostWithContext(ctx, "/sendcommand", coap.AppJSON, strings.NewReader(jws))
+	if err != nil {
+		return nil, err
+	}
+
+	if response.Code() != codes.Changed {
+		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
+	return response.Payload(), nil
 }
