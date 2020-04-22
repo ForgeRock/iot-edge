@@ -37,6 +37,8 @@ import (
 // ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the IEC
 var ErrCOAPServerAlreadyStarted = errors.New("COAP server has already been started")
 
+var HeartBeat time.Duration = time.Millisecond * 100
+
 // authenticateHandler handles authentication requests
 func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler")
@@ -144,7 +146,7 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 			Certificates:         []tls.Certificate{cert},
 			ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
 		},
-		time.Millisecond*100)
+		HeartBeat)
 	if err != nil {
 		return err
 	}
