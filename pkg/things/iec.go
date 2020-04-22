@@ -23,6 +23,7 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
+	"net"
 	"time"
 )
 
@@ -33,7 +34,7 @@ type IEC struct {
 	// coap server
 	coapServer *coap.Server
 	coapChan   chan error
-	Net        string // which protocol for COAP to use, "" defaults to UDP
+	address    net.Addr
 }
 
 // NewIEC creates a new IEC

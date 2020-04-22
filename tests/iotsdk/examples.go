@@ -47,11 +47,13 @@ func (t *SimpleThingExample) Setup() (data anvil.ThingData, ok bool) {
 
 func (t *SimpleThingExample) Run(client things.Client, data anvil.ThingData) bool {
 	var server string
-	switch client.(type) {
+	var iecAddress string
+	switch c := client.(type) {
 	case *things.AMClient:
 		server = "am"
 	case *things.IECClient:
 		server = "iec"
+		iecAddress = c.Address
 	}
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/simple/thing",
 		"-url", am.AMURL,
@@ -59,7 +61,8 @@ func (t *SimpleThingExample) Run(client things.Client, data anvil.ThingData) boo
 		"-tree", "Anvil-User-Pwd",
 		"-name", data.Id.Name,
 		"-pwd", data.Id.Password,
-		"-server", server)
+		"-server", server,
+		"-address", iecAddress)
 	stdout, _ := cmd.StdoutPipe()
 	startErr := cmd.Start()
 	output, _ := ioutil.ReadAll(stdout)

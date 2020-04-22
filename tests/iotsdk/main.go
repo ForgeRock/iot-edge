@@ -17,6 +17,9 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
@@ -98,14 +101,15 @@ func runTests() (err error) {
 	if err != nil {
 		return err
 	}
-	err = controller.StartCOAPServer(anvil.COAPAddress)
+	controllerKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	err = controller.StartCOAPServer(":0", controllerKey)
 	if err != nil {
 		return err
 	}
 	defer controller.ShutdownCOAPServer()
 
 	// create IEC Client
-	iecClient := anvil.TestIECClient()
+	iecClient := anvil.TestIECClient(controller.Address())
 	err = iecClient.Initialise()
 	if err != nil {
 		return err

@@ -19,10 +19,15 @@ package things
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
-
 	"gopkg.in/square/go-jose.v2"
+	"math/big"
 )
+
+var errMissingSigner = errors.New("missing signer")
 
 // signatureAlgorithm attempts to deduce the signing algorithm by looking at the public key
 func signatureAlgorithm(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
@@ -36,4 +41,25 @@ func signatureAlgorithm(s crypto.Signer) (alg jose.SignatureAlgorithm, err error
 		}
 	}
 	return alg, errors.New("unsupported algorithm")
+}
+
+// publicKeyCertificate returns a stripped down tls certificate containing the public key
+func publicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
+	if key == nil {
+		return cert, errMissingSigner
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+	}
+
+	raw, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
+	if err != nil {
+		return cert, err
+	}
+	return tls.Certificate{
+
+		Certificate: [][]byte{raw},
+		PrivateKey:  key,
+		Leaf:        &template,
+	}, nil
 }

@@ -17,6 +17,9 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/crypto"
@@ -27,12 +30,13 @@ import (
 )
 
 var (
-	amURL     = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
-	realm     = flag.String("realm", "example", "AM Realm")
-	authTree  = flag.String("tree", "iot-user-pwd", "Authentication tree")
-	thingName = flag.String("name", "simple-thing", "Thing name")
-	thingPwd  = flag.String("pwd", "password", "Thing password")
-	server    = flag.String("server", "am", "Server to connect to, am or iec")
+	amURL      = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
+	realm      = flag.String("realm", "example", "AM Realm")
+	authTree   = flag.String("tree", "iot-user-pwd", "Authentication tree")
+	thingName  = flag.String("name", "simple-thing", "Thing name")
+	thingPwd   = flag.String("pwd", "password", "Thing password")
+	server     = flag.String("server", "am", "Server to connect to, am or iec")
+	iecAddress = flag.String("address", "127.0.0.1:5688", "Address of IEC")
 )
 
 // simpleThing initialises a Thing with AM.
@@ -59,7 +63,11 @@ func simpleThing() error {
 	if *server == "am" {
 		client = things.NewAMClient(*amURL, *realm)
 	} else if *server == "iec" {
-		client = things.NewIECClient("127.0.0.1:5688")
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return err
+		}
+		client = things.NewIECClient(*iecAddress, key)
 	} else {
 		log.Fatal("server not supported")
 	}

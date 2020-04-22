@@ -18,6 +18,9 @@ package things
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/mock"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
@@ -33,30 +36,27 @@ const (
 
 func TestCOAPServer_Initialise(t *testing.T) {
 	iec := NewIEC("http://127.0.0.1:8008", mock.SimpleTestRealm)
-	if err := iec.StartCOAPServer(address); err != nil {
+	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()
 
-	err := NewIECClient(address).Initialise()
+	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	client := NewIECClient(iec.Address(), clientKey)
+	err := client.Initialise()
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func authSimpleClient(name string) error {
-	c := NewIECClient(address)
-	err := c.Initialise()
-	if err != nil {
-		return fmt.Errorf("%s %s", name, err)
-	}
-
+func authSimple(client *IECClient, name string) (err error) {
 	handlers := []callback.Handler{callback.NameHandler{Name: name}}
 	var auth payload.Authenticate
 	for i := 0; i < 5; i++ {
-		auth, err = c.Authenticate(mock.SimpleTestAuthTree, auth)
+		auth, err = client.Authenticate(mock.SimpleTestAuthTree, auth)
 		if err != nil {
-			return fmt.Errorf("%s %s", name, err)
+			return fmt.Errorf("auth %d %s %s", i, name, err)
 		}
 
 		// check that the reply has a token
@@ -76,34 +76,54 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 	am := mock.NewSimpleServer().Start("127.0.0.1:8008")
 	defer am.Close()
 
+	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	iec := NewIEC("http://127.0.0.1:8008", mock.SimpleTestRealm)
-	if err := iec.StartCOAPServer(address); err != nil {
+	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()
 
-	err := authSimpleClient("test-client")
+	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	client := NewIECClient(iec.Address(), clientKey)
+	err := client.Initialise()
+	if err != nil {
+		t.Error(err)
+	}
+	err = authSimple(client, "test-client")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 // checks that the IEC can authenticate multiple client concurrently
-func TestCOAPServer_Authenticate_Multiple(t *testing.T) {
+func TestCOAPServer_Authenticate_Concurrent(t *testing.T) {
 	am := mock.NewSimpleServer().Start("127.0.0.1:8008")
 	defer am.Close()
 
+	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	iec := NewIEC("http://127.0.0.1:8008", mock.SimpleTestRealm)
-	if err := iec.StartCOAPServer(address); err != nil {
+	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
 		t.Fatal(err)
 	}
 	defer iec.ShutdownCOAPServer()
 
+	const num = 5
+	var clients [num]*IECClient
+	for i := 0; i < num; i++ {
+		clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		clients[i] = NewIECClient(iec.Address(), clientKey)
+		err := clients[i].Initialise()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	errGroup, _ := errgroup.WithContext(context.Background())
-	for i := 0; i < 5; i++ {
+	for i, client := range clients {
 		name := fmt.Sprintf("client%d", i)
+		localClient := client
 		errGroup.Go(func() error {
-			return authSimpleClient(name)
+			return authSimple(localClient, name)
 		})
 	}
 	err := errGroup.Wait()

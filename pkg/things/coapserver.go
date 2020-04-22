@@ -17,11 +17,16 @@
 package things
 
 import (
+	"crypto"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
+	"github.com/go-ocf/go-coap/net"
+	"github.com/pion/dtls/v2"
+	"time"
 )
 
 // CoAP server design
@@ -31,6 +36,8 @@ import (
 
 // ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the IEC
 var ErrCOAPServerAlreadyStarted = errors.New("COAP server has already been started")
+
+var HeartBeat time.Duration = time.Millisecond * 100
 
 // authenticateHandler handles authentication requests
 func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
@@ -117,23 +124,40 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 }
 
 // StartCOAPServer starts a COAP server within the IEC
-func (c *IEC) StartCOAPServer(address string) error {
+func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 	if c.coapServer != nil {
 		return ErrCOAPServerAlreadyStarted
+	}
+	if key == nil {
+		return errMissingSigner
 	}
 	c.coapChan = make(chan error, 1)
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
 	mux.HandleFunc("/iotendpointinfo", c.iotEndpointInfoHandler)
 	mux.HandleFunc("/sendcommand", c.sendCommandHandler)
-	// use UDP as default unless the protocol has been configured
-	net := "udp"
-	if c.Net != "" {
-		net = c.Net
+
+	cert, err := publicKeyCertificate(key)
+	if err != nil {
+		return err
 	}
-	c.coapServer = &coap.Server{Addr: address, Net: net, Handler: mux}
+	l, err := net.NewDTLSListener("udp", address,
+		&dtls.Config{
+			Certificates:         []tls.Certificate{cert},
+			ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+		},
+		HeartBeat)
+	if err != nil {
+		return err
+	}
+	c.address = l.Addr()
+	c.coapServer = &coap.Server{
+		Listener: l,
+		Handler:  mux,
+	}
 	go func() {
-		c.coapChan <- c.coapServer.ListenAndServe()
+		c.coapChan <- c.coapServer.ActivateAndServe()
+		l.Close()
 		c.coapServer = nil
 	}()
 	return nil
@@ -147,4 +171,12 @@ func (c *IEC) ShutdownCOAPServer() {
 	c.coapServer.Shutdown()
 	// wait for shutdown to complete
 	<-c.coapChan
+}
+
+// Address returns in string form the address that it is listening on.
+func (c *IEC) Address() string {
+	if c.address == nil {
+		return ""
+	}
+	return c.address.String()
 }
