@@ -89,7 +89,7 @@ func TestAMClient_Initialise(t *testing.T) {
 	}
 }
 
-func testAuthServerHTTPMux(code int, response []byte) (mux *http.ServeMux) {
+func testAuthHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	mux = testServerInfoHTTPMux(http.StatusOK, testServerInfo())
 	mux.HandleFunc("/json/authenticate", func(writer http.ResponseWriter, request *http.Request) {
 		// check that the query is correct
@@ -146,9 +146,9 @@ func TestAMClient_Authenticate(t *testing.T) {
 		successful bool
 		serverMux  *http.ServeMux
 	}{
-		{name: "success", successful: true, serverMux: testAuthServerHTTPMux(http.StatusOK, b)},
-		{name: "not-ok", serverMux: testAuthServerHTTPMux(http.StatusUnauthorized, []byte("No go"))},
-		{name: "invalid-auth-payload", serverMux: testAuthServerHTTPMux(http.StatusOK, []byte("aaaaaa"))},
+		{name: "success", successful: true, serverMux: testAuthHTTPMux(http.StatusOK, b)},
+		{name: "not-ok", serverMux: testAuthHTTPMux(http.StatusUnauthorized, []byte("No go"))},
+		{name: "invalid-auth-payload", serverMux: testAuthHTTPMux(http.StatusOK, []byte("aaaaaa"))},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {

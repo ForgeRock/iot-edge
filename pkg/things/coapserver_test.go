@@ -33,7 +33,7 @@ import (
 )
 
 func testDial(client *coap.Client) error {
-	iec := NewIEC("http://127.0.0.1:8008", testRealm)
+	iec := testIEC(&mockClient{})
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
 		panic(err)
@@ -272,7 +272,6 @@ func TestIEC_StartCOAPServer(t *testing.T) {
 	// use a bad signer
 	err = iec.StartCOAPServer(":0", testBadSigner{})
 	if err == nil {
-		//t.Fatal(err)
 		t.Error("Expected an error")
 	}
 

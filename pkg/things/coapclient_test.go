@@ -37,7 +37,7 @@ func testGenerateSigner() crypto.Signer {
 	return key
 }
 
-func testAuthServerMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
+func testAuthCoAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/authenticate", func(w coap.ResponseWriter, r *coap.Request) {
 		// check that the query is set to auth tree
@@ -54,7 +54,7 @@ func testAuthServerMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	return mux
 }
 
-func testIoTEndpointInfoServerMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
+func testIoTEndpointInfoCoAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/iotendpointinfo", func(w coap.ResponseWriter, r *coap.Request) {
 		w.SetCode(code)
@@ -64,7 +64,7 @@ func testIoTEndpointInfoServerMux(code codes.Code, response []byte) (mux *coap.S
 	return mux
 }
 
-func testSendCommandMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
+func testSendCommandCoAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/sendcommand", func(w coap.ResponseWriter, r *coap.Request) {
 		w.SetCode(code)
@@ -201,11 +201,11 @@ func TestIECClient_Authenticate(t *testing.T) {
 		server     *testCoAPServer
 	}{
 		{name: "success", successful: true, client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testAuthServerMux(codes.Valid, b)}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testAuthCoAPMux(codes.Valid, b)}},
 		{name: "unexpected-code", client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testAuthServerMux(codes.BadGateway, b)}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testAuthCoAPMux(codes.BadGateway, b)}},
 		{name: "invalid-auth-payload", client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testAuthServerMux(codes.Content, []byte("aaaa"))}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testAuthCoAPMux(codes.Content, []byte("aaaa"))}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -257,11 +257,11 @@ func TestIECClient_IoTEndpointInfo(t *testing.T) {
 		server     *testCoAPServer
 	}{
 		{name: "success", successful: true, client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testIoTEndpointInfoServerMux(codes.Content, b)}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testIoTEndpointInfoCoAPMux(codes.Content, b)}},
 		{name: "unexpected-code", client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testIoTEndpointInfoServerMux(codes.BadGateway, b)}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testIoTEndpointInfoCoAPMux(codes.BadGateway, b)}},
 		{name: "invalid-info", client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testIoTEndpointInfoServerMux(codes.Content, []byte("aaaa"))}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testIoTEndpointInfoCoAPMux(codes.Content, []byte("aaaa"))}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -304,9 +304,9 @@ func TestIECClient_SendCommand(t *testing.T) {
 		server     *testCoAPServer
 	}{
 		{name: "success", successful: true, client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testSendCommandMux(codes.Changed, []byte("{}"))}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testSendCommandCoAPMux(codes.Changed, []byte("{}"))}},
 		{name: "unexpected-code", client: &IECClient{Key: testGenerateSigner()},
-			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testSendCommandMux(codes.BadGateway, []byte("{}"))}},
+			server: &testCoAPServer{config: dtlsServerConfig(cert), mux: testSendCommandCoAPMux(codes.BadGateway, []byte("{}"))}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
