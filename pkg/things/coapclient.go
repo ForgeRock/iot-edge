@@ -59,14 +59,6 @@ func NewIECClient(address string, key crypto.Signer) *IECClient {
 	return &IECClient{
 		Address: address,
 		Key:     key,
-		client: &coap.Client{
-			Net: "udp-dtls",
-			DTLSConfig: &dtls.Config{
-				Certificates:         nil,
-				ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
-				InsecureSkipVerify:   true,
-			},
-		},
 	}
 }
 
@@ -89,6 +81,14 @@ func (c *IECClient) context() (context.Context, context.CancelFunc) {
 	return context.WithCancel(context.Background())
 }
 
+func dtlsClientConfig(cert ...tls.Certificate) *dtls.Config {
+	return &dtls.Config{
+		Certificates:         cert,
+		ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+		InsecureSkipVerify:   true,
+	}
+}
+
 // Initialise checks that the server can be reached and prepares the client for further communication
 func (c *IECClient) Initialise() (err error) {
 	// create certificate
@@ -96,7 +96,10 @@ func (c *IECClient) Initialise() (err error) {
 	if err != nil {
 		return err
 	}
-	c.client.DTLSConfig.Certificates = []tls.Certificate{cert}
+	c.client = &coap.Client{
+		Net:        "udp-dtls",
+		DTLSConfig: dtlsClientConfig(cert),
+	}
 
 	conn, err := c.dial()
 	if err != nil {
@@ -173,7 +176,8 @@ func (c *IECClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
 }
 
 // SendCommand sends the signed JWT to the IoT Command Endpoint
-func (c *IECClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
+// SSO token is extracted from signed JWT by IEC
+func (c *IECClient) SendCommand(_ string, jws string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err

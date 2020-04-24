@@ -47,11 +47,19 @@ type AMClient struct {
 	cookieName    string
 }
 
-// ErrorResponse is used to unmarshal an AM error response
-type ErrorResponse struct {
+// amError is used to unmarshal an AM error response
+type amError struct {
 	Code    int    `json:"code"`
 	Reason  string `json:"reason"`
 	Message string `json:"message"`
+}
+
+func parseAMError(response []byte, status int) error {
+	var amError amError
+	if err := json.Unmarshal(response, &amError); err != nil {
+		return fmt.Errorf("request failed with status code %d", status)
+	}
+	return fmt.Errorf("%s: %s", amError.Reason, amError.Message)
 }
 
 // NewAMClient returns a new client for connecting directly to AM
@@ -178,15 +186,7 @@ func (c *AMClient) SendCommand(tokenID string, jws string) ([]byte, error) {
 	}
 	if response.StatusCode != http.StatusOK {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return responseBody, errorResponse(responseBody, response.StatusCode)
+		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
-}
-
-func errorResponse(response []byte, status int) error {
-	var amError ErrorResponse
-	if err := json.Unmarshal(response, &amError); err != nil {
-		return fmt.Errorf("request failed with status code %d", status)
-	}
-	return fmt.Errorf("%s: %s", amError.Reason, amError.Message)
 }
