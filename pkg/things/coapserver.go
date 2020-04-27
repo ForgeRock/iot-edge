@@ -154,15 +154,24 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 		return err
 	}
 	c.address = l.Addr()
+
+	// it is safer to wait for the CoAP server to fully start before returning from the function
+	// since instructing the server to shutdown while it is still starting up can cause a hang
+	started := make(chan struct{})
+
 	c.coapServer = &coap.Server{
 		Listener: l,
 		Handler:  mux,
+		NotifyStartedFunc: func() {
+			close(started)
+		},
 	}
 	go func() {
 		c.coapChan <- c.coapServer.ActivateAndServe()
 		l.Close()
 		c.coapServer = nil
 	}()
+	<-started
 	return nil
 }
 

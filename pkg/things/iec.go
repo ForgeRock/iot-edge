@@ -17,10 +17,12 @@
 package things
 
 import (
+	"crypto"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"net"
@@ -29,6 +31,7 @@ import (
 
 // IEC represents an Identity Edge Controller
 type IEC struct {
+	Thing     Thing
 	Client    Client
 	authCache *tokencache.Cache
 	// coap server
@@ -38,16 +41,33 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(baseURL, realm string) *IEC {
+func NewIEC(signer crypto.Signer, baseURL, realm, authTree string, handlers []callback.Handler) *IEC {
 	return &IEC{
+		Thing: Thing{
+			Signer:   signer,
+			AuthTree: authTree,
+			Handlers: handlers,
+		},
 		Client:    NewAMClient(baseURL, realm),
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
 
+// NewDefaultIEC creates a new IEC using a default setup
+func NewDefaultIEC(signer crypto.Signer, baseURL, realm, name, password string) *IEC {
+	return NewIEC(signer, baseURL, realm, "Anvil-User-Pwd",
+		[]callback.Handler{
+			callback.NameHandler{Name: name},
+			callback.PasswordHandler{Password: password},
+		})
+}
+
 // Initialise the IEC
 func (c *IEC) Initialise() error {
-	return c.Client.Initialise()
+	if err := c.Client.Initialise(); err != nil {
+		return err
+	}
+	return c.Thing.Initialise(c.Client)
 }
 
 // Authenticate with the AM authTree using the given payload

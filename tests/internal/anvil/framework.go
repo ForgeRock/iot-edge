@@ -131,9 +131,6 @@ func TestAMClient() *things.AMClient {
 	return t
 }
 
-// COAPAddress is the address served by the COAP server run by the test IEC
-const COAPAddress = "127.0.0.1:5688"
-
 // TestIECClient creates an COAP client that connects with the test IEC instance
 func TestIECClient(address string) *things.IECClient {
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -143,9 +140,22 @@ func TestIECClient(address string) *things.IECClient {
 }
 
 // TestIEC creates a test IEC
-func TestIEC() *things.IEC {
-	c := things.NewIEC(am.AMURL, PrimaryRealm())
-	return c
+func TestIEC() (*things.IEC, error) {
+	jwk, signer, err := GenerateConfirmationKey()
+	if err != nil {
+		return nil, err
+	}
+	data, ok := CreateIdentity(ThingData{
+		Id: am.IdAttributes{
+			Name:      "iec-" + RandomName(),
+			ThingType: "iec",
+			ThingKeys: jwk,
+		},
+	})
+	if !ok {
+		return nil, fmt.Errorf("Pre-provision of IEC %s failed", data.Id.Name)
+	}
+	return things.NewDefaultIEC(signer, am.AMURL, PrimaryRealm(), data.Id.Name, data.Id.Password), nil
 }
 
 // ThingData holds information about a Thing used in a test
