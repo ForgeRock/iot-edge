@@ -90,7 +90,7 @@ func (t *SimpleIECExample) Setup() (data anvil.ThingData, ok bool) {
 		return data, false
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
-	data.Id.ThingType = "IEC"
+	data.Id.ThingType = "iec"
 	return anvil.CreateIdentity(data)
 }
 
