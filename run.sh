@@ -21,6 +21,9 @@ set -e
 export GOPATH=$(pwd)/vendor
 export GO111MODULE=on
 
+# uncomment to switch on DTLS debug
+#export PION_LOG_TRACE=all
+
 case "$1" in
 anvil)
   # Run the IoT SDK tests
@@ -28,12 +31,15 @@ anvil)
 	;;
 test)
   # Run the IoT unit tests
-  go test -v -p 1 github.com/ForgeRock/iot-edge/...
+  go test -v -p 1 -timeout 5s -coverprofile=coverage.out -failfast github.com/ForgeRock/iot-edge/...
 	;;
 example)
   # Run the example program
   go run github.com/ForgeRock/iot-edge/examples/"$2"
 	;;
+coverage)
+  go tool cover -html=coverage.out
+  ;;
 *)
   echo "unknown script option: $1"
   exit 1

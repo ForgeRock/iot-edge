@@ -123,6 +123,14 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("sendCommandHandler: success")
 }
 
+func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
+	return &dtls.Config{
+		Certificates:         cert,
+		ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+		ClientAuth:           dtls.RequireAnyClientCert,
+	}
+}
+
 // StartCOAPServer starts a COAP server within the IEC
 func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 	if c.coapServer != nil {
@@ -141,12 +149,7 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 	if err != nil {
 		return err
 	}
-	l, err := net.NewDTLSListener("udp", address,
-		&dtls.Config{
-			Certificates:         []tls.Certificate{cert},
-			ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
-		},
-		HeartBeat)
+	l, err := net.NewDTLSListener("udp", address, dtlsServerConfig(cert), HeartBeat)
 	if err != nil {
 		return err
 	}
@@ -171,6 +174,7 @@ func (c *IEC) ShutdownCOAPServer() {
 	c.coapServer.Shutdown()
 	// wait for shutdown to complete
 	<-c.coapChan
+	c.address = nil
 }
 
 // Address returns in string form the address that it is listening on.
