@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	amURL    = flag.String("url", "http://openam.iectest.com:8080/openam", "AM URL")
+	amURL    = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
 	realm    = flag.String("realm", "example", "AM Realm")
 	authTree = flag.String("tree", "iot-user-pwd", "Authentication tree")
 	iecName  = flag.String("name", "simple-iec", "IEC name")
