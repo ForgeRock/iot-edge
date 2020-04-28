@@ -239,9 +239,6 @@ func TestIEC_Address(t *testing.T) {
 
 	}
 
-	// sleep since stopping while it is still starting causes it to hang
-	// ToDo: protect against ShutdownCOAPServer hanging
-	time.Sleep(10 * time.Millisecond)
 	iec.ShutdownCOAPServer()
 	// after the server has started, the address is the empty string
 	if iec.Address() != "" {

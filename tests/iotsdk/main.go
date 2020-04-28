@@ -44,6 +44,7 @@ var tests = []anvil.SDKTest{
 	&AccessTokenWithNoScopes{},
 	&AccessTokenFromCustomClient{},
 	&SimpleThingExample{},
+	&SimpleIECExample{},
 }
 
 // run the full test set for a single client
@@ -72,7 +73,11 @@ func runTests() (err error) {
 	fmt.Println()
 
 	var logfile *os.File
-	am.DebugLogger, logfile = anvil.NewFileDebugger(debugDir, "am-config")
+	iotsdkLogger, logfile := anvil.NewFileDebugger(debugDir, "iotsdk")
+	am.DebugLogger, things.DebugLogger = iotsdkLogger, iotsdkLogger
+	defer func() {
+		_ = logfile.Close()
+	}()
 	// create test realm
 	if err := anvil.CreatePrimaryRealm(testdataDir); err != nil {
 		return err
@@ -80,7 +85,6 @@ func runTests() (err error) {
 	defer func() {
 		//_ = anvil.DeletePrimaryRealm()
 	}()
-	_ = logfile.Close()
 
 	allPass := true
 
@@ -96,7 +100,11 @@ func runTests() (err error) {
 	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
 
 	// run the IEC
-	controller := anvil.TestIEC()
+	am.DebugLogger, things.DebugLogger = iotsdkLogger, iotsdkLogger
+	controller, err := anvil.TestIEC()
+	if err != nil {
+		return err
+	}
 	err = controller.Initialise()
 	if err != nil {
 		return err

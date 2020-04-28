@@ -23,24 +23,55 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"log"
 	"os"
 )
 
 var (
-	amURL = flag.String("url", "http://openam.iectest.com:8080/openam", "AM URL")
-	realm = flag.String("realm", "example", "AM Realm")
+	amURL    = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
+	realm    = flag.String("realm", "example", "AM Realm")
+	authTree = flag.String("tree", "iot-user-pwd", "Authentication tree")
+	iecName  = flag.String("name", "simple-iec", "IEC name")
+	iecPwd   = flag.String("pwd", "password", "IEC password")
+	address  = flag.String("address", "127.0.0.1:5688", "CoAP Address of IEC")
 )
 
+// simpleIEC initialises an IEC with AM.
+//
+// Example setup:
+// Start up the AM test container
+// Create a realm called "example"
+// Create the IoT username-password tree in the "example" realm and call it "iot-user-pwd"
+// Create an identity with
+//	name: simple-iec
+//	password: password
+// Modify the "simple-iec" entry in DS
+//	thingType: IEC
+//	thingKeys: <see examples/resources/eckey1.jwks>
 func simpleIEC() error {
-	controller := things.NewIEC(*amURL, *realm)
-
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	amKey, err := crypto.LoadECPrivateKey("./examples/resources/eckey1.key.pem")
 	if err != nil {
 		return err
 	}
-	err = controller.StartCOAPServer("127.0.0.1:5688", key)
+	controller := things.NewIEC(amKey, *amURL, *realm, *authTree,
+		[]callback.Handler{
+			callback.NameHandler{Name: *iecName},
+			callback.PasswordHandler{Password: *iecPwd},
+		})
+
+	err = controller.Initialise()
+	if err != nil {
+		return err
+	}
+
+	serverKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return err
+	}
+	err = controller.StartCOAPServer(*address, serverKey)
 	if err != nil {
 		return err
 	}
