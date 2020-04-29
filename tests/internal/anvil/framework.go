@@ -23,6 +23,11 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
+	"github.com/dchest/uniuri"
+	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -30,12 +35,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
-	"github.com/ForgeRock/iot-edge/pkg/things"
-
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
-	"github.com/dchest/uniuri"
 )
 
 const (
@@ -141,7 +140,7 @@ func TestIECClient(address string) *things.IECClient {
 
 // TestIEC creates a test IEC
 func TestIEC() (*things.IEC, error) {
-	jwk, signer, err := GenerateConfirmationKey()
+	jwk, signer, err := GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +169,7 @@ type SDKTest interface {
 	Setup() (data ThingData, ok bool)              // setup actions before the test starts
 	Run(client things.Client, data ThingData) bool // function that runs and validates the test
 	Cleanup(data ThingData)                        // cleanup actions after the test has finished
+	NameSuffix() string                            // optional suffix to add to struct name to create the test name
 }
 
 // NopSetupCleanup defines a struct with no-op Setup and Cleanup methods
@@ -183,6 +183,11 @@ func (t NopSetupCleanup) Setup() bool {
 
 // Cleanup is a no op function
 func (t NopSetupCleanup) Cleanup(ThingData) {
+}
+
+// NameSuffix returns the empty string
+func (t NopSetupCleanup) NameSuffix() string {
+	return ""
 }
 
 // Create an identity in AM from the supplied data
@@ -222,6 +227,11 @@ func TypeName(t interface{}) string {
 	return nameSlice[len(nameSlice)-1]
 }
 
+// TestName returns the name of the test
+func TestName(t SDKTest) string {
+	return TypeName(t) + t.NameSuffix()
+}
+
 // NewFileDebugger creates a new Anvil logger that logs to file with the given test name
 func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 	err := os.MkdirAll(directory, 0777)
@@ -238,7 +248,7 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 
 // RunTest runs the given SDKTest
 func RunTest(client things.Client, t SDKTest) (pass bool) {
-	name := TypeName(t)
+	name := TestName(t)
 	ProgressLogger.Printf("%-10s%s\n", runStr, name)
 	start := time.Now()
 	defer func() {

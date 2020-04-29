@@ -19,7 +19,10 @@ package things
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -27,20 +30,39 @@ import (
 	"math/big"
 )
 
-var errMissingSigner = errors.New("missing signer")
+var (
+	errMissingSigner               = errors.New("missing signer")
+	errUnsupportedSigningAlgorithm = errors.New("unsupported algorithm")
+)
 
-// signatureAlgorithm attempts to deduce the signing algorithm by looking at the public key
-func signatureAlgorithm(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
+// signingJWKAlgorithmFromKey attempts to deduce the signing algorithm by looking at the public key
+func signingJWKAlgorithmFromKey(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
 	if s == nil {
-		return alg, errors.New("no signer")
+		return alg, errMissingSigner
 	}
 	switch k := s.Public().(type) {
 	case *ecdsa.PublicKey:
-		if k.Curve.Params().Name == "P-256" {
+		switch k.Curve {
+		case elliptic.P256():
 			return jose.ES256, nil
+		case elliptic.P384():
+			return jose.ES384, nil
+		case elliptic.P521():
+			return jose.ES512, nil
+		}
+	case ed25519.PublicKey:
+		return jose.EdDSA, nil
+	case *rsa.PublicKey:
+		switch k.N.BitLen() / 8 {
+		case 256:
+			return jose.PS256, nil
+		case 384:
+			return jose.PS384, nil
+		case 512:
+			return jose.PS512, nil
 		}
 	}
-	return alg, errors.New("unsupported algorithm")
+	return alg, errUnsupportedSigningAlgorithm
 }
 
 // publicKeyCertificate returns a stripped down tls certificate containing the public key

@@ -20,6 +20,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"gopkg.in/square/go-jose.v2"
 )
 
 func userPwdThing(data anvil.ThingData) *things.Thing {
@@ -40,7 +41,7 @@ type AuthenticateWithUsernameAndPassword struct {
 
 func (t *AuthenticateWithUsernameAndPassword) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false

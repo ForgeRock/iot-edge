@@ -19,17 +19,39 @@ package anvil
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
-
+	"crypto/rsa"
+	"fmt"
 	jose "gopkg.in/square/go-jose.v2"
 )
 
 // GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
-func GenerateConfirmationKey() (public jose.JSONWebKeySet, private crypto.Signer, err error) {
+func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private crypto.Signer, err error) {
 	// create a new key
-	private, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	switch algorithm {
+	case jose.ES256:
+		private, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	case jose.ES384:
+		private, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	case jose.ES512:
+		private, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	case jose.EdDSA:
+		_, private, err = ed25519.GenerateKey(rand.Reader)
+	case jose.PS256:
+		private, err = rsa.GenerateKey(rand.Reader, 2048)
+	case jose.PS384:
+		private, err = rsa.GenerateKey(rand.Reader, 3072)
+	case jose.PS512:
+		private, err = rsa.GenerateKey(rand.Reader, 4096)
+	default:
+		err = fmt.Errorf("unsupported signing algorithm %s", algorithm)
+	}
+	if err != nil {
+		return public, private, err
+	}
 	return jose.JSONWebKeySet{
-		Keys: []jose.JSONWebKey{{KeyID: "pop.cnf", Key: private.Public(), Algorithm: string(jose.ES256), Use: "sig"}},
-	}, private, err
+		Keys: []jose.JSONWebKey{{KeyID: "pop.cnf", Key: private.Public(), Algorithm: string(algorithm), Use: "sig"}},
+	}, private, nil
 }
