@@ -20,6 +20,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"reflect"
 	"sort"
@@ -34,7 +35,7 @@ type AccessTokenWithExactScopes struct {
 
 func (t *AccessTokenWithExactScopes) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -65,7 +66,7 @@ type AccessTokenWithASubsetOfScopes struct {
 
 func (t *AccessTokenWithASubsetOfScopes) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -96,7 +97,7 @@ type AccessTokenWithUnsupportedScopes struct {
 
 func (t *AccessTokenWithUnsupportedScopes) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -122,12 +123,13 @@ func (t *AccessTokenWithUnsupportedScopes) Run(client things.Client, data anvil.
 // AccessTokenWithNoScopes requests an access token for a thing with no scopes. The default scopes configured
 // in AM is expected to be returned.
 type AccessTokenWithNoScopes struct {
+	alg jose.SignatureAlgorithm
 	anvil.NopSetupCleanup
 }
 
 func (t *AccessTokenWithNoScopes) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(t.alg)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -150,6 +152,10 @@ func (t *AccessTokenWithNoScopes) Run(client things.Client, data anvil.ThingData
 	return verifyAccessTokenResponse(response, data.Id.Name, "subscribe")
 }
 
+func (t *AccessTokenWithNoScopes) NameSuffix() string {
+	return string(t.alg)
+}
+
 // AccessTokenFromCustomClient requests an access token for a thing. The OAuth 2.0 client used during the request
 // is specified in the thing identity and contains a different set of scopes to those configured in the default IoT
 // service OAuth 2.0 client.
@@ -159,7 +165,7 @@ type AccessTokenFromCustomClient struct {
 
 func (t *AccessTokenFromCustomClient) Setup() (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false

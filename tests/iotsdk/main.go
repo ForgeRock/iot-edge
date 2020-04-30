@@ -24,6 +24,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
+	"gopkg.in/square/go-jose.v2"
 	"os"
 	"path/filepath"
 )
@@ -41,7 +42,14 @@ var tests = []anvil.SDKTest{
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},
 	&AccessTokenWithUnsupportedScopes{},
-	&AccessTokenWithNoScopes{},
+	&AccessTokenWithNoScopes{alg: jose.ES256},
+	&AccessTokenWithNoScopes{alg: jose.ES384},
+	&AccessTokenWithNoScopes{alg: jose.ES512},
+	// ToDo: add support for the following algorithms
+	//&AccessTokenWithNoScopes{alg: jose.EdDSA},
+	//&AccessTokenWithNoScopes{alg: jose.PS256},
+	//&AccessTokenWithNoScopes{alg: jose.PS384},
+	//&AccessTokenWithNoScopes{alg: jose.PS512},
 	&AccessTokenFromCustomClient{},
 	&SimpleThingExample{},
 	&SimpleIECExample{},
@@ -55,7 +63,7 @@ func runAllTestsForClient(client things.Client) (result bool) {
 	result = true
 	var logfile *os.File
 	for _, test := range tests {
-		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TypeName(test))
+		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TestName(test))
 		am.DebugLogger = things.DebugLogger
 		if !anvil.RunTest(client, test) {
 			result = false
