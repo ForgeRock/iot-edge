@@ -35,8 +35,8 @@ var (
 	errUnsupportedSigningAlgorithm = errors.New("unsupported algorithm")
 )
 
-// signingJWKAlgorithmFromKey attempts to deduce the signing algorithm by looking at the public key
-func signingJWKAlgorithmFromKey(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
+// signingJWAFromKey attempts to deduce the signing algorithm by looking at the public key
+func signingJWAFromKey(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
 	if s == nil {
 		return alg, errMissingSigner
 	}

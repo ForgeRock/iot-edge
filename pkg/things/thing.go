@@ -92,7 +92,7 @@ func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body inte
 	opts.WithHeader("nonce", 0)
 
 	// check that the signer is supported
-	alg, err := signingJWKAlgorithmFromKey(signer)
+	alg, err := signingJWAFromKey(signer)
 	if err != nil {
 		return "", err
 	}

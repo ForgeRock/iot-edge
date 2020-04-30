@@ -56,7 +56,7 @@ func TestSigningJWKAlgorithmFromKey(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			alg, err := signingJWKAlgorithmFromKey(subtest.signer)
+			alg, err := signingJWAFromKey(subtest.signer)
 			if err != subtest.err || alg != subtest.alg {
 				t.Errorf("Expected %s,%s; got %s, %s", subtest.alg, subtest.err, alg, err)
 			}
