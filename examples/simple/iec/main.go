@@ -26,13 +26,14 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"log"
 	"os"
 )
 
 var (
 	amURL    = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
-	realm    = flag.String("realm", "example", "AM Realm")
+	amRealm  = flag.String("realm", "example", "AM Realm")
 	authTree = flag.String("tree", "iot-user-pwd", "Authentication tree")
 	iecName  = flag.String("name", "simple-iec", "IEC name")
 	iecPwd   = flag.String("pwd", "password", "IEC password")
@@ -56,7 +57,7 @@ func simpleIEC() error {
 	if err != nil {
 		return err
 	}
-	controller := things.NewIEC(amKey, *amURL, *realm, *authTree,
+	controller := things.NewIEC(amKey, *amURL, realm.FromString(*amRealm), *authTree,
 		[]callback.Handler{
 			callback.NameHandler{Name: *iecName},
 			callback.PasswordHandler{Password: *iecPwd},

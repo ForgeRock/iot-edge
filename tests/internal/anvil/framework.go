@@ -24,6 +24,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
@@ -49,27 +50,34 @@ const (
 var DebugLogger = log.New(ioutil.Discard, "", 0)
 var ProgressLogger = log.New(os.Stdout, "", 0)
 
-// primaryRealm represents the primary test realm
-var primaryRealm = struct {
-	name string
-	id   string
-}{}
-
-// CreatePrimaryRealm creates the primary realm and loads all the data in the testDataDir
-func CreatePrimaryRealm(testDataDir string) (err error) {
-	primaryRealm.name = RandomName()
-	primaryRealm.id, err = am.CreateRealm(primaryRealm.name)
-	if err != nil {
-		return err
+// CreateTestRealm creates a realm with a random name
+// level indicates how many realms are above it e.g. a realm at level 1 is a child of the root realm
+// For level > 1, the number of necessary parent realms are created
+func CreateTestRealm(level uint) (r realm.Realm, err error) {
+	if level == 0 {
+		return nil, fmt.Errorf("invalid level")
 	}
+	parent := realm.Root()
+	for ; level > 0; level-- {
+		r = realm.SubRealm(parent, RandomName())
+		err = am.CreateRealm(r.ParentPath(), r.Name())
+		if err != nil {
+			return r, err
+		}
+		parent = r
+	}
+	return r, nil
+}
 
+// ConfigureTestRealm configures the realm by loading all the data in the testDataDir
+func ConfigureTestRealm(r realm.Realm, testDataDir string) (err error) {
 	// add tree nodes
 	nodes, err := trees.ReadNodes(filepath.Join(testDataDir, "nodes"))
 	if err != nil {
 		return err
 	}
 	for _, node := range nodes {
-		err = am.CreateTreeNode(PrimaryRealm(), node)
+		err = am.CreateTreeNode(r, node)
 		if err != nil {
 			return err
 		}
@@ -81,30 +89,30 @@ func CreatePrimaryRealm(testDataDir string) (err error) {
 		return err
 	}
 	for _, tree := range loadTrees {
-		err = am.CreateTree(PrimaryRealm(), tree)
+		err = am.CreateTree(r, tree)
 		if err != nil {
 			return err
 		}
 	}
 
 	// add IoT Service
-	err = am.CreateService(PrimaryRealm(), "iot", filepath.Join(testDataDir, "services/iot.json"))
+	err = am.CreateService(r, "iot", filepath.Join(testDataDir, "services/iot.json"))
 	if err != nil {
 		return err
 	}
 	// add OAuth 2.0 Service
-	err = am.CreateService(PrimaryRealm(), "oauth-oidc", filepath.Join(testDataDir, "services/oauth2.json"))
+	err = am.CreateService(r, "oauth-oidc", filepath.Join(testDataDir, "services/oauth2.json"))
 	if err != nil {
 		return err
 	}
 	// update the OAuth 2.0 Client with test specific config
-	err = am.UpdateAgent(PrimaryRealm(), "OAuth2Client/forgerock-iot-oauth2-client",
+	err = am.UpdateAgent(r, "OAuth2Client/forgerock-iot-oauth2-client",
 		filepath.Join(testDataDir, "agents/forgerock-iot-oauth2-client.json"))
 	if err != nil {
 		return err
 	}
 	// create thing OAuth 2.0 Client for thing specific config
-	err = am.CreateAgent(PrimaryRealm(), "OAuth2Client/thing-oauth2-client",
+	err = am.CreateAgent(r, "OAuth2Client/thing-oauth2-client",
 		filepath.Join(testDataDir, "agents/thing-oauth2-client.json"))
 	if err != nil {
 		return err
@@ -114,62 +122,77 @@ func CreatePrimaryRealm(testDataDir string) (err error) {
 }
 
 // DeletePrimaryRealm deletes the primary testing realm
-func DeletePrimaryRealm() (err error) {
-	return am.DeleteRealm(primaryRealm.id)
-}
-
-// PrimaryRealm returns the name of the primary testing realm
-func PrimaryRealm() string {
-	return primaryRealm.name
-}
-
-// TestAMClient creates an AM client that connects with the test AM instance
-func TestAMClient() *things.AMClient {
-	t := things.NewAMClient(am.AMURL, primaryRealm.name)
-	t.Timeout = StdTimeOut
-	return t
-}
-
-// TestIECClient creates an COAP client that connects with the test IEC instance
-func TestIECClient(address string) *things.IECClient {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	c := things.NewIECClient(address, key)
-	c.Timeout = StdTimeOut
-	return c
-}
+//func DeletePrimaryRealm(realm am.Realm) (err error) {
+//	return am.DeleteRealm(realm.Id)
+//}
 
 // TestIEC creates a test IEC
-func TestIEC() (*things.IEC, error) {
+func TestIEC(r realm.Realm) (*things.IEC, error) {
 	jwk, signer, err := GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
 	}
-	data, ok := CreateIdentity(ThingData{
-		Id: am.IdAttributes{
-			Name:      "iec-" + RandomName(),
-			ThingType: "iec",
-			ThingKeys: jwk,
-		},
-	})
-	if !ok {
-		return nil, fmt.Errorf("Pre-provision of IEC %s failed", data.Id.Name)
+	attributes := am.IdAttributes{
+		Name:      "iec-" + RandomName(),
+		Password:  RandomName(),
+		ThingType: "iec",
+		ThingKeys: jwk,
 	}
-	return things.NewDefaultIEC(signer, am.AMURL, PrimaryRealm(), data.Id.Name, data.Id.Password), nil
+	err = am.CreateIdentity(r, attributes)
+	if err != nil {
+		return nil, err
+	}
+	return things.NewDefaultIEC(signer, am.AMURL, r, attributes.Name, attributes.Password), nil
 }
 
 // ThingData holds information about a Thing used in a test
 type ThingData struct {
-	Realm  string
 	Id     am.IdAttributes
 	Signer crypto.Signer
 }
 
+type TestContext struct {
+	clientCreator func() things.Client
+	realm         realm.Realm
+}
+
+func (c TestContext) NewClient() things.Client {
+	return c.clientCreator()
+}
+
+func (c TestContext) Realm() realm.Realm {
+	return c.realm
+}
+
+func AMClientTestContext(r realm.Realm) TestContext {
+	return TestContext{
+		clientCreator: func() things.Client {
+			t := things.NewAMClient(am.AMURL, r)
+			t.Timeout = StdTimeOut
+			return t
+		},
+		realm: r,
+	}
+}
+
+func IECClientTestContext(r realm.Realm, address string) TestContext {
+	return TestContext{
+		clientCreator: func() things.Client {
+			key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			c := things.NewIECClient(address, key)
+			c.Timeout = StdTimeOut
+			return c
+		},
+		realm: r,
+	}
+}
+
 // SDKTest defines the interface required by a SDK API test
 type SDKTest interface {
-	Setup() (data ThingData, ok bool)              // setup actions before the test starts
-	Run(client things.Client, data ThingData) bool // function that runs and validates the test
-	Cleanup(data ThingData)                        // cleanup actions after the test has finished
-	NameSuffix() string                            // optional suffix to add to struct name to create the test name
+	Setup(testCtx TestContext) (data ThingData, ok bool) // setup actions before the test starts
+	Run(testCtx TestContext, data ThingData) bool        // function that runs and validates the test
+	Cleanup(testCtx TestContext, data ThingData)         // cleanup actions after the test has finished
+	NameSuffix() string                                  // optional suffix to add to struct name to create the test name
 }
 
 // NopSetupCleanup defines a struct with no-op Setup and Cleanup methods
@@ -182,7 +205,7 @@ func (t NopSetupCleanup) Setup() bool {
 }
 
 // Cleanup is a no op function
-func (t NopSetupCleanup) Cleanup(ThingData) {
+func (t NopSetupCleanup) Cleanup(TestContext, ThingData) {
 }
 
 // NameSuffix returns the empty string
@@ -192,17 +215,14 @@ func (t NopSetupCleanup) NameSuffix() string {
 
 // Create an identity in AM from the supplied data
 // uses sensible defaults for certain fields if none have been set
-func CreateIdentity(data ThingData) (ThingData, bool) {
+func CreateIdentity(r realm.Realm, data ThingData) (ThingData, bool) {
 	if data.Id.Name == "" {
 		data.Id.Name = RandomName()
 	}
 	if data.Id.Password == "" {
 		data.Id.Password = RandomName()
 	}
-	if data.Realm == "" {
-		data.Realm = PrimaryRealm()
-	}
-	return data, am.CreateIdentity(data.Realm, data.Id) == nil
+	return data, am.CreateIdentity(r, data.Id) == nil
 }
 
 // resultSprint formats the result string output for a test
@@ -238,7 +258,7 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	file, err := os.Create(filepath.Join(directory, testName+".log"))
+	file, err := os.OpenFile(filepath.Join(directory, testName+".log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -247,7 +267,7 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 }
 
 // RunTest runs the given SDKTest
-func RunTest(client things.Client, t SDKTest) (pass bool) {
+func RunTest(testCtx TestContext, t SDKTest) (pass bool) {
 	name := TestName(t)
 	ProgressLogger.Printf("%-10s%s\n", runStr, name)
 	start := time.Now()
@@ -255,12 +275,12 @@ func RunTest(client things.Client, t SDKTest) (pass bool) {
 		ProgressLogger.Print(resultSprint(pass, name, start))
 	}()
 	var data ThingData
-	if data, pass = t.Setup(); !pass {
+	if data, pass = t.Setup(testCtx); !pass {
 		return false
 	}
-	DebugLogger.Println("*** STARTING TEST RUN")
-	pass = t.Run(client, data)
-	DebugLogger.Printf("*** RUN RESULT: %v", pass)
-	t.Cleanup(data)
+	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", testCtx.realm)
+	pass = t.Run(testCtx, data)
+	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
+	t.Cleanup(testCtx, data)
 	return
 }

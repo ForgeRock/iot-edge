@@ -17,7 +17,6 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
@@ -33,7 +32,7 @@ type AccessTokenWithExactScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithExactScopes) Setup() (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithExactScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -41,12 +40,17 @@ func (t *AccessTokenWithExactScopes) Setup() (data anvil.ThingData, ok bool) {
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AccessTokenWithExactScopes) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AccessTokenWithExactScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != nil {
 		return false
 	}
@@ -64,7 +68,7 @@ type AccessTokenWithASubsetOfScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithASubsetOfScopes) Setup() (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithASubsetOfScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -72,12 +76,17 @@ func (t *AccessTokenWithASubsetOfScopes) Setup() (data anvil.ThingData, ok bool)
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AccessTokenWithASubsetOfScopes) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AccessTokenWithASubsetOfScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != nil {
 		return false
 	}
@@ -95,7 +104,7 @@ type AccessTokenWithUnsupportedScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithUnsupportedScopes) Setup() (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithUnsupportedScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -103,12 +112,17 @@ func (t *AccessTokenWithUnsupportedScopes) Setup() (data anvil.ThingData, ok boo
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AccessTokenWithUnsupportedScopes) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AccessTokenWithUnsupportedScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != nil {
 		return false
 	}
@@ -127,7 +141,7 @@ type AccessTokenWithNoScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithNoScopes) Setup() (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithNoScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(t.alg)
 	if err != nil {
@@ -135,12 +149,17 @@ func (t *AccessTokenWithNoScopes) Setup() (data anvil.ThingData, ok bool) {
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AccessTokenWithNoScopes) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AccessTokenWithNoScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != nil {
 		return false
 	}
@@ -163,7 +182,7 @@ type AccessTokenFromCustomClient struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenFromCustomClient) Setup() (data anvil.ThingData, ok bool) {
+func (t *AccessTokenFromCustomClient) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -172,12 +191,17 @@ func (t *AccessTokenFromCustomClient) Setup() (data anvil.ThingData, ok bool) {
 	}
 	data.Id.ThingType = "Device"
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AccessTokenFromCustomClient) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AccessTokenFromCustomClient) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != nil {
 		return false
 	}

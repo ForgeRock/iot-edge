@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/amurl"
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -63,12 +63,11 @@ func parseAMError(response []byte, status int) error {
 }
 
 // NewAMClient returns a new client for connecting directly to AM
-func NewAMClient(baseURL, realm string) *AMClient {
-	r := amurl.RealmFromString(realm)
+func NewAMClient(baseURL string, realm realm.Realm) *AMClient {
 	return &AMClient{
 		ServerInfoURL: fmt.Sprintf("%s/json/serverinfo/*", baseURL),
-		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=", baseURL, r.Query()),
-		IoTURL:        fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, r.Path()),
+		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=", baseURL, realm.Name()),
+		IoTURL:        fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, realm.URLPath()),
 	}
 }
 
