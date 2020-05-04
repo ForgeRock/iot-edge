@@ -117,5 +117,8 @@ func (s subRealm) ParentPath() string {
 }
 
 func (s subRealm) String() string {
+	if s.parent == Root() {
+		return "/" + s.Name()
+	}
 	return s.ParentPath() + "/" + s.Name()
 }

@@ -44,6 +44,9 @@ const (
 	// AM admin's credentials
 	adminUsername = "amadmin"
 	adminPassword = "password"
+	// endpoint versions
+	realmConfigEndpointVersion = "protocol=2.0,resource=1.0"
+	userEndpointVersion        = "resource=3.0, protocol=1.0"
 )
 
 var DebugLogger = log.New(ioutil.Discard, "", 0)
@@ -283,6 +286,57 @@ func getSSOToken() (token string, err error) {
 	return responseBody.TokenID, nil
 }
 
+// RealmData holds realm data retrieved from AM
+// implements the Sort interface so that the data can be sorted from lowest to topmost realm
+type RealmData struct {
+	Result []struct {
+		Id         string `json:"_id"`
+		Name       string `json:"name"`
+		ParentPath string `json:"parentPath"`
+	} `json:"result"`
+}
+
+// numberOfParents returns the number of parents that a realm has
+func (d RealmData) numberOfParents(i int) (num int) {
+	if d.Result[i].Name == "/" {
+		return 0
+	}
+	var r rune
+	for _, r = range d.Result[i].ParentPath {
+		if r == '/' {
+			num += 1
+		}
+	}
+	// differentiate between  "/" = one parent, "/12345abcde" = two parents
+	if r != '/' {
+		num += 1
+	}
+	return num
+}
+
+func (d RealmData) Len() int {
+	return len(d.Result)
+}
+
+func (d RealmData) Less(i, j int) bool {
+	return d.numberOfParents(i) > d.numberOfParents(j)
+}
+
+func (d RealmData) Swap(i, j int) {
+	d.Result[i], d.Result[j] = d.Result[j], d.Result[i]
+}
+
+// GetRealms retrieves all the realms in the AM instance
+func GetRealms() (data RealmData, err error) {
+	url := urlGlobalConfig("realms?_queryFilter=true")
+	b, err := crestRead(url, "protocol=2.0,resource=1.0")
+	if err != nil {
+		return data, err
+	}
+	err = json.Unmarshal(b, &data)
+	return data, err
+}
+
 // CreateRealm creates a realm with the given name
 // Returns the realm Id that is required to modify/delete the realm
 func CreateRealm(parentPath, realmName string) (err error) {
@@ -319,7 +373,7 @@ func CreateIdentity(r realm.Realm, attributes IdAttributes) error {
 	}
 	_, err = crestCreate(
 		urlRealm(r, "users"),
-		"resource=3.0, protocol=1.0",
+		userEndpointVersion,
 		bytes.NewBuffer(payload))
 	return err
 }
@@ -328,29 +382,45 @@ func CreateIdentity(r realm.Realm, attributes IdAttributes) error {
 func DeleteIdentity(r realm.Realm, name string) (err error) {
 	_, err = crestDelete(
 		urlRealm(r, "users", name),
-		"resource=3.0, protocol=1.0")
+		userEndpointVersion)
 	return err
 }
 
-// CreateTreeNode creates an Auth Tree node in AM
+// CreateTreeNode creates an auth tree node in the realm
 func CreateTreeNode(r realm.Realm, node trees.Node) (err error) {
 	_, err = putCreate(
 		urlTreeNodes(r, node.Type, node.Id),
-		"resource=1.0, protocol=2.0",
+		realmConfigEndpointVersion,
 		bytes.NewReader(node.Config))
 	return err
 }
 
-// CreateTree creates an Auth Tree in AM
+// DeleteTreeNode deletes the auth tree node from the realm
+func DeleteTreeNode(r realm.Realm, node trees.Node) (err error) {
+	_, err = crestDelete(
+		urlTreeNodes(r, node.Type, node.Id),
+		realmConfigEndpointVersion)
+	return err
+}
+
+// CreateTree creates an auth tree in the realm
 func CreateTree(r realm.Realm, tree trees.Tree) (err error) {
 	_, err = putCreate(
 		urlTrees(r, tree.Id),
-		"resource=1.0, protocol=2.0",
+		realmConfigEndpointVersion,
 		bytes.NewReader(tree.Config))
 	return err
 }
 
-// CreateService creates a service in AM
+// DeleteTree deletes the auth tree from the realm
+func DeleteTree(r realm.Realm, tree trees.Tree) (err error) {
+	_, err = crestDelete(
+		urlTrees(r, tree.Id),
+		realmConfigEndpointVersion)
+	return err
+}
+
+// CreateService creates a service in the realm
 func CreateService(r realm.Realm, serviceName, payloadPath string) (err error) {
 	b, err := ioutil.ReadFile(payloadPath)
 	if err != nil {
@@ -358,12 +428,20 @@ func CreateService(r realm.Realm, serviceName, payloadPath string) (err error) {
 	}
 	_, err = crestCreate(
 		urlRealmConfig(r, "services/"+serviceName),
-		"protocol=1.0,resource=1.0",
+		realmConfigEndpointVersion,
 		bytes.NewReader(b))
 	return err
 }
 
-// CreateAgent creates an agent (OAuth 2.0 Client, JWT Issuer etc) in AM
+// DeleteService deletes the service from the realm
+func DeleteService(r realm.Realm, serviceName string) (err error) {
+	_, err = crestDelete(
+		urlRealmConfig(r, "services/"+serviceName),
+		realmConfigEndpointVersion)
+	return err
+}
+
+// CreateAgent creates an agent (OAuth 2.0 Client, JWT Issuer etc) in the realm
 func CreateAgent(r realm.Realm, agentName, payloadPath string) (err error) {
 	b, err := ioutil.ReadFile(payloadPath)
 	if err != nil {
@@ -371,8 +449,16 @@ func CreateAgent(r realm.Realm, agentName, payloadPath string) (err error) {
 	}
 	_, err = putCreate(
 		urlRealmConfig(r, "agents/"+agentName),
-		"protocol=2.0,resource=1.0",
+		realmConfigEndpointVersion,
 		bytes.NewReader(b))
+	return err
+}
+
+// DeleteAgent deletes the agent from the realm
+func DeleteAgent(r realm.Realm, agentName string) (err error) {
+	_, err = crestDelete(
+		urlRealmConfig(r, "agents/"+agentName),
+		realmConfigEndpointVersion)
 	return err
 }
 
@@ -384,7 +470,7 @@ func UpdateAgent(r realm.Realm, agentName, payloadPath string) (err error) {
 	}
 	_, err = crestUpdate(
 		urlRealmConfig(r, "agents/"+agentName),
-		"protocol=2.0,resource=1.0",
+		realmConfigEndpointVersion,
 		bytes.NewReader(b))
 	return err
 }

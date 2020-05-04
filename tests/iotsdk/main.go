@@ -65,7 +65,6 @@ func runAllTestsForContext(testCtx anvil.TestContext) (result bool) {
 	var logfile *os.File
 	for _, test := range tests {
 		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TestName(test))
-		am.DebugLogger = things.DebugLogger
 		if !anvil.RunTest(testCtx, test) {
 			result = false
 		}
@@ -74,12 +73,47 @@ func runAllTestsForContext(testCtx anvil.TestContext) (result bool) {
 	return result
 }
 
+func runAllTestsForRealm(r realm.Realm) (result bool, err error) {
+	err = anvil.ConfigureTestRealm(r, testdataDir)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		err = anvil.RestoreTestRealm(r, testdataDir)
+	}()
+
+	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", r)
+
+	fmt.Printf("-- Running AM Client Tests --\n\n")
+	allPass := runAllTestsForContext(anvil.AMClientTestContext(r))
+
+	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
+
+	// run the IEC
+	controller, err := anvil.TestIEC(r)
+	if err != nil {
+		return false, err
+	}
+	err = controller.Initialise()
+	if err != nil {
+		return false, err
+	}
+	controllerKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	err = controller.StartCOAPServer(":0", controllerKey)
+	if err != nil {
+		return false, err
+	}
+	defer controller.ShutdownCOAPServer()
+
+	allPass = runAllTestsForContext(anvil.IECClientTestContext(r, controller.Address())) && allPass
+	return allPass, nil
+}
+
 func runTests() (err error) {
 	fmt.Println()
 	fmt.Println("====================")
 	fmt.Println("-- IoT SDK Tests  --")
 	fmt.Println("====================")
-	fmt.Println()
 
 	var logfile *os.File
 	// delete old debug files by removing the debug directory
@@ -93,64 +127,26 @@ func runTests() (err error) {
 		_ = logfile.Close()
 	}()
 
-	//err = anvil.ConfigureTestRealm(realm.Root(), testdataDir)
-	//if err != nil {
-	//	return err
-	//}
-	// create test realm
+	// create test realms
+	defer func() {
+		err = anvil.DeleteAllSubRealms()
+	}()
 	subRealm, err := anvil.CreateTestRealm(1)
 	if err != nil {
 		return err
 	}
-
-	err = anvil.ConfigureTestRealm(subRealm, testdataDir)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		//_ = anvil.DeletePrimaryRealm()
-	}()
-
 	subSubRealm, err := anvil.CreateTestRealm(2)
 	if err != nil {
 		return err
 	}
-	err = anvil.ConfigureTestRealm(subSubRealm, testdataDir)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		//_ = anvil.DeletePrimaryRealm()
-	}()
+
 	allPass := true
-	for _, realm := range []realm.Realm{realm.Root(), subRealm, subSubRealm} {
-
-		fmt.Printf("-- Running Tests in realm %s --\n\n", realm)
-
-		fmt.Printf("-- Running AM Client Tests --\n\n")
-		allPass = runAllTestsForContext(anvil.AMClientTestContext(realm))
-
-		fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
-
-		// run the IEC
-		am.DebugLogger, things.DebugLogger = iotsdkLogger, iotsdkLogger
-		controller, err := anvil.TestIEC(realm)
+	for _, r := range []realm.Realm{realm.Root(), subRealm, subSubRealm} {
+		pass, err := runAllTestsForRealm(r)
+		allPass = allPass && pass
 		if err != nil {
 			return err
 		}
-		err = controller.Initialise()
-		if err != nil {
-			return err
-		}
-		controllerKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		err = controller.StartCOAPServer(":0", controllerKey)
-		if err != nil {
-			return err
-		}
-
-		allPass = runAllTestsForContext(anvil.IECClientTestContext(realm, controller.Address())) && allPass
-		controller.ShutdownCOAPServer()
-		//break
 	}
 
 	if !allPass {

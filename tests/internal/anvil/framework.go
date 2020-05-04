@@ -34,6 +34,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 )
@@ -121,10 +122,72 @@ func ConfigureTestRealm(r realm.Realm, testDataDir string) (err error) {
 	return nil
 }
 
-// DeletePrimaryRealm deletes the primary testing realm
-//func DeletePrimaryRealm(realm am.Realm) (err error) {
-//	return am.DeleteRealm(realm.Id)
-//}
+// RestoreTestRealm restores the configuration of the realm to a pre-test state
+func RestoreTestRealm(r realm.Realm, testDataDir string) (err error) {
+	// delete the various services
+	for _, service := range []string{"oauth-oidc", "iot"} {
+		err = am.DeleteService(r, service)
+		if err != nil {
+			return err
+		}
+	}
+
+	// delete the OAuth 2.0 agents
+	for _, agent := range []string{"OAuth2Client/forgerock-iot-oauth2-client", "OAuth2Client/thing-oauth2-client", "TrustedJwtIssuer/forgerock-iot-jwt-issuer"} {
+		err = am.DeleteAgent(r, agent)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	// remove the trees
+	loadTrees, err := trees.ReadTrees(filepath.Join(testDataDir, "trees"))
+	if err != nil {
+		return err
+	}
+	for _, tree := range loadTrees {
+		err = am.DeleteTree(r, tree)
+		if err != nil {
+			return err
+		}
+	}
+
+	// delete the tree nodes
+	nodes, err := trees.ReadNodes(filepath.Join(testDataDir, "nodes"))
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
+		err = am.DeleteTreeNode(r, node)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DeleteAllSubRealms deletes all the realms in the AM instance except the root realm
+func DeleteAllSubRealms() (err error) {
+	data, err := am.GetRealms()
+	if err != nil {
+		return err
+	}
+	// sort the realms from lowest to highest
+	sort.Sort(data)
+
+	for _, r := range data.Result {
+		if r.Name == "/" {
+			continue
+		}
+		err = am.DeleteRealm(r.Id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // TestIEC creates a test IEC
 func TestIEC(r realm.Realm) (*things.IEC, error) {
