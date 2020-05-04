@@ -214,19 +214,23 @@ type ThingData struct {
 	Signer crypto.Signer
 }
 
+// TestContext contains client and realm data required to run a test
 type TestContext struct {
 	clientCreator func() things.Client
 	realm         realm.Realm
 }
 
+// NewClient returns a new Client
 func (c TestContext) NewClient() things.Client {
 	return c.clientCreator()
 }
 
+// Realm returns the realm currently being used for testing
 func (c TestContext) Realm() realm.Realm {
 	return c.realm
 }
 
+// AMClientTestContext returns a test context for testing the AM client
 func AMClientTestContext(r realm.Realm) TestContext {
 	return TestContext{
 		clientCreator: func() things.Client {
@@ -238,6 +242,7 @@ func AMClientTestContext(r realm.Realm) TestContext {
 	}
 }
 
+// AMClientTestContext returns a test context for testing the IEC client
 func IECClientTestContext(r realm.Realm, address string) TestContext {
 	return TestContext{
 		clientCreator: func() things.Client {

@@ -23,8 +23,11 @@ import (
 
 // Realm represents a realm in AM
 type Realm interface {
+	// Name of the realm. Can be used in URL queries.
 	Name() string
+	// URLPath returns a portion of a URL path that navigates to the realm e.g. "realms/root/realms/iotexample"
 	URLPath() string
+	// ParentPath returns a string that describes a realm's parents
 	ParentPath() string
 	fmt.Stringer
 }
