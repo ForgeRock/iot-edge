@@ -128,17 +128,18 @@ func runTests() (err error) {
 	}()
 
 	// create test realms
+	realmIds, subRealm, err := anvil.CreateTestRealm(1)
+	if err != nil {
+		return err
+	}
+	ids, subSubRealm, err := anvil.CreateTestRealm(2)
+	if err != nil {
+		return err
+	}
+	realmIds = append(realmIds, ids...)
 	defer func() {
-		err = anvil.DeleteAllSubRealms()
+		err = anvil.DeleteRealms(realmIds)
 	}()
-	subRealm, err := anvil.CreateTestRealm(1)
-	if err != nil {
-		return err
-	}
-	subSubRealm, err := anvil.CreateTestRealm(2)
-	if err != nil {
-		return err
-	}
 
 	allPass := true
 	for _, r := range []realm.Realm{realm.Root(), subRealm, subSubRealm} {
