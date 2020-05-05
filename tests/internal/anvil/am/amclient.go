@@ -286,63 +286,19 @@ func getSSOToken() (token string, err error) {
 	return responseBody.TokenID, nil
 }
 
-// RealmData holds realm data retrieved from AM
-// implements the Sort interface so that the data can be sorted from lowest to topmost realm
-type RealmData struct {
-	Result []struct {
-		Id         string `json:"_id"`
-		Name       string `json:"name"`
-		ParentPath string `json:"parentPath"`
-	} `json:"result"`
-}
-
-// numberOfParents returns the number of parents that a realm has
-func (d RealmData) numberOfParents(i int) (num int) {
-	if d.Result[i].Name == "/" {
-		return 0
-	}
-	var r rune
-	for _, r = range d.Result[i].ParentPath {
-		if r == '/' {
-			num += 1
-		}
-	}
-	// differentiate between  "/" = one parent, "/12345abcde" = two parents
-	if r != '/' {
-		num += 1
-	}
-	return num
-}
-
-func (d RealmData) Len() int {
-	return len(d.Result)
-}
-
-func (d RealmData) Less(i, j int) bool {
-	return d.numberOfParents(i) > d.numberOfParents(j)
-}
-
-func (d RealmData) Swap(i, j int) {
-	d.Result[i], d.Result[j] = d.Result[j], d.Result[i]
-}
-
-// GetRealms retrieves all the realms in the AM instance
-func GetRealms() (data RealmData, err error) {
-	url := urlGlobalConfig("realms?_queryFilter=true")
-	b, err := crestRead(url, "protocol=2.0,resource=1.0")
-	if err != nil {
-		return data, err
-	}
-	err = json.Unmarshal(b, &data)
-	return data, err
-}
-
 // CreateRealm creates a realm with the given name
 // Returns the realm Id that is required to modify/delete the realm
-func CreateRealm(parentPath, realmName string) (err error) {
+func CreateRealm(parentPath, realmName string) (realmId string, err error) {
 	payload := strings.NewReader(fmt.Sprintf("{\"name\": \"%s\", \"active\": true, \"parentPath\": \"%s\", \"aliases\": []}", realmName, parentPath))
-	_, err = crestCreate(urlGlobalConfig("realms"), "resource=1.0, protocol=2.0", payload)
-	return err
+	b, err := crestCreate(urlGlobalConfig("realms"), "resource=1.0, protocol=2.0", payload)
+	if err != nil {
+		return realmId, err
+	}
+	data := struct {
+		Id string `json:"_id"`
+	}{}
+	err = json.Unmarshal(b, &data)
+	return data.Id, err
 }
 
 // DeleteRealm deletes the realm with the given Id

@@ -34,7 +34,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"time"
 )
@@ -54,20 +53,22 @@ var ProgressLogger = log.New(os.Stdout, "", 0)
 // CreateTestRealm creates a realm with a random name
 // level indicates how many realms are above it e.g. a realm at level 1 is a child of the root realm
 // For level > 1, the number of necessary parent realms are created
-func CreateTestRealm(level uint) (r realm.Realm, err error) {
+func CreateTestRealm(level uint) (ids []string, r realm.Realm, err error) {
 	if level == 0 {
-		return nil, fmt.Errorf("invalid level")
+		return ids, nil, fmt.Errorf("invalid level")
 	}
+	ids = make([]string, level)
 	parent := realm.Root()
 	for ; level > 0; level-- {
 		r = realm.SubRealm(parent, RandomName())
-		err = am.CreateRealm(r.ParentPath(), r.Name())
+		// store realm ids in reverse order i.e. child to parent order
+		ids[level-1], err = am.CreateRealm(r.ParentPath(), r.Name())
 		if err != nil {
-			return r, err
+			return ids, r, err
 		}
 		parent = r
 	}
-	return r, nil
+	return ids, r, nil
 }
 
 // ConfigureTestRealm configures the realm by loading all the data in the testDataDir
@@ -168,20 +169,11 @@ func RestoreTestRealm(r realm.Realm, testDataDir string) (err error) {
 	return nil
 }
 
-// DeleteAllSubRealms deletes all the realms in the AM instance except the root realm
-func DeleteAllSubRealms() (err error) {
-	data, err := am.GetRealms()
-	if err != nil {
-		return err
-	}
-	// sort the realms from lowest to highest
-	sort.Sort(data)
-
-	for _, r := range data.Result {
-		if r.Name == "/" {
-			continue
-		}
-		err = am.DeleteRealm(r.Id)
+// DeleteRealms deletes all the realms in the id slice from the AM instance
+// Assumes that the ids are in an order that can be safely deleted e.g. children before parents
+func DeleteRealms(ids []string) (err error) {
+	for _, id := range ids {
+		err = am.DeleteRealm(id)
 		if err != nil {
 			return err
 		}
