@@ -24,6 +24,7 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/go-ocf/go-coap"
 	"net"
 	"time"
@@ -41,21 +42,21 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(signer crypto.Signer, baseURL, realm, authTree string, handlers []callback.Handler) *IEC {
+func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string, handlers []callback.Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
 			Signer:   signer,
 			AuthTree: authTree,
 			Handlers: handlers,
 		},
-		Client:    NewAMClient(baseURL, realm),
+		Client:    NewAMClient(baseURL, r),
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
 
 // NewDefaultIEC creates a new IEC using a default setup
-func NewDefaultIEC(signer crypto.Signer, baseURL, realm, name, password string) *IEC {
-	return NewIEC(signer, baseURL, realm, "Anvil-User-Pwd",
+func NewDefaultIEC(signer crypto.Signer, baseURL string, r realm.Realm, name, password string) *IEC {
+	return NewIEC(signer, baseURL, r, "Anvil-User-Pwd",
 		[]callback.Handler{
 			callback.NameHandler{Name: name},
 			callback.PasswordHandler{Password: password},

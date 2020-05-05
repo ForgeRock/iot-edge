@@ -39,7 +39,7 @@ type AuthenticateWithUsernameAndPassword struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Setup() (data anvil.ThingData, ok bool) {
+func (t *AuthenticateWithUsernameAndPassword) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -47,12 +47,17 @@ func (t *AuthenticateWithUsernameAndPassword) Setup() (data anvil.ThingData, ok 
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AuthenticateWithUsernameAndPassword) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != nil {
 		return false
 	}
@@ -65,14 +70,19 @@ type AuthenticateWithoutConfirmationKey struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithoutConfirmationKey) Setup() (data anvil.ThingData, ok bool) {
+func (t *AuthenticateWithoutConfirmationKey) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(testCtx.Realm(), data)
 }
 
-func (t *AuthenticateWithoutConfirmationKey) Run(client things.Client, data anvil.ThingData) bool {
+func (t *AuthenticateWithoutConfirmationKey) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
 	thing := userPwdThing(data)
-	err := thing.Initialise(client)
+	client := testCtx.NewClient()
+	err := client.Initialise()
+	if err != nil {
+		return false
+	}
+	err = thing.Initialise(client)
 	if err != things.ErrUnauthorised {
 		return false
 	}

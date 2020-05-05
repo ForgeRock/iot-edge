@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
@@ -56,16 +57,15 @@ var tests = []anvil.SDKTest{
 }
 
 // run the full test set for a single client
-func runAllTestsForClient(client things.Client) (result bool) {
+func runAllTestsForContext(testCtx anvil.TestContext) (result bool) {
 	// put the debug for the client in its own subdirectory
-	subDir := filepath.Join(debugDir, anvil.TypeName(client))
+	subDir := filepath.Join(debugDir, anvil.TypeName(testCtx.NewClient()))
 
 	result = true
 	var logfile *os.File
 	for _, test := range tests {
 		things.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TestName(test))
-		am.DebugLogger = things.DebugLogger
-		if !anvil.RunTest(client, test) {
+		if !anvil.RunTest(testCtx, test) {
 			result = false
 		}
 		_ = logfile.Close()
@@ -73,64 +73,81 @@ func runAllTestsForClient(client things.Client) (result bool) {
 	return result
 }
 
+func runAllTestsForRealm(r realm.Realm) (result bool, err error) {
+	err = anvil.ConfigureTestRealm(r, testdataDir)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		err = anvil.RestoreTestRealm(r, testdataDir)
+	}()
+
+	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", r)
+
+	fmt.Printf("-- Running AM Client Tests --\n\n")
+	allPass := runAllTestsForContext(anvil.AMClientTestContext(r))
+
+	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
+
+	// run the IEC
+	controller, err := anvil.TestIEC(r)
+	if err != nil {
+		return false, err
+	}
+	err = controller.Initialise()
+	if err != nil {
+		return false, err
+	}
+	controllerKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	err = controller.StartCOAPServer(":0", controllerKey)
+	if err != nil {
+		return false, err
+	}
+	defer controller.ShutdownCOAPServer()
+
+	allPass = runAllTestsForContext(anvil.IECClientTestContext(r, controller.Address())) && allPass
+	return allPass, nil
+}
+
 func runTests() (err error) {
 	fmt.Println()
 	fmt.Println("====================")
 	fmt.Println("-- IoT SDK Tests  --")
 	fmt.Println("====================")
-	fmt.Println()
 
 	var logfile *os.File
+	// delete old debug files by removing the debug directory
+	err = os.RemoveAll(debugDir)
+	if err != nil {
+		return err
+	}
 	iotsdkLogger, logfile := anvil.NewFileDebugger(debugDir, "iotsdk")
 	am.DebugLogger, things.DebugLogger = iotsdkLogger, iotsdkLogger
 	defer func() {
 		_ = logfile.Close()
 	}()
-	// create test realm
-	if err := anvil.CreatePrimaryRealm(testdataDir); err != nil {
+
+	// create test realms
+	defer func() {
+		err = anvil.DeleteAllSubRealms()
+	}()
+	subRealm, err := anvil.CreateTestRealm(1)
+	if err != nil {
 		return err
 	}
-	defer func() {
-		//_ = anvil.DeletePrimaryRealm()
-	}()
+	subSubRealm, err := anvil.CreateTestRealm(2)
+	if err != nil {
+		return err
+	}
 
 	allPass := true
-
-	fmt.Printf("-- Running AM Client Tests --\n\n")
-	// create AM Client
-	amClient := anvil.TestAMClient()
-	err = amClient.Initialise()
-	if err != nil {
-		return err
+	for _, r := range []realm.Realm{realm.Root(), subRealm, subSubRealm} {
+		pass, err := runAllTestsForRealm(r)
+		allPass = allPass && pass
+		if err != nil {
+			return err
+		}
 	}
-	allPass = runAllTestsForClient(amClient)
-
-	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
-
-	// run the IEC
-	am.DebugLogger, things.DebugLogger = iotsdkLogger, iotsdkLogger
-	controller, err := anvil.TestIEC()
-	if err != nil {
-		return err
-	}
-	err = controller.Initialise()
-	if err != nil {
-		return err
-	}
-	controllerKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	err = controller.StartCOAPServer(":0", controllerKey)
-	if err != nil {
-		return err
-	}
-	defer controller.ShutdownCOAPServer()
-
-	// create IEC Client
-	iecClient := anvil.TestIECClient(controller.Address())
-	err = iecClient.Initialise()
-	if err != nil {
-		return err
-	}
-	allPass = runAllTestsForClient(iecClient) && allPass
 
 	if !allPass {
 		return fmt.Errorf("test FAILURE")
@@ -140,8 +157,7 @@ func runTests() (err error) {
 
 func main() {
 	if err := runTests(); err != nil {
-		anvil.DebugLogger.Println("Test failure: ", err)
-		anvil.ProgressLogger.Fatal("\nFAIL")
+		anvil.ProgressLogger.Fatalf("\nFAIL %s", err)
 	}
 	anvil.ProgressLogger.Println("\nPASS")
 	os.Exit(0)

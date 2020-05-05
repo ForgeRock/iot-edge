@@ -25,13 +25,14 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"log"
 	"os"
 )
 
 var (
 	amURL      = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
-	realm      = flag.String("realm", "example", "AM Realm")
+	amRealm    = flag.String("realm", "example", "AM Realm")
 	authTree   = flag.String("tree", "iot-user-pwd", "Authentication tree")
 	thingName  = flag.String("name", "simple-thing", "Thing name")
 	thingPwd   = flag.String("pwd", "password", "Thing password")
@@ -61,7 +62,7 @@ func simpleThing() error {
 
 	var client things.Client
 	if *server == "am" {
-		client = things.NewAMClient(*amURL, *realm)
+		client = things.NewAMClient(*amURL, realm.FromString(*amRealm))
 	} else if *server == "iec" {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {

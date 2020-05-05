@@ -21,16 +21,17 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
+	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-const (
+var (
 	testCookieName          = "iPlanetDirectoryPro"
-	testRealm               = "testRealm"
+	testRealm               = realm.SubRealm(realm.Root(), "testRealm")
 	testTree                = "testTree"
-	testHTTPCommandEndpoint = "/json/realms/root/realms/" + testRealm + "/iot"
+	testHTTPCommandEndpoint = "/json/" + testRealm.URLPath() + "/iot"
 )
 
 func testServerInfo() []byte {
@@ -93,7 +94,7 @@ func testAuthHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	mux = testServerInfoHTTPMux(http.StatusOK, testServerInfo())
 	mux.HandleFunc("/json/authenticate", func(writer http.ResponseWriter, request *http.Request) {
 		// check that the query is correct
-		if realm, ok := request.URL.Query()["realm"]; !ok || len(realm) != 1 || realm[0] != testRealm {
+		if realm, ok := request.URL.Query()["realm"]; !ok || len(realm) != 1 || realm[0] != testRealm.Name() {
 			http.Error(writer, "incorrect realm query", http.StatusBadRequest)
 		}
 		if tree, ok := request.URL.Query()["authIndexValue"]; !ok || len(tree) != 1 || tree[0] != testTree {
