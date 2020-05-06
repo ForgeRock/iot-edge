@@ -65,7 +65,7 @@ func (m *mockClient) SendCommand(tokenID string, jws string) (reply []byte, err 
 
 func testIEC(client *mockClient) *IEC {
 	return &IEC{
-		Client:    client,
+		Thing:     Thing{client: client},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 

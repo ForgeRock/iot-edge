@@ -53,33 +53,48 @@ type Client interface {
 }
 
 // Thing represents an AM Thing identity
-// Restrictions: Signer uses ECDSA with a P-256 curve. Sign returns the signature ans1 encoded.
+// Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
 type Thing struct {
-	Signer   crypto.Signer // see restrictions
-	AuthTree string
-	Handlers []callback.Handler
+	client          Client
+	confirmationKey crypto.Signer // see restrictions
+	authTree        string
+	handlers        []callback.Handler
+}
+
+// NewThing creates a new Thing
+func NewThing(client Client, confirmationKey crypto.Signer, authTree string, handlers []callback.Handler) *Thing {
+	return &Thing{
+		client:          client,
+		confirmationKey: confirmationKey,
+		authTree:        authTree,
+		handlers:        handlers,
+	}
 }
 
 // authenticate the Thing
-func (t Thing) authenticate(client Client) (tokenID string, err error) {
-	payload := payload.Authenticate{}
+func (t *Thing) authenticate() (tokenID string, err error) {
+	auth := payload.Authenticate{}
 	for {
-		if payload, err = client.Authenticate(t.AuthTree, payload); err != nil {
+		if auth, err = t.client.Authenticate(t.authTree, auth); err != nil {
 			return tokenID, err
 		}
 
-		if payload.HasSessionToken() {
-			return payload.TokenId, nil
+		if auth.HasSessionToken() {
+			return auth.TokenId, nil
 		}
-		if err = callback.ProcessCallbacks(payload.Callbacks, t.Handlers); err != nil {
+		if err = callback.ProcessCallbacks(auth.Callbacks, t.handlers); err != nil {
 			return tokenID, err
 		}
 	}
 }
 
 // Initialise the Thing
-func (t Thing) Initialise(client Client) (err error) {
-	_, err = t.authenticate(client)
+func (t *Thing) Initialise() (err error) {
+	err = t.client.Initialise()
+	if err != nil {
+		return err
+	}
+	_, err = t.authenticate()
 	return err
 }
 
@@ -114,20 +129,20 @@ func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body inte
 // RequestAccessToken requests an OAuth 2.0 access token for a thing. The provided scopes will be included in the token
 // if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
 // will include the default scopes configured in the OAuth 2.0 Client.
-func (t Thing) RequestAccessToken(client Client, scopes ...string) (response payload.AccessTokenResponse, err error) {
-	tokenID, err := t.authenticate(client)
+func (t *Thing) RequestAccessToken(scopes ...string) (response payload.AccessTokenResponse, err error) {
+	tokenID, err := t.authenticate()
 	if err != nil {
 		return
 	}
-	iotInfo, err := client.IoTEndpointInfo()
+	iotInfo, err := t.client.IoTEndpointInfo()
 	if err != nil {
 		return
 	}
-	requestBody, err := signedJWTBody(t.Signer, iotInfo.URL, iotInfo.Version, tokenID, payload.NewGetAccessTokenV1(scopes))
+	requestBody, err := signedJWTBody(t.confirmationKey, iotInfo.URL, iotInfo.Version, tokenID, payload.NewGetAccessTokenV1(scopes))
 	if err != nil {
 		return
 	}
-	reply, err := client.SendCommand(tokenID, requestBody)
+	reply, err := t.client.SendCommand(tokenID, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}

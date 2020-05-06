@@ -33,7 +33,6 @@ import (
 // IEC represents an Identity Edge Controller
 type IEC struct {
 	Thing     Thing
-	Client    Client
 	authCache *tokencache.Cache
 	// coap server
 	coapServer *coap.Server
@@ -45,11 +44,11 @@ type IEC struct {
 func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string, handlers []callback.Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
-			Signer:   signer,
-			AuthTree: authTree,
-			Handlers: handlers,
+			confirmationKey: signer,
+			authTree:        authTree,
+			handlers:        handlers,
+			client:          NewAMClient(baseURL, r),
 		},
-		Client:    NewAMClient(baseURL, r),
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
@@ -65,10 +64,7 @@ func NewDefaultIEC(signer crypto.Signer, baseURL string, r realm.Realm, name, pa
 
 // Initialise the IEC
 func (c *IEC) Initialise() error {
-	if err := c.Client.Initialise(); err != nil {
-		return err
-	}
-	return c.Thing.Initialise(c.Client)
+	return c.Thing.Initialise()
 }
 
 // Authenticate with the AM authTree using the given payload
@@ -78,7 +74,7 @@ func (c *IEC) Authenticate(authTree string, auth payload.Authenticate) (reply pa
 	}
 	auth.AuthIDKey = ""
 
-	reply, err = c.Client.Authenticate(authTree, auth)
+	reply, err = c.Thing.client.Authenticate(authTree, auth)
 	if err != nil {
 		return
 	}

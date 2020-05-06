@@ -23,15 +23,15 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
-func userPwdThing(data anvil.ThingData) *things.Thing {
-	return &things.Thing{
-		AuthTree: "Anvil-User-Pwd",
-		Signer:   data.Signer,
-		Handlers: []callback.Handler{
+func userPwdThing(testCtx anvil.TestContext, data anvil.ThingData) *things.Thing {
+	return things.NewThing(
+		testCtx.NewClient(),
+		data.Signer,
+		"Anvil-User-Pwd",
+		[]callback.Handler{
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: data.Id.Password},
-		},
-	}
+		})
 }
 
 // AuthenticateWithUsernameAndPassword tests the authentication of a pre-registered device
@@ -51,13 +51,8 @@ func (t *AuthenticateWithUsernameAndPassword) Setup(testCtx anvil.TestContext) (
 }
 
 func (t *AuthenticateWithUsernameAndPassword) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
-	if err != nil {
-		return false
-	}
-	err = thing.Initialise(client)
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != nil {
 		return false
 	}
@@ -76,13 +71,8 @@ func (t *AuthenticateWithoutConfirmationKey) Setup(testCtx anvil.TestContext) (d
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
-	if err != nil {
-		return false
-	}
-	err = thing.Initialise(client)
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != things.ErrUnauthorised {
 		return false
 	}

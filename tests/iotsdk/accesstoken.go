@@ -44,17 +44,12 @@ func (t *AccessTokenWithExactScopes) Setup(testCtx anvil.TestContext) (data anvi
 }
 
 func (t *AccessTokenWithExactScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != nil {
 		return false
 	}
-	err = thing.Initialise(client)
-	if err != nil {
-		return false
-	}
-	response, err := thing.RequestAccessToken(client, "publish", "subscribe")
+	response, err := thing.RequestAccessToken("publish", "subscribe")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
@@ -80,17 +75,12 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(testCtx anvil.TestContext) (data 
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != nil {
 		return false
 	}
-	err = thing.Initialise(client)
-	if err != nil {
-		return false
-	}
-	response, err := thing.RequestAccessToken(client, "publish")
+	response, err := thing.RequestAccessToken("publish")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
@@ -116,17 +106,12 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(testCtx anvil.TestContext) (dat
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != nil {
 		return false
 	}
-	err = thing.Initialise(client)
-	if err != nil {
-		return false
-	}
-	_, err = thing.RequestAccessToken(client, "publish", "subscribe", "delete")
+	_, err = thing.RequestAccessToken("publish", "subscribe", "delete")
 	if err != nil && strings.Contains(err.Error(), "Unknown/invalid scope(s)") {
 		return true
 	}
@@ -153,17 +138,12 @@ func (t *AccessTokenWithNoScopes) Setup(testCtx anvil.TestContext) (data anvil.T
 }
 
 func (t *AccessTokenWithNoScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != nil {
 		return false
 	}
-	err = thing.Initialise(client)
-	if err != nil {
-		return false
-	}
-	response, err := thing.RequestAccessToken(client)
+	response, err := thing.RequestAccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
@@ -195,17 +175,12 @@ func (t *AccessTokenFromCustomClient) Setup(testCtx anvil.TestContext) (data anv
 }
 
 func (t *AccessTokenFromCustomClient) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(data)
-	client := testCtx.NewClient()
-	err := client.Initialise()
+	thing := userPwdThing(testCtx, data)
+	err := thing.Initialise()
 	if err != nil {
 		return false
 	}
-	err = thing.Initialise(client)
-	if err != nil {
-		return false
-	}
-	response, err := thing.RequestAccessToken(client, "create", "modify", "delete")
+	response, err := thing.RequestAccessToken("create", "modify", "delete")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
