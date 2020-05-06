@@ -85,7 +85,7 @@ func runAllTestsForRealm(r realm.Realm) (result bool, err error) {
 	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", r)
 
 	fmt.Printf("-- Running AM Client Tests --\n\n")
-	allPass := runAllTestsForContext(anvil.AMClientTestContext(r))
+	result = runAllTestsForContext(anvil.AMClientTestContext(r))
 
 	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
 
@@ -105,8 +105,8 @@ func runAllTestsForRealm(r realm.Realm) (result bool, err error) {
 	}
 	defer controller.ShutdownCOAPServer()
 
-	allPass = runAllTestsForContext(anvil.IECClientTestContext(r, controller.Address())) && allPass
-	return allPass, nil
+	result = runAllTestsForContext(anvil.IECClientTestContext(r, controller.Address())) && result
+	return result, nil
 }
 
 func runTests() (err error) {
@@ -138,7 +138,10 @@ func runTests() (err error) {
 	}
 	realmIds = append(realmIds, ids...)
 	defer func() {
-		err = anvil.DeleteRealms(realmIds)
+		deferError := anvil.DeleteRealms(realmIds)
+		if deferError != nil {
+			err = deferError
+		}
 	}()
 
 	allPass := true

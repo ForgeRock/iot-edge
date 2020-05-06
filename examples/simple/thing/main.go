@@ -54,7 +54,6 @@ var (
 //	thingType: Device
 //	thingKeys: <see examples/resources/eckey1.jwks>
 func simpleThing() error {
-	fmt.Printf("Initialising client... ")
 
 	// choose which client to use:
 	// * AMCLient communicates directly with AM
@@ -72,11 +71,6 @@ func simpleThing() error {
 	} else {
 		log.Fatal("server not supported")
 	}
-	err := client.Initialise()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Done\n")
 
 	key, err := crypto.LoadECPrivateKey("./examples/resources/eckey1.key.pem")
 	if err != nil {
@@ -84,22 +78,22 @@ func simpleThing() error {
 	}
 
 	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.Thing{
-		Signer:   key,
-		AuthTree: *authTree,
-		Handlers: []callback.Handler{
+	thing := things.NewThing(
+		client,
+		key,
+		*authTree,
+		[]callback.Handler{
 			callback.NameHandler{Name: *thingName},
 			callback.PasswordHandler{Password: *thingPwd},
-		},
-	}
-	err = thing.Initialise(client)
+		})
+	err = thing.Initialise()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Done\n")
 
 	fmt.Printf("Requesting access token... ")
-	tokenResponse, err := thing.RequestAccessToken(client, "publish")
+	tokenResponse, err := thing.RequestAccessToken("publish")
 	if err != nil {
 		return err
 	}
