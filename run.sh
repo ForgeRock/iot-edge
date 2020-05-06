@@ -40,6 +40,13 @@ example)
 coverage)
   go tool cover -html=coverage.out
   ;;
+doc)
+  # Download latest godoc to get module support, godoc is no longer packaged with go.
+  go get -u golang.org/x/tools/cmd/godoc
+  echo
+  echo "Go to: http://localhost:6060/pkg/github.com/ForgeRock/iot-edge/"
+  "$GOPATH"/bin/godoc
+  ;;
 *)
   echo "unknown script option: $1"
   exit 1
