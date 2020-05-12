@@ -25,7 +25,6 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
@@ -43,6 +42,7 @@ const (
 // AMClient contains information for connecting directly to AM
 type AMClient struct {
 	http.Client
+	AuthTree      string
 	ServerInfoURL string
 	AuthURL       string
 	IoTURL        string
@@ -67,8 +67,9 @@ func parseAMError(response []byte, status int) error {
 // NewAMClient returns a new client for connecting directly to AM
 func NewAMClient(baseURL string, realm realm.Realm, authTree string) *AMClient {
 	return &AMClient{
+		AuthTree:      authTree,
 		ServerInfoURL: fmt.Sprintf("%s/json/serverinfo/*", baseURL),
-		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&%s=%s", baseURL, realm.Name(), authTreeQueryKey, authTree),
+		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service", baseURL, realm.Name()),
 		IoTURL:        fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, realm.URLPath()),
 	}
 }
@@ -95,6 +96,12 @@ func (c *AMClient) Authenticate(payload payload.Authenticate) (reply payload.Aut
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return reply, err
 	}
+
+	// add auth tree to query
+	q := request.URL.Query()
+	q.Set(authTreeQueryKey, c.AuthTree)
+	request.URL.RawQuery = q.Encode()
+
 	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
 	request.Header.Add(contentType, applicationJson)
 	response, err := c.Do(request)
@@ -190,17 +197,4 @@ func (c *AMClient) SendCommand(tokenID string, jws string) ([]byte, error) {
 		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
-}
-
-// SetAuthTree sets the authentication tree used by the client to authenticate
-func (c *AMClient) SetAuthTree(authTree string) error {
-	u, err := url.Parse(c.AuthURL)
-	if err != nil {
-		return err
-	}
-	q := u.Query()
-	q.Set(authTreeQueryKey, authTree)
-	u.RawQuery = q.Encode()
-	c.AuthURL = u.String()
-	return nil
 }

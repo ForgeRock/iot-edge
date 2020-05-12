@@ -241,7 +241,9 @@ type iecTestState struct {
 
 func (i *iecTestState) InitClients(authTree string) things.Client {
 	// set thing auth tree on the test IEC
-	_ = i.iec.ThingClient.(*things.AMClient).SetAuthTree(authTree)
+	amClient := i.iec.ThingClient.(*things.AMClient)
+	amClient.AuthTree = authTree
+
 	// create a new IEC client
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	c := things.NewIECClient(i.iec.Address(), key)

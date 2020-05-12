@@ -24,7 +24,6 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 )
 
@@ -253,38 +252,6 @@ func Test_parseAMError(t *testing.T) {
 			err := parseAMError(subtest.response, subtest.code)
 			if err.Error() != subtest.expected {
 				t.Errorf("expected %s, got %s", subtest.expected, err.Error())
-			}
-		})
-	}
-}
-
-func TestSetAuthTree(t *testing.T) {
-	tests := []struct {
-		name    string
-		success bool
-		client  *AMClient
-		newTree string
-	}{
-		{name: "success", success: true, client: NewAMClient("www.example.com", realm.Root(), "oak"), newTree: "ash"},
-		{name: "invalid-auth-url", success: false, client: &AMClient{AuthURL: "%gh&%ij"}, newTree: "ash"},
-	}
-	for _, subtest := range tests {
-		t.Run(subtest.name, func(t *testing.T) {
-			err := subtest.client.SetAuthTree(subtest.newTree)
-			if !subtest.success && err == nil {
-				t.Errorf("expected error")
-			} else if subtest.success {
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				u, err := url.Parse(subtest.client.AuthURL)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if got := u.Query().Get(authTreeQueryKey); got != subtest.newTree {
-					t.Errorf("Expected %s; got %s", subtest.newTree, got)
-				}
 			}
 		})
 	}
