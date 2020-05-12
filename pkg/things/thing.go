@@ -43,7 +43,7 @@ type Client interface {
 	Initialise() error
 
 	// Authenticate sends an Authenticate request to the ForgeRock platform
-	Authenticate(authTree string, payload payload.Authenticate) (reply payload.Authenticate, err error)
+	Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error)
 
 	// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
 	IoTEndpointInfo() (info payload.IoTEndpoint, err error)
@@ -57,16 +57,14 @@ type Client interface {
 type Thing struct {
 	client          Client
 	confirmationKey crypto.Signer // see restrictions
-	authTree        string
 	handlers        []callback.Handler
 }
 
 // NewThing creates a new Thing
-func NewThing(client Client, confirmationKey crypto.Signer, authTree string, handlers []callback.Handler) *Thing {
+func NewThing(client Client, confirmationKey crypto.Signer, handlers []callback.Handler) *Thing {
 	return &Thing{
 		client:          client,
 		confirmationKey: confirmationKey,
-		authTree:        authTree,
 		handlers:        handlers,
 	}
 }
@@ -75,7 +73,7 @@ func NewThing(client Client, confirmationKey crypto.Signer, authTree string, han
 func (t *Thing) authenticate() (tokenID string, err error) {
 	auth := payload.Authenticate{}
 	for {
-		if auth, err = t.client.Authenticate(t.authTree, auth); err != nil {
+		if auth, err = t.client.Authenticate(auth); err != nil {
 			return tokenID, err
 		}
 

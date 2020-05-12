@@ -25,6 +25,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -36,6 +37,7 @@ const (
 	contentType               = "Content-Type"
 	applicationJson           = "application/json"
 	applicationJose           = "application/jose"
+	authTreeQueryKey          = "authIndexValue"
 )
 
 // AMClient contains information for connecting directly to AM
@@ -63,10 +65,10 @@ func parseAMError(response []byte, status int) error {
 }
 
 // NewAMClient returns a new client for connecting directly to AM
-func NewAMClient(baseURL string, realm realm.Realm) *AMClient {
+func NewAMClient(baseURL string, realm realm.Realm, authTree string) *AMClient {
 	return &AMClient{
 		ServerInfoURL: fmt.Sprintf("%s/json/serverinfo/*", baseURL),
-		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=", baseURL, realm.Name()),
+		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&%s=%s", baseURL, realm.Name(), authTreeQueryKey, authTree),
 		IoTURL:        fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, realm.URLPath()),
 	}
 }
@@ -83,12 +85,12 @@ func (c *AMClient) Initialise() error {
 
 // Authenticate with the AM authTree using the given payload
 // This is a single round trip
-func (c *AMClient) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
-	requestBody, err := json.Marshal(auth)
+func (c *AMClient) Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error) {
+	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
 	}
-	request, err := http.NewRequest(http.MethodPost, c.AuthURL+authTree, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest(http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return reply, err
@@ -188,4 +190,17 @@ func (c *AMClient) SendCommand(tokenID string, jws string) ([]byte, error) {
 		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
+}
+
+// SetAuthTree sets the authentication tree used by the client to authenticate
+func (c *AMClient) SetAuthTree(authTree string) error {
+	u, err := url.Parse(c.AuthURL)
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	q.Set(authTreeQueryKey, authTree)
+	u.RawQuery = q.Encode()
+	c.AuthURL = u.String()
+	return nil
 }

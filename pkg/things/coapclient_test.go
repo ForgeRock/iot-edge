@@ -40,13 +40,6 @@ func testGenerateSigner() crypto.Signer {
 func testAuthCoAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/authenticate", func(w coap.ResponseWriter, r *coap.Request) {
-		// check that the query is set to auth tree
-		query := r.Msg.Query()
-		if len(query) != 1 || query[0] != testTree {
-			w.SetCode(codes.BadRequest)
-			w.Write([]byte("Missing or incorrect auth tree"))
-			return
-		}
 		w.SetCode(code)
 		w.Write(response)
 		return
@@ -179,7 +172,7 @@ func testIECClientAuthenticate(client *IECClient, server *testCoAPServer) (err e
 	if err != nil {
 		return err
 	}
-	_, err = client.Authenticate("testTree", payload.Authenticate{})
+	_, err = client.Authenticate(payload.Authenticate{})
 	return err
 }
 

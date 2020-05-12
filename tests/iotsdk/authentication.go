@@ -23,15 +23,11 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
-func userPwdThing(testCtx anvil.TestContext, data anvil.ThingData) *things.Thing {
-	return things.NewThing(
-		testCtx.NewClient(),
-		data.Signer,
-		"Anvil-User-Pwd",
-		[]callback.Handler{
-			callback.NameHandler{Name: data.Id.Name},
-			callback.PasswordHandler{Password: data.Id.Password},
-		})
+func userPwdThing(state anvil.TestState, data anvil.ThingData) *things.Thing {
+	return things.NewThing(state.InitClients("Anvil-User-Pwd"), data.Signer, []callback.Handler{
+		callback.NameHandler{Name: data.Id.Name},
+		callback.PasswordHandler{Password: data.Id.Password},
+	})
 }
 
 // AuthenticateWithUsernameAndPassword tests the authentication of a pre-registered device
@@ -39,7 +35,7 @@ type AuthenticateWithUsernameAndPassword struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AuthenticateWithUsernameAndPassword) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -47,11 +43,11 @@ func (t *AuthenticateWithUsernameAndPassword) Setup(testCtx anvil.TestContext) (
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AuthenticateWithUsernameAndPassword) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -65,13 +61,13 @@ type AuthenticateWithoutConfirmationKey struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithoutConfirmationKey) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AuthenticateWithoutConfirmationKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AuthenticateWithoutConfirmationKey) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != things.ErrUnauthorised {
 		return false

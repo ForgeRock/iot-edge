@@ -32,7 +32,7 @@ type AccessTokenWithExactScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithExactScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -40,11 +40,11 @@ func (t *AccessTokenWithExactScopes) Setup(testCtx anvil.TestContext) (data anvi
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AccessTokenWithExactScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -63,7 +63,7 @@ type AccessTokenWithASubsetOfScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithASubsetOfScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -71,11 +71,11 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(testCtx anvil.TestContext) (data 
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AccessTokenWithASubsetOfScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -94,7 +94,7 @@ type AccessTokenWithUnsupportedScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithUnsupportedScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -102,11 +102,11 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(testCtx anvil.TestContext) (dat
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AccessTokenWithUnsupportedScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -126,7 +126,7 @@ type AccessTokenWithNoScopes struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenWithNoScopes) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(t.alg)
 	if err != nil {
@@ -134,11 +134,11 @@ func (t *AccessTokenWithNoScopes) Setup(testCtx anvil.TestContext) (data anvil.T
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AccessTokenWithNoScopes) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -162,7 +162,7 @@ type AccessTokenFromCustomClient struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AccessTokenFromCustomClient) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
@@ -171,11 +171,11 @@ func (t *AccessTokenFromCustomClient) Setup(testCtx anvil.TestContext) (data anv
 	}
 	data.Id.ThingType = "Device"
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AccessTokenFromCustomClient) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	thing := userPwdThing(testCtx, data)
+func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := userPwdThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false

@@ -32,8 +32,9 @@ import (
 
 // IEC represents an Identity Edge Controller
 type IEC struct {
-	Thing     Thing
-	authCache *tokencache.Cache
+	self        Thing
+	ThingClient Client
+	authCache   *tokencache.Cache
 	// coap server
 	coapServer *coap.Server
 	coapChan   chan error
@@ -41,40 +42,39 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string, handlers []callback.Handler) *IEC {
+func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, selfAuthTree string, handlers []callback.Handler, thingAuthTree string) *IEC {
 	return &IEC{
-		Thing: Thing{
+		self: Thing{
 			confirmationKey: signer,
-			authTree:        authTree,
 			handlers:        handlers,
-			client:          NewAMClient(baseURL, r),
+			client:          NewAMClient(baseURL, r, selfAuthTree),
 		},
-		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
+		ThingClient: NewAMClient(baseURL, r, thingAuthTree),
+		authCache:   tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
 
 // NewDefaultIEC creates a new IEC using a default setup
 func NewDefaultIEC(signer crypto.Signer, baseURL string, r realm.Realm, name, password string) *IEC {
-	return NewIEC(signer, baseURL, r, "Anvil-User-Pwd",
-		[]callback.Handler{
-			callback.NameHandler{Name: name},
-			callback.PasswordHandler{Password: password},
-		})
+	return NewIEC(signer, baseURL, r, "Anvil-User-Pwd", []callback.Handler{
+		callback.NameHandler{Name: name},
+		callback.PasswordHandler{Password: password},
+	}, "Anvil-User-Pwd")
 }
 
 // Initialise the IEC
 func (c *IEC) Initialise() error {
-	return c.Thing.Initialise()
+	return c.self.Initialise()
 }
 
-// Authenticate with the AM authTree using the given payload
-func (c *IEC) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+// Authenticate a Thing with AM using the given payload
+func (c *IEC) Authenticate(auth payload.Authenticate) (reply payload.Authenticate, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
 	auth.AuthIDKey = ""
 
-	reply, err = c.Thing.client.Authenticate(authTree, auth)
+	reply, err = c.ThingClient.Authenticate(auth)
 	if err != nil {
 		return
 	}

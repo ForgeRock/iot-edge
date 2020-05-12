@@ -24,6 +24,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -55,7 +56,7 @@ func testAMClientInitialise(mux *http.ServeMux) (err error) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	c := NewAMClient(server.URL, testRealm)
+	c := NewAMClient(server.URL, testRealm, testTree)
 	err = c.Initialise()
 	if err != nil {
 		return err
@@ -117,13 +118,13 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	c := NewAMClient(server.URL, testRealm)
+	c := NewAMClient(server.URL, testRealm, testTree)
 	err = c.Initialise()
 	if err != nil {
 		return err
 	}
 
-	reply, err := c.Authenticate(testTree, payload.Authenticate{})
+	reply, err := c.Authenticate(payload.Authenticate{})
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func TestAMClient_Authenticate(t *testing.T) {
 
 func TestAMClient_IoTEndpointInfo(t *testing.T) {
 	url := "http://same-path.org"
-	info, err := NewAMClient(url, testRealm).IoTEndpointInfo()
+	info, err := NewAMClient(url, testRealm, testTree).IoTEndpointInfo()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +197,7 @@ func testAMClientSendCommand(mux *http.ServeMux) (err error) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	c := NewAMClient(server.URL, testRealm)
+	c := NewAMClient(server.URL, testRealm, testTree)
 	err = c.Initialise()
 	if err != nil {
 		return err
@@ -255,5 +256,36 @@ func Test_parseAMError(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestSetAuthTree(t *testing.T) {
+	tests := []struct {
+		name    string
+		success bool
+		client  *AMClient
+		newTree string
+	}{
+		{name: "success", success: true, client: NewAMClient("www.example.com", realm.Root(), "oak"), newTree: "ash"},
+		{name: "invalid-auth-url", success: false, client: &AMClient{AuthURL: "%gh&%ij"}, newTree: "ash"},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			err := subtest.client.SetAuthTree(subtest.newTree)
+			if !subtest.success && err == nil {
+				t.Errorf("expected error")
+			} else if subtest.success {
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				u, err := url.Parse(subtest.client.AuthURL)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got := u.Query().Get(authTreeQueryKey); got != subtest.newTree {
+					t.Errorf("Expected %s; got %s", subtest.newTree, got)
+				}
+			}
+		})
+	}
 }

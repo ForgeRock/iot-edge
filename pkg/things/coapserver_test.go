@@ -102,7 +102,7 @@ func testCOAPServerAuthenticate(m *mockClient) (err error) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = client.Authenticate(testTree, payload.Authenticate{})
+	_, err = client.Authenticate(payload.Authenticate{})
 	return err
 }
 
@@ -113,7 +113,7 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(string, payload.Authenticate) (authenticate payload.Authenticate, err error) {
+		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(payload.Authenticate) (authenticate payload.Authenticate, err error) {
 			return payload.Authenticate{}, errors.New("AM auth error")
 		}}},
 	}
