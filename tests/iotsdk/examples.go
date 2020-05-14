@@ -49,7 +49,7 @@ type SimpleThingExample struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *SimpleThingExample) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var verifier jose.JSONWebKey
 	err := verifier.UnmarshalJSON([]byte(thingJWK))
 	if err != nil {
@@ -58,13 +58,13 @@ func (t *SimpleThingExample) Setup(testCtx anvil.TestContext) (data anvil.ThingD
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *SimpleThingExample) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
+func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
 	var server string
 	var iecAddress string
-	switch c := testCtx.NewClient().(type) {
+	switch c := state.InitClients("Anvil-User-Pwd").(type) {
 	case *things.AMClient:
 		server = "am"
 	case *things.IECClient:
@@ -73,7 +73,7 @@ func (t *SimpleThingExample) Run(testCtx anvil.TestContext, data anvil.ThingData
 	}
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/simple/thing",
 		"-url", am.AMURL,
-		"-realm", fmt.Sprintf("%s", testCtx.Realm()),
+		"-realm", fmt.Sprintf("%s", state.Realm()),
 		"-tree", "Anvil-User-Pwd",
 		"-name", data.Id.Name,
 		"-pwd", data.Id.Password,
@@ -109,7 +109,7 @@ type SimpleIECExample struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *SimpleIECExample) Setup(testCtx anvil.TestContext) (data anvil.ThingData, ok bool) {
+func (t *SimpleIECExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var verifier jose.JSONWebKey
 	err := verifier.UnmarshalJSON([]byte(thingJWK))
 	if err != nil {
@@ -118,11 +118,11 @@ func (t *SimpleIECExample) Setup(testCtx anvil.TestContext) (data anvil.ThingDat
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
 	data.Id.ThingType = "iec"
-	return anvil.CreateIdentity(testCtx.Realm(), data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *SimpleIECExample) Run(testCtx anvil.TestContext, data anvil.ThingData) bool {
-	switch testCtx.NewClient().(type) {
+func (t *SimpleIECExample) Run(state anvil.TestState, data anvil.ThingData) bool {
+	switch state.InitClients("Anvil-User-Pwd").(type) {
 	case *things.IECClient:
 		// as this example involves an IEC there is no benefit of running it again during the IEC test set
 		return true
@@ -130,7 +130,7 @@ func (t *SimpleIECExample) Run(testCtx anvil.TestContext, data anvil.ThingData) 
 
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/simple/iec",
 		"-url", am.AMURL,
-		"-realm", fmt.Sprintf("%s", testCtx.Realm()),
+		"-realm", fmt.Sprintf("%s", state.Realm()),
 		"-tree", "Anvil-User-Pwd",
 		"-name", data.Id.Name,
 		"-pwd", data.Id.Password,

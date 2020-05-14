@@ -24,6 +24,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
@@ -197,7 +198,10 @@ func TestIEC(r realm.Realm) (*things.IEC, error) {
 	if err != nil {
 		return nil, err
 	}
-	return things.NewDefaultIEC(signer, am.AMURL, r, attributes.Name, attributes.Password), nil
+	return things.NewIEC(signer, am.AMURL, r, "Anvil-User-Pwd", []callback.Handler{
+		callback.NameHandler{Name: attributes.Name},
+		callback.PasswordHandler{Password: attributes.Password},
+	}), nil
 }
 
 // ThingData holds information about a Thing used in a test
@@ -206,53 +210,69 @@ type ThingData struct {
 	Signer crypto.Signer
 }
 
-// TestContext contains client and realm data required to run a test
-type TestContext struct {
-	clientCreator func() things.Client
-	realm         realm.Realm
+// TestState contains client and realm data required to run a test
+type TestState interface {
+	// Realm returns the current test realm
+	Realm() realm.Realm
+	// InitClients initialises the test clients (multiple clients in the case of IEC tests)
+	// and returns a new client to be used for testing
+	InitClients(thingAuthTree string) things.Client
 }
 
-// NewClient returns a new Client
-func (c TestContext) NewClient() things.Client {
-	return c.clientCreator()
+type amTestState struct {
+	r realm.Realm
 }
 
-// Realm returns the realm currently being used for testing
-func (c TestContext) Realm() realm.Realm {
-	return c.realm
+func (a *amTestState) InitClients(authTree string) things.Client {
+	t := things.NewAMClient(am.AMURL, a.r, authTree)
+	t.Timeout = StdTimeOut
+	return t
 }
 
-// AMClientTestContext returns a test context for testing the AM client
-func AMClientTestContext(r realm.Realm) TestContext {
-	return TestContext{
-		clientCreator: func() things.Client {
-			t := things.NewAMClient(am.AMURL, r)
-			t.Timeout = StdTimeOut
-			return t
-		},
-		realm: r,
-	}
+func (a *amTestState) Realm() realm.Realm {
+	return a.r
 }
 
-// AMClientTestContext returns a test context for testing the IEC client
-func IECClientTestContext(r realm.Realm, address string) TestContext {
-	return TestContext{
-		clientCreator: func() things.Client {
-			key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			c := things.NewIECClient(address, key)
-			c.Timeout = StdTimeOut
-			return c
-		},
-		realm: r,
+// AMClientTestContext returns a test state for testing the AM client
+func AMClientTestState(r realm.Realm) TestState {
+	return &amTestState{r: r}
+}
+
+type iecTestState struct {
+	iec *things.IEC
+	r   realm.Realm
+}
+
+func (i *iecTestState) InitClients(authTree string) things.Client {
+	// set thing auth tree on the test IEC
+	amClient := i.iec.Thing.Client.(*things.AMClient)
+	amClient.AuthTree = authTree
+
+	// create a new IEC client
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	c := things.NewIECClient(i.iec.Address(), key)
+	c.Timeout = StdTimeOut
+	return c
+}
+
+func (i *iecTestState) Realm() realm.Realm {
+	return i.r
+}
+
+// IECClientTestState returns a test state for testing the IEC client
+func IECClientTestState(r realm.Realm, iec *things.IEC) TestState {
+	return &iecTestState{
+		iec: iec,
+		r:   r,
 	}
 }
 
 // SDKTest defines the interface required by a SDK API test
 type SDKTest interface {
-	Setup(testCtx TestContext) (data ThingData, ok bool) // setup actions before the test starts
-	Run(testCtx TestContext, data ThingData) bool        // function that runs and validates the test
-	Cleanup(testCtx TestContext, data ThingData)         // cleanup actions after the test has finished
-	NameSuffix() string                                  // optional suffix to add to struct name to create the test name
+	Setup(state TestState) (data ThingData, ok bool) // setup actions before the test starts
+	Run(state TestState, data ThingData) bool        // function that runs and validates the test
+	Cleanup(state TestState, data ThingData)         // cleanup actions after the test has finished
+	NameSuffix() string                              // optional suffix to add to struct name to create the test name
 }
 
 // NopSetupCleanup defines a struct with no-op Setup and Cleanup methods
@@ -265,7 +285,7 @@ func (t NopSetupCleanup) Setup() bool {
 }
 
 // Cleanup is a no op function
-func (t NopSetupCleanup) Cleanup(TestContext, ThingData) {
+func (t NopSetupCleanup) Cleanup(TestState, ThingData) {
 }
 
 // NameSuffix returns the empty string
@@ -327,7 +347,7 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 }
 
 // RunTest runs the given SDKTest
-func RunTest(testCtx TestContext, t SDKTest) (pass bool) {
+func RunTest(state TestState, t SDKTest) (pass bool) {
 	name := TestName(t)
 	ProgressLogger.Printf("%-10s%s\n", runStr, name)
 	start := time.Now()
@@ -335,12 +355,12 @@ func RunTest(testCtx TestContext, t SDKTest) (pass bool) {
 		ProgressLogger.Print(resultSprint(pass, name, start))
 	}()
 	var data ThingData
-	if data, pass = t.Setup(testCtx); !pass {
+	if data, pass = t.Setup(state); !pass {
 		return false
 	}
-	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", testCtx.realm)
-	pass = t.Run(testCtx, data)
+	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", state.Realm())
+	pass = t.Run(state, data)
 	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
-	t.Cleanup(testCtx, data)
+	t.Cleanup(state, data)
 	return
 }

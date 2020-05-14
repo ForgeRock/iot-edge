@@ -43,7 +43,7 @@ type Client interface {
 	Initialise() error
 
 	// Authenticate sends an Authenticate request to the ForgeRock platform
-	Authenticate(authTree string, payload payload.Authenticate) (reply payload.Authenticate, err error)
+	Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error)
 
 	// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
 	IoTEndpointInfo() (info payload.IoTEndpoint, err error)
@@ -55,18 +55,16 @@ type Client interface {
 // Thing represents an AM Thing identity
 // Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
 type Thing struct {
-	client          Client
+	Client          Client
 	confirmationKey crypto.Signer // see restrictions
-	authTree        string
 	handlers        []callback.Handler
 }
 
 // NewThing creates a new Thing
-func NewThing(client Client, confirmationKey crypto.Signer, authTree string, handlers []callback.Handler) *Thing {
+func NewThing(client Client, confirmationKey crypto.Signer, handlers []callback.Handler) *Thing {
 	return &Thing{
-		client:          client,
+		Client:          client,
 		confirmationKey: confirmationKey,
-		authTree:        authTree,
 		handlers:        handlers,
 	}
 }
@@ -75,7 +73,7 @@ func NewThing(client Client, confirmationKey crypto.Signer, authTree string, han
 func (t *Thing) authenticate() (tokenID string, err error) {
 	auth := payload.Authenticate{}
 	for {
-		if auth, err = t.client.Authenticate(t.authTree, auth); err != nil {
+		if auth, err = t.Client.Authenticate(auth); err != nil {
 			return tokenID, err
 		}
 
@@ -90,7 +88,7 @@ func (t *Thing) authenticate() (tokenID string, err error) {
 
 // Initialise the Thing
 func (t *Thing) Initialise() (err error) {
-	err = t.client.Initialise()
+	err = t.Client.Initialise()
 	if err != nil {
 		return err
 	}
@@ -134,7 +132,7 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response payload.AccessTok
 	if err != nil {
 		return
 	}
-	iotInfo, err := t.client.IoTEndpointInfo()
+	iotInfo, err := t.Client.IoTEndpointInfo()
 	if err != nil {
 		return
 	}
@@ -142,7 +140,7 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response payload.AccessTok
 	if err != nil {
 		return
 	}
-	reply, err := t.client.SendCommand(tokenID, requestBody)
+	reply, err := t.Client.SendCommand(tokenID, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}

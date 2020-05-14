@@ -45,21 +45,11 @@ func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string
 	return &IEC{
 		Thing: Thing{
 			confirmationKey: signer,
-			authTree:        authTree,
 			handlers:        handlers,
-			client:          NewAMClient(baseURL, r),
+			Client:          NewAMClient(baseURL, r, authTree),
 		},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
-}
-
-// NewDefaultIEC creates a new IEC using a default setup
-func NewDefaultIEC(signer crypto.Signer, baseURL string, r realm.Realm, name, password string) *IEC {
-	return NewIEC(signer, baseURL, r, "Anvil-User-Pwd",
-		[]callback.Handler{
-			callback.NameHandler{Name: name},
-			callback.PasswordHandler{Password: password},
-		})
 }
 
 // Initialise the IEC
@@ -67,14 +57,14 @@ func (c *IEC) Initialise() error {
 	return c.Thing.Initialise()
 }
 
-// Authenticate with the AM authTree using the given payload
-func (c *IEC) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+// Authenticate a Thing with AM using the given payload
+func (c *IEC) Authenticate(auth payload.Authenticate) (reply payload.Authenticate, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
 	auth.AuthIDKey = ""
 
-	reply, err = c.Thing.client.Authenticate(authTree, auth)
+	reply, err = c.Thing.Client.Authenticate(auth)
 	if err != nil {
 		return
 	}

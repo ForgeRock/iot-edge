@@ -119,13 +119,13 @@ func (c *IECClient) Initialise() (err error) {
 }
 
 // Authenticate with the AM authTree using the given payload
-func (c *IECClient) Authenticate(authTree string, auth payload.Authenticate) (reply payload.Authenticate, err error) {
+func (c *IECClient) Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return reply, err
 	}
 
-	requestBody, err := json.Marshal(auth)
+	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
 	}
@@ -134,7 +134,6 @@ func (c *IECClient) Authenticate(authTree string, auth payload.Authenticate) (re
 	if err != nil {
 		return reply, err
 	}
-	msg.SetQueryString(authTree)
 
 	ctx, cancel := c.context()
 	defer cancel()

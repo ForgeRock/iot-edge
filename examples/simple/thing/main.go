@@ -61,7 +61,7 @@ func simpleThing() error {
 
 	var client things.Client
 	if *server == "am" {
-		client = things.NewAMClient(*amURL, realm.FromString(*amRealm))
+		client = things.NewAMClient(*amURL, realm.FromString(*amRealm), *authTree)
 	} else if *server == "iec" {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
@@ -78,14 +78,10 @@ func simpleThing() error {
 	}
 
 	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.NewThing(
-		client,
-		key,
-		*authTree,
-		[]callback.Handler{
-			callback.NameHandler{Name: *thingName},
-			callback.PasswordHandler{Password: *thingPwd},
-		})
+	thing := things.NewThing(client, key, []callback.Handler{
+		callback.NameHandler{Name: *thingName},
+		callback.PasswordHandler{Password: *thingPwd},
+	})
 	err = thing.Initialise()
 	if err != nil {
 		return err

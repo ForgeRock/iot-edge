@@ -70,7 +70,7 @@ func testAMClientInitialise(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := NewAMClient(server.URL, testRealm)
+	c := NewAMClient(server.URL, testRealm, testTree)
 	testSetRootCAs(c, server)
 
 	err = c.Initialise()
@@ -134,7 +134,7 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := NewAMClient(server.URL, testRealm)
+	c := NewAMClient(server.URL, testRealm, testTree)
 	testSetRootCAs(c, server)
 
 	err = c.Initialise()
@@ -142,7 +142,7 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 		return err
 	}
 
-	reply, err := c.Authenticate(testTree, payload.Authenticate{})
+	reply, err := c.Authenticate(payload.Authenticate{})
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func TestAMClient_Authenticate(t *testing.T) {
 
 func TestAMClient_IoTEndpointInfo(t *testing.T) {
 	url := "http://same-path.org"
-	info, err := NewAMClient(url, testRealm).IoTEndpointInfo()
+	info, err := NewAMClient(url, testRealm, testTree).IoTEndpointInfo()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +215,7 @@ func testAMClientSendCommand(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := NewAMClient(server.URL, testRealm)
+	c := NewAMClient(server.URL, testRealm, testTree)
 	testSetRootCAs(c, server)
 
 	err = c.Initialise()
@@ -276,5 +276,4 @@ func Test_parseAMError(t *testing.T) {
 			}
 		})
 	}
-
 }

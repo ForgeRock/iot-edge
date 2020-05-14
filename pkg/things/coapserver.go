@@ -42,14 +42,6 @@ var HeartBeat time.Duration = time.Millisecond * 100
 // authenticateHandler handles authentication requests
 func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler")
-	// check that the query is set to auth tree
-	query := r.Msg.Query()
-	if len(query) != 1 {
-		DebugLogger.Println("Missing or incorrect auth tree")
-		w.SetCode(codes.BadRequest)
-		w.Write([]byte("Missing or incorrect auth tree"))
-		return
-	}
 	var auth payload.Authenticate
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
 		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
@@ -58,7 +50,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 		return
 	}
 
-	reply, err := c.Authenticate(query[0], auth)
+	reply, err := c.Authenticate(auth)
 	if err != nil {
 		DebugLogger.Printf("Error connecting to AM; %s", err)
 		w.SetCode(codes.Unauthorized)
@@ -81,7 +73,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 // iotEndpointInfoHandler handles IoT Endpoint Info requests
 func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("iotEndpointInfoHandler")
-	info, err := c.Thing.client.IoTEndpointInfo()
+	info, err := c.Thing.Client.IoTEndpointInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(""))
@@ -112,7 +104,7 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 		return
 	}
 
-	b, err := c.Thing.client.SendCommand(claims.CSRF, payload)
+	b, err := c.Thing.Client.SendCommand(claims.CSRF, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))

@@ -27,7 +27,7 @@ import (
 
 // mockClient mocks a thing.mockClient
 type mockClient struct {
-	AuthenticateFunc    func(string, payload.Authenticate) (payload.Authenticate, error)
+	AuthenticateFunc    func(payload.Authenticate) (payload.Authenticate, error)
 	iotEndpointInfoFunc func() (payload.IoTEndpoint, error)
 	iotEndpointInfo     payload.IoTEndpoint
 	sendCommandFunc     func(string, string) ([]byte, error)
@@ -41,9 +41,9 @@ func (m *mockClient) Initialise() error {
 	return nil
 }
 
-func (m *mockClient) Authenticate(authTree string, payload payload.Authenticate) (reply payload.Authenticate, err error) {
+func (m *mockClient) Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error) {
 	if m.AuthenticateFunc != nil {
-		return m.AuthenticateFunc(authTree, payload)
+		return m.AuthenticateFunc(payload)
 	}
 	reply.TokenId = uniuri.New()
 	return reply, nil
@@ -65,7 +65,7 @@ func (m *mockClient) SendCommand(tokenID string, jws string) (reply []byte, err 
 
 func testIEC(client *mockClient) *IEC {
 	return &IEC{
-		Thing:     Thing{client: client},
+		Thing:     Thing{Client: client},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 
@@ -75,7 +75,7 @@ func testIEC(client *mockClient) *IEC {
 func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ string, payload payload.Authenticate) (reply payload.Authenticate, err error) {
+		AuthenticateFunc: func(payload payload.Authenticate) (reply payload.Authenticate, err error) {
 			if payload.AuthIDKey != "" {
 				return reply, fmt.Errorf("don't send auth id digest")
 			}
@@ -84,11 +84,11 @@ func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 
 		}}
 	controller := testIEC(mockClient)
-	reply, err := controller.Authenticate("tree", payload.Authenticate{})
+	reply, err := controller.Authenticate(payload.Authenticate{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = controller.Authenticate("tree", reply)
+	_, err = controller.Authenticate(reply)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,13 +98,13 @@ func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ string, _ payload.Authenticate) (reply payload.Authenticate, _ error) {
+		AuthenticateFunc: func(_ payload.Authenticate) (reply payload.Authenticate, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
 		}}
 	controller := testIEC(mockClient)
-	reply, _ := controller.Authenticate("tree", payload.Authenticate{})
+	reply, _ := controller.Authenticate(payload.Authenticate{})
 	if reply.AuthId != "" {
 		t.Fatal("AuthId has been returned")
 	}
@@ -114,13 +114,13 @@ func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 func TestIEC_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ string, _ payload.Authenticate) (reply payload.Authenticate, _ error) {
+		AuthenticateFunc: func(_ payload.Authenticate) (reply payload.Authenticate, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
 		}}
 	controller := testIEC(mockClient)
-	reply, _ := controller.Authenticate("tree", payload.Authenticate{})
+	reply, _ := controller.Authenticate(payload.Authenticate{})
 	id, ok := controller.authCache.Get(reply.AuthIDKey)
 	if !ok {
 		t.Fatal("The authId has not been stored")
