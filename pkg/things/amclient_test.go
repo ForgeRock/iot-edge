@@ -17,6 +17,7 @@
 package things
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,11 +52,27 @@ func testServerInfoHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	return mux
 }
 
+// testSetRootCAs sets the root certificate authorities on the AM client as the same as the test server client
+// Function is careful not to change any existing transport configuration except the root CAs
+func testSetRootCAs(client *AMClient, server *httptest.Server) {
+	transport, ok := client.Transport.(*http.Transport)
+	if !ok {
+		transport = &http.Transport{}
+	}
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	transport.TLSClientConfig.RootCAs = server.Client().Transport.(*http.Transport).TLSClientConfig.RootCAs
+	client.Transport = transport
+}
+
 func testAMClientInitialise(mux *http.ServeMux) (err error) {
-	server := httptest.NewServer(mux)
+	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
 	c := NewAMClient(server.URL, testRealm, testTree)
+	testSetRootCAs(c, server)
+
 	err = c.Initialise()
 	if err != nil {
 		return err
@@ -114,10 +131,12 @@ func testAuthHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 }
 
 func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
-	server := httptest.NewServer(mux)
+	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
 	c := NewAMClient(server.URL, testRealm, testTree)
+	testSetRootCAs(c, server)
+
 	err = c.Initialise()
 	if err != nil {
 		return err
@@ -193,10 +212,12 @@ func testSendCommandHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 }
 
 func testAMClientSendCommand(mux *http.ServeMux) (err error) {
-	server := httptest.NewServer(mux)
+	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
 	c := NewAMClient(server.URL, testRealm, testTree)
+	testSetRootCAs(c, server)
+
 	err = c.Initialise()
 	if err != nil {
 		return err
