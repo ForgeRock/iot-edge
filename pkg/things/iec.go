@@ -32,9 +32,8 @@ import (
 
 // IEC represents an Identity Edge Controller
 type IEC struct {
-	self        Thing
-	ThingClient Client
-	authCache   *tokencache.Cache
+	Thing     Thing
+	authCache *tokencache.Cache
 	// coap server
 	coapServer *coap.Server
 	coapChan   chan error
@@ -42,15 +41,14 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, selfAuthTree string, handlers []callback.Handler, thingAuthTree string) *IEC {
+func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string, handlers []callback.Handler) *IEC {
 	return &IEC{
-		self: Thing{
+		Thing: Thing{
 			confirmationKey: signer,
 			handlers:        handlers,
-			client:          NewAMClient(baseURL, r, selfAuthTree),
+			Client:          NewAMClient(baseURL, r, authTree),
 		},
-		ThingClient: NewAMClient(baseURL, r, thingAuthTree),
-		authCache:   tokencache.New(5*time.Minute, 10*time.Minute),
+		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 }
 
@@ -59,12 +57,12 @@ func NewDefaultIEC(signer crypto.Signer, baseURL string, r realm.Realm, name, pa
 	return NewIEC(signer, baseURL, r, "Anvil-User-Pwd", []callback.Handler{
 		callback.NameHandler{Name: name},
 		callback.PasswordHandler{Password: password},
-	}, "Anvil-User-Pwd")
+	})
 }
 
 // Initialise the IEC
 func (c *IEC) Initialise() error {
-	return c.self.Initialise()
+	return c.Thing.Initialise()
 }
 
 // Authenticate a Thing with AM using the given payload
@@ -74,7 +72,7 @@ func (c *IEC) Authenticate(auth payload.Authenticate) (reply payload.Authenticat
 	}
 	auth.AuthIDKey = ""
 
-	reply, err = c.ThingClient.Authenticate(auth)
+	reply, err = c.Thing.Client.Authenticate(auth)
 	if err != nil {
 		return
 	}

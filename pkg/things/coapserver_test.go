@@ -202,7 +202,7 @@ func TestCOAPServer_SendCommand(t *testing.T) {
 	}{
 		{name: "success", successful: true, client: &mockClient{}, jws: ".eyJjc3JmIjoiMTIzNDUifQ."},
 		{name: "not-a-valid-jwt", client: &mockClient{}, jws: "eyJjc3JmIjoiMTIzNDUifQ"},
-		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", client: &mockClient{sendCommandFunc: func(string, string) (bytes []byte, err error) {
+		{name: "am-Client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", client: &mockClient{sendCommandFunc: func(string, string) (bytes []byte, err error) {
 			return nil, errors.New("AM send command error")
 		}}},
 	}

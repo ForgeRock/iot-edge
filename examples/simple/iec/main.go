@@ -60,7 +60,7 @@ func simpleIEC() error {
 	controller := things.NewIEC(amKey, *amURL, realm.FromString(*amRealm), *authTree, []callback.Handler{
 		callback.NameHandler{Name: *iecName},
 		callback.PasswordHandler{Password: *iecPwd},
-	}, *authTree)
+	})
 
 	err = controller.Initialise()
 	if err != nil {

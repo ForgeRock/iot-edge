@@ -73,7 +73,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 // iotEndpointInfoHandler handles IoT Endpoint Info requests
 func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("iotEndpointInfoHandler")
-	info, err := c.self.client.IoTEndpointInfo()
+	info, err := c.Thing.Client.IoTEndpointInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(""))
@@ -104,7 +104,7 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 		return
 	}
 
-	b, err := c.self.client.SendCommand(claims.CSRF, payload)
+	b, err := c.Thing.Client.SendCommand(claims.CSRF, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))

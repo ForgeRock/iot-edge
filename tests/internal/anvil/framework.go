@@ -24,6 +24,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
@@ -197,7 +198,10 @@ func TestIEC(r realm.Realm) (*things.IEC, error) {
 	if err != nil {
 		return nil, err
 	}
-	return things.NewDefaultIEC(signer, am.AMURL, r, attributes.Name, attributes.Password), nil
+	return things.NewIEC(signer, am.AMURL, r, "Anvil-User-Pwd", []callback.Handler{
+		callback.NameHandler{Name: attributes.Name},
+		callback.PasswordHandler{Password: attributes.Password},
+	}), nil
 }
 
 // ThingData holds information about a Thing used in a test
@@ -241,7 +245,7 @@ type iecTestState struct {
 
 func (i *iecTestState) InitClients(authTree string) things.Client {
 	// set thing auth tree on the test IEC
-	amClient := i.iec.ThingClient.(*things.AMClient)
+	amClient := i.iec.Thing.Client.(*things.AMClient)
 	amClient.AuthTree = authTree
 
 	// create a new IEC client
