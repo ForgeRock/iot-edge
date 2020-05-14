@@ -52,14 +52,6 @@ func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string
 	}
 }
 
-// NewDefaultIEC creates a new IEC using a default setup
-func NewDefaultIEC(signer crypto.Signer, baseURL string, r realm.Realm, name, password string) *IEC {
-	return NewIEC(signer, baseURL, r, "Anvil-User-Pwd", []callback.Handler{
-		callback.NameHandler{Name: name},
-		callback.PasswordHandler{Password: password},
-	})
-}
-
 // Initialise the IEC
 func (c *IEC) Initialise() error {
 	return c.Thing.Initialise()
