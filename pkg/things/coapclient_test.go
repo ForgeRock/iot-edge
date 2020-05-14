@@ -115,7 +115,7 @@ func TestIECClient_Initialise(t *testing.T) {
 		server     *testCoAPServer
 	}{
 		{name: "success", successful: true, client: &IECClient{Key: testGenerateSigner()}, server: &testCoAPServer{config: dtlsServerConfig(cert), mux: coap.DefaultServeMux}},
-		{name: "Client-no-signer", client: &IECClient{Key: nil}, server: nil},
+		{name: "client-no-signer", client: &IECClient{Key: nil}, server: nil},
 		// starting a DTLS server without a certificate or PSK is an error.
 		{name: "server-wrong-tls-signer", client: &IECClient{Key: testGenerateSigner()}, server: &testCoAPServer{config: dtlsServerConfig(testWrongTLSSigner()), mux: coap.DefaultServeMux}},
 	}
