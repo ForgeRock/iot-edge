@@ -43,7 +43,7 @@ func (t *AuthenticateWithUsernameAndPassword) Setup(state anvil.TestState) (data
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AuthenticateWithUsernameAndPassword) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -63,7 +63,7 @@ type AuthenticateWithoutConfirmationKey struct {
 
 func (t *AuthenticateWithoutConfirmationKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anvil.ThingData) bool {

@@ -25,7 +25,6 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"log"
 	"os"
 )
@@ -61,7 +60,7 @@ func simpleThing() error {
 
 	var client things.Client
 	if *server == "am" {
-		client = things.NewAMClient(*amURL, realm.FromString(*amRealm), *authTree)
+		client = things.NewAMClient(*amURL, *amRealm, *authTree)
 	} else if *server == "iec" {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {

@@ -24,7 +24,6 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/go-ocf/go-coap"
 	"net"
 	"time"
@@ -41,12 +40,12 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(signer crypto.Signer, baseURL string, r realm.Realm, authTree string, handlers []callback.Handler) *IEC {
+func NewIEC(signer crypto.Signer, baseURL string, realm string, authTree string, handlers []callback.Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
 			confirmationKey: signer,
 			handlers:        handlers,
-			Client:          NewAMClient(baseURL, r, authTree),
+			Client:          NewAMClient(baseURL, realm, authTree),
 		},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}

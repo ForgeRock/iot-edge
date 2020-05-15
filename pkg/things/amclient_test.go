@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,9 +29,9 @@ import (
 
 var (
 	testCookieName          = "iPlanetDirectoryPro"
-	testRealm               = realm.SubRealm(realm.Root(), "testRealm")
+	testRealm               = "/testRealm"
 	testTree                = "testTree"
-	testHTTPCommandEndpoint = "/json/" + testRealm.URLPath() + "/iot"
+	testHTTPCommandEndpoint = "/json/iot"
 )
 
 func testServerInfo() []byte {
@@ -111,7 +110,7 @@ func testAuthHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	mux = testServerInfoHTTPMux(http.StatusOK, testServerInfo())
 	mux.HandleFunc("/json/authenticate", func(writer http.ResponseWriter, request *http.Request) {
 		// check that the query is correct
-		if realm, ok := request.URL.Query()["realm"]; !ok || len(realm) != 1 || realm[0] != testRealm.Name() {
+		if realm, ok := request.URL.Query()["realm"]; !ok || len(realm) != 1 || realm[0] != testRealm {
 			http.Error(writer, "incorrect realm query", http.StatusBadRequest)
 		}
 		if tree, ok := request.URL.Query()["authIndexValue"]; !ok || len(tree) != 1 || tree[0] != testTree {
@@ -185,14 +184,15 @@ func TestAMClient_Authenticate(t *testing.T) {
 
 func TestAMClient_IoTEndpointInfo(t *testing.T) {
 	url := "http://same-path.org"
-	info, err := NewAMClient(url, testRealm, testTree).IoTEndpointInfo()
+	client := NewAMClient(url, testRealm, testTree)
+	info, err := client.IoTEndpointInfo()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if info.Version != commandEndpointVersion {
 		t.Error("incorrect command endpoint version")
 	}
-	if info.URL != (url + testHTTPCommandEndpoint + "?_action=command") {
+	if info.URL != client.iotURL() {
 		t.Error("incorrect command endpoint url")
 	}
 }
