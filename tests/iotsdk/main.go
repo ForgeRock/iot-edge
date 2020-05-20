@@ -22,7 +22,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
@@ -73,24 +72,24 @@ func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 	return result
 }
 
-func runAllTestsForRealm(r realm.Realm) (result bool, err error) {
-	err = anvil.ConfigureTestRealm(r, testdataDir)
+func runAllTestsForRealm(realm string) (result bool, err error) {
+	err = anvil.ConfigureTestRealm(realm, testdataDir)
 	if err != nil {
 		return false, err
 	}
 	defer func() {
-		err = anvil.RestoreTestRealm(r, testdataDir)
+		err = anvil.RestoreTestRealm(realm, testdataDir)
 	}()
 
-	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", r)
+	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Client Tests --\n\n")
-	result = runAllTestsForContext(anvil.AMClientTestState(r))
+	result = runAllTestsForContext(anvil.AMClientTestState(realm))
 
 	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
 
 	// run the IEC
-	controller, err := anvil.TestIEC(r)
+	controller, err := anvil.TestIEC(realm)
 	if err != nil {
 		return false, err
 	}
@@ -105,7 +104,7 @@ func runAllTestsForRealm(r realm.Realm) (result bool, err error) {
 	}
 	defer controller.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(anvil.IECClientTestState(r, controller)) && result
+	result = runAllTestsForContext(anvil.IECClientTestState(realm, controller)) && result
 	return result, nil
 }
 
@@ -128,11 +127,19 @@ func runTests() (err error) {
 	}()
 
 	// create test realms
-	realmIds, subRealm, err := anvil.CreateTestRealm(1)
+	subRealm, realmIds, err := anvil.CreateRealmHierarchy(anvil.RandomName())
 	if err != nil {
 		return err
 	}
-	ids, subSubRealm, err := anvil.CreateTestRealm(2)
+	randomName := anvil.RandomName()
+	subSubRealm, ids, err := anvil.CreateRealmHierarchy(anvil.RandomName(), randomName)
+	if err != nil {
+		return err
+	}
+	realmIds = append(realmIds, ids...)
+	// Create a doppelganger realm that shares the same name as the subSubRealm but is not IoT configured
+	// This checks that the fully qualified realm name is used throughout the SDK
+	_, ids, err = anvil.CreateRealmHierarchy(randomName)
 	if err != nil {
 		return err
 	}
@@ -145,7 +152,7 @@ func runTests() (err error) {
 	}()
 
 	allPass := true
-	for _, r := range []realm.Realm{realm.Root(), subRealm, subSubRealm} {
+	for _, r := range []string{"/", subRealm, subSubRealm} {
 		pass, err := runAllTestsForRealm(r)
 		allPass = allPass && pass
 		if err != nil {

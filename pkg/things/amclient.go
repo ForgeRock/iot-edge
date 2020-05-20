@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/pkg/things/payload"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -36,17 +35,24 @@ const (
 	contentType               = "Content-Type"
 	applicationJson           = "application/json"
 	applicationJose           = "application/jose"
-	authTreeQueryKey          = "authIndexValue"
+	// Query keys
+	fieldQueryKey         = "_fields"
+	realmQueryKey         = "realm"
+	authIndexTypeQueryKey = "authIndexType"
+	authTreeQueryKey      = "authIndexValue"
 )
 
 // AMClient contains information for connecting directly to AM
 type AMClient struct {
 	http.Client
-	AuthTree      string
-	ServerInfoURL string
-	AuthURL       string
-	IoTURL        string
-	cookieName    string
+	BaseURL string
+	// Realm that the client communicates with, must be the fully-qualified name including the parent path e.g.
+	// root realm; "/"
+	// a sub-realm of root called "alfheim"; "/alfheim"
+	// a sub-realm of alfheim called "svartalfheim"; "/alfheim/svartalfheim"
+	Realm      string
+	AuthTree   string
+	cookieName string
 }
 
 // amError is used to unmarshal an AM error response
@@ -65,12 +71,11 @@ func parseAMError(response []byte, status int) error {
 }
 
 // NewAMClient returns a new client for connecting directly to AM
-func NewAMClient(baseURL string, realm realm.Realm, authTree string) *AMClient {
+func NewAMClient(baseURL, realm, authTree string) *AMClient {
 	return &AMClient{
-		AuthTree:      authTree,
-		ServerInfoURL: fmt.Sprintf("%s/json/serverinfo/*", baseURL),
-		AuthURL:       fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service", baseURL, realm.Name()),
-		IoTURL:        fmt.Sprintf("%s/json/%s/iot?_action=command", baseURL, realm.URLPath()),
+		BaseURL:  baseURL,
+		Realm:    realm,
+		AuthTree: authTree,
 	}
 }
 
@@ -91,14 +96,16 @@ func (c *AMClient) Authenticate(payload payload.Authenticate) (reply payload.Aut
 	if err != nil {
 		return reply, err
 	}
-	request, err := http.NewRequest(http.MethodPost, c.AuthURL, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest(http.MethodPost, c.BaseURL+"/json/authenticate", bytes.NewBuffer(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return reply, err
 	}
 
-	// add auth tree to query
+	// add realm and auth tree to query
 	q := request.URL.Query()
+	q.Set(realmQueryKey, c.Realm)
+	q.Set(authIndexTypeQueryKey, "service")
 	q.Set(authTreeQueryKey, c.AuthTree)
 	request.URL.RawQuery = q.Encode()
 
@@ -133,12 +140,16 @@ type serverInfo struct {
 
 // getServerInfo makes a server information request to AM
 func (c *AMClient) getServerInfo() (info serverInfo, err error) {
-	url := c.ServerInfoURL + "?_fields=cookieName"
-	request, err := http.NewRequest(http.MethodGet, url, nil)
+	request, err := http.NewRequest(http.MethodGet, c.BaseURL+"/json/serverinfo/*", nil)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return info, err
 	}
+
+	q := request.URL.Query()
+	q.Set(fieldQueryKey, "cookieName")
+	request.URL.RawQuery = q.Encode()
+
 	request.Header.Add(acceptAPIVersion, serverInfoEndpointVersion)
 	request.Header.Add(contentType, applicationJson)
 	response, err := c.Do(request)
@@ -163,17 +174,21 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
+func (c *AMClient) iotURL() string {
+	return c.BaseURL + "/json/iot?_action=command&realm=" + c.Realm
+}
+
 // IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
 func (c *AMClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
 	return payload.IoTEndpoint{
-		URL:     c.IoTURL,
+		URL:     c.iotURL(),
 		Version: commandEndpointVersion,
 	}, nil
 }
 
 // SendCommand sends the signed JWT to the IoT Command Endpoint
 func (c *AMClient) SendCommand(tokenID string, jws string) ([]byte, error) {
-	request, err := http.NewRequest(http.MethodPost, c.IoTURL, strings.NewReader(jws))
+	request, err := http.NewRequest(http.MethodPost, c.iotURL(), strings.NewReader(jws))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err

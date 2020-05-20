@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/pkg/things/callback"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
@@ -51,36 +50,33 @@ const (
 var DebugLogger = log.New(ioutil.Discard, "", 0)
 var ProgressLogger = log.New(os.Stdout, "", 0)
 
-// CreateTestRealm creates a realm with a random name
-// level indicates how many realms are above it e.g. a realm at level 1 is a child of the root realm
-// For level > 1, the number of necessary parent realms are created
-func CreateTestRealm(level uint) (ids []string, r realm.Realm, err error) {
-	if level == 0 {
-		return ids, nil, fmt.Errorf("invalid level")
-	}
-	ids = make([]string, level)
-	parent := realm.Root()
-	for ; level > 0; level-- {
-		r = realm.SubRealm(parent, RandomName())
+// CreateRealmHierarchy creates the supplied realms in a linear hierarchy
+// The first realm is a child of root, otherwise a realm is a child of the previously created realm
+// Returns the fully-qualified name of the leaf realm and a list of ids of all the created realms
+func CreateRealmHierarchy(names ...string) (fullName string, ids []string, err error) {
+	ids = make([]string, len(names))
+	parentPath := "/"
+	for i, name := range names {
+		fullName = parentPath + name
 		// store realm ids in reverse order i.e. child to parent order
-		ids[level-1], err = am.CreateRealm(r.ParentPath(), r.Name())
+		ids[len(names)-i-1], err = am.CreateRealm(parentPath, name)
 		if err != nil {
-			return ids, r, err
+			return fullName, ids, err
 		}
-		parent = r
+		parentPath += name + "/"
 	}
-	return ids, r, nil
+	return fullName, ids, nil
 }
 
 // ConfigureTestRealm configures the realm by loading all the data in the testDataDir
-func ConfigureTestRealm(r realm.Realm, testDataDir string) (err error) {
+func ConfigureTestRealm(realm string, testDataDir string) (err error) {
 	// add tree nodes
 	nodes, err := trees.ReadNodes(filepath.Join(testDataDir, "nodes"))
 	if err != nil {
 		return err
 	}
 	for _, node := range nodes {
-		err = am.CreateTreeNode(r, node)
+		err = am.CreateTreeNode(realm, node)
 		if err != nil {
 			return err
 		}
@@ -92,30 +88,30 @@ func ConfigureTestRealm(r realm.Realm, testDataDir string) (err error) {
 		return err
 	}
 	for _, tree := range loadTrees {
-		err = am.CreateTree(r, tree)
+		err = am.CreateTree(realm, tree)
 		if err != nil {
 			return err
 		}
 	}
 
 	// add IoT Service
-	err = am.CreateService(r, "iot", filepath.Join(testDataDir, "services/iot.json"))
+	err = am.CreateService(realm, "iot", filepath.Join(testDataDir, "services/iot.json"))
 	if err != nil {
 		return err
 	}
 	// add OAuth 2.0 Service
-	err = am.CreateService(r, "oauth-oidc", filepath.Join(testDataDir, "services/oauth2.json"))
+	err = am.CreateService(realm, "oauth-oidc", filepath.Join(testDataDir, "services/oauth2.json"))
 	if err != nil {
 		return err
 	}
 	// update the OAuth 2.0 Client with test specific config
-	err = am.UpdateAgent(r, "OAuth2Client/forgerock-iot-oauth2-client",
+	err = am.UpdateAgent(realm, "OAuth2Client/forgerock-iot-oauth2-client",
 		filepath.Join(testDataDir, "agents/forgerock-iot-oauth2-client.json"))
 	if err != nil {
 		return err
 	}
 	// create thing OAuth 2.0 Client for thing specific config
-	err = am.CreateAgent(r, "OAuth2Client/thing-oauth2-client",
+	err = am.CreateAgent(realm, "OAuth2Client/thing-oauth2-client",
 		filepath.Join(testDataDir, "agents/thing-oauth2-client.json"))
 	if err != nil {
 		return err
@@ -125,10 +121,10 @@ func ConfigureTestRealm(r realm.Realm, testDataDir string) (err error) {
 }
 
 // RestoreTestRealm restores the configuration of the realm to a pre-test state
-func RestoreTestRealm(r realm.Realm, testDataDir string) (err error) {
+func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	// delete the various services
 	for _, service := range []string{"oauth-oidc", "iot"} {
-		err = am.DeleteService(r, service)
+		err = am.DeleteService(realm, service)
 		if err != nil {
 			return err
 		}
@@ -136,7 +132,7 @@ func RestoreTestRealm(r realm.Realm, testDataDir string) (err error) {
 
 	// delete the OAuth 2.0 agents
 	for _, agent := range []string{"OAuth2Client/forgerock-iot-oauth2-client", "OAuth2Client/thing-oauth2-client", "TrustedJwtIssuer/forgerock-iot-jwt-issuer"} {
-		err = am.DeleteAgent(r, agent)
+		err = am.DeleteAgent(realm, agent)
 		if err != nil {
 			return err
 		}
@@ -149,7 +145,7 @@ func RestoreTestRealm(r realm.Realm, testDataDir string) (err error) {
 		return err
 	}
 	for _, tree := range loadTrees {
-		err = am.DeleteTree(r, tree)
+		err = am.DeleteTree(realm, tree)
 		if err != nil {
 			return err
 		}
@@ -161,7 +157,7 @@ func RestoreTestRealm(r realm.Realm, testDataDir string) (err error) {
 		return err
 	}
 	for _, node := range nodes {
-		err = am.DeleteTreeNode(r, node)
+		err = am.DeleteTreeNode(realm, node)
 		if err != nil {
 			return err
 		}
@@ -183,7 +179,7 @@ func DeleteRealms(ids []string) (err error) {
 }
 
 // TestIEC creates a test IEC
-func TestIEC(r realm.Realm) (*things.IEC, error) {
+func TestIEC(realm string) (*things.IEC, error) {
 	jwk, signer, err := GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
@@ -194,11 +190,11 @@ func TestIEC(r realm.Realm) (*things.IEC, error) {
 		ThingType: "iec",
 		ThingKeys: jwk,
 	}
-	err = am.CreateIdentity(r, attributes)
+	err = am.CreateIdentity(attributes)
 	if err != nil {
 		return nil, err
 	}
-	return things.NewIEC(signer, am.AMURL, r, "Anvil-User-Pwd", []callback.Handler{
+	return things.NewIEC(signer, am.AMURL, realm, "Anvil-User-Pwd", []callback.Handler{
 		callback.NameHandler{Name: attributes.Name},
 		callback.PasswordHandler{Password: attributes.Password},
 	}), nil
@@ -213,34 +209,34 @@ type ThingData struct {
 // TestState contains client and realm data required to run a test
 type TestState interface {
 	// Realm returns the current test realm
-	Realm() realm.Realm
+	Realm() string
 	// InitClients initialises the test clients (multiple clients in the case of IEC tests)
 	// and returns a new client to be used for testing
 	InitClients(thingAuthTree string) things.Client
 }
 
 type amTestState struct {
-	r realm.Realm
+	realm string
 }
 
 func (a *amTestState) InitClients(authTree string) things.Client {
-	t := things.NewAMClient(am.AMURL, a.r, authTree)
+	t := things.NewAMClient(am.AMURL, a.realm, authTree)
 	t.Timeout = StdTimeOut
 	return t
 }
 
-func (a *amTestState) Realm() realm.Realm {
-	return a.r
+func (a *amTestState) Realm() string {
+	return a.realm
 }
 
 // AMClientTestContext returns a test state for testing the AM client
-func AMClientTestState(r realm.Realm) TestState {
-	return &amTestState{r: r}
+func AMClientTestState(realm string) TestState {
+	return &amTestState{realm: realm}
 }
 
 type iecTestState struct {
-	iec *things.IEC
-	r   realm.Realm
+	iec   *things.IEC
+	realm string
 }
 
 func (i *iecTestState) InitClients(authTree string) things.Client {
@@ -255,15 +251,15 @@ func (i *iecTestState) InitClients(authTree string) things.Client {
 	return c
 }
 
-func (i *iecTestState) Realm() realm.Realm {
-	return i.r
+func (i *iecTestState) Realm() string {
+	return i.realm
 }
 
 // IECClientTestState returns a test state for testing the IEC client
-func IECClientTestState(r realm.Realm, iec *things.IEC) TestState {
+func IECClientTestState(realm string, iec *things.IEC) TestState {
 	return &iecTestState{
-		iec: iec,
-		r:   r,
+		iec:   iec,
+		realm: realm,
 	}
 }
 
@@ -295,14 +291,14 @@ func (t NopSetupCleanup) NameSuffix() string {
 
 // Create an identity in AM from the supplied data
 // uses sensible defaults for certain fields if none have been set
-func CreateIdentity(r realm.Realm, data ThingData) (ThingData, bool) {
+func CreateIdentity(data ThingData) (ThingData, bool) {
 	if data.Id.Name == "" {
 		data.Id.Name = RandomName()
 	}
 	if data.Id.Password == "" {
 		data.Id.Password = RandomName()
 	}
-	return data, am.CreateIdentity(r, data.Id) == nil
+	return data, am.CreateIdentity(data.Id) == nil
 }
 
 // resultSprint formats the result string output for a test

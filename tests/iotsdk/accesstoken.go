@@ -40,7 +40,7 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -71,7 +71,7 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -102,7 +102,7 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -134,7 +134,7 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -171,7 +171,7 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 	}
 	data.Id.ThingType = "Device"
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(data)
 }
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {

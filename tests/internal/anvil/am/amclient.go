@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things/realm"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"io"
 	"io/ioutil"
@@ -55,33 +54,6 @@ var httpClient = http.Client{
 	Timeout: 30 * time.Second,
 }
 
-// url utility functions
-func urlGlobalConfig(path ...string) string {
-	return AMURL + "/json/global-config/" + strings.Join(path, "/")
-}
-func urlRealmConfig(r realm.Realm, path ...string) string {
-	return AMURL + "/json/" + r.URLPath() + "/realm-config/" + strings.Join(path, "/")
-}
-func urlRealm(r realm.Realm, path ...string) string {
-	return AMURL + "/json/" + r.URLPath() + "/" + strings.Join(path, "/")
-}
-func urlTreeNodes(r realm.Realm, path ...string) string {
-	return urlRealm(r, append([]string{"realm-config/authentication/authenticationtrees/nodes"}, path...)...)
-}
-func urlTrees(r realm.Realm, path ...string) string {
-	return urlRealm(r, append([]string{"realm-config/authentication/authenticationtrees/trees"}, path...)...)
-}
-
-// URLAuthenticate returns the URL for an Auth tree in the given realm
-func URLAuthenticate(realm, tree string) string {
-	return fmt.Sprintf("%s/json/authenticate?realm=%s&authIndexType=service&authIndexValue=%s", AMURL, realm, tree)
-}
-
-// URLIoT returns the URL for the IoT endpoint in the given realm
-func URLIoT(realm string) string {
-	return fmt.Sprintf("%s/json/realms/root/realms/%s/iot", AMURL, realm)
-}
-
 // crestCreate makes an HTTP POST request with the CREST 'create' action appended to the given endpoint.
 func crestCreate(endpoint string, version string, payload io.Reader) (reply []byte, err error) {
 	// get SSO token
@@ -89,10 +61,15 @@ func crestCreate(endpoint string, version string, payload io.Reader) (reply []by
 	if err != nil {
 		return reply, err
 	}
-	req, err := http.NewRequest(http.MethodPost, endpoint+"/?_action=create", payload)
+	req, err := http.NewRequest(http.MethodPost, endpoint, payload)
 	if err != nil {
 		return reply, err
 	}
+
+	q := req.URL.Query()
+	q.Set("_action", "create")
+	req.URL.RawQuery = q.Encode()
+
 	req.Header.Set(headerContentType, "application/json")
 	req.Header.Set(headerCookie, ssoToken)
 	req.Header.Set(headerAPIVersion, version)
@@ -184,39 +161,6 @@ func crestDelete(endpoint string, version string) (reply []byte, err error) {
 	return reply, nil
 }
 
-// crestRead makes an HTTP GET request to the given endpoint to the given endpoint.
-func crestRead(endpoint string, version string) (reply []byte, err error) {
-	// get SSO token
-	ssoToken, err := getSSOToken()
-	if err != nil {
-		return reply, err
-	}
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-	if err != nil {
-		return reply, err
-	}
-	req.Header.Set(headerContentType, "application/json")
-	req.Header.Set(headerCookie, ssoToken)
-	req.Header.Set(headerAPIVersion, version)
-
-	res, err := httpClient.Do(req)
-	if err != nil {
-		dumpHTTPRoundTrip(req, res)
-		return reply, err
-	}
-	defer res.Body.Close()
-
-	reply, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		return reply, err
-	}
-	if res.StatusCode != http.StatusOK {
-		dumpHTTPRoundTrip(req, res)
-		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
-	}
-	return reply, nil
-}
-
 // crestCreate makes an HTTP Put request to the given endpoint to the given endpoint.
 func putCreate(endpoint string, version string, payload io.Reader) (reply []byte, err error) {
 	// get SSO token
@@ -253,7 +197,7 @@ func putCreate(endpoint string, version string, payload io.Reader) (reply []byte
 
 // getSSOToken gets an SSO token using the AM Admin's credentials
 func getSSOToken() (token string, err error) {
-	req, err := http.NewRequest(http.MethodPost, urlRealm(realm.Root(), "authenticate"), nil)
+	req, err := http.NewRequest(http.MethodPost, AMURL+"/json/realms/root/authenticate", nil)
 	if err != nil {
 		return token, err
 	}
@@ -290,7 +234,7 @@ func getSSOToken() (token string, err error) {
 // Returns the realm Id that is required to modify/delete the realm
 func CreateRealm(parentPath, realmName string) (realmId string, err error) {
 	payload := strings.NewReader(fmt.Sprintf("{\"name\": \"%s\", \"active\": true, \"parentPath\": \"%s\", \"aliases\": []}", realmName, parentPath))
-	b, err := crestCreate(urlGlobalConfig("realms"), "resource=1.0, protocol=2.0", payload)
+	b, err := crestCreate(AMURL+"/json/global-config/realms", "resource=1.0, protocol=2.0", payload)
 	if err != nil {
 		return realmId, err
 	}
@@ -303,7 +247,7 @@ func CreateRealm(parentPath, realmName string) (realmId string, err error) {
 
 // DeleteRealm deletes the realm with the given Id
 func DeleteRealm(realmId string) (err error) {
-	_, err = crestDelete(urlGlobalConfig("realms", realmId), "resource=1.0, protocol=2.0")
+	_, err = crestDelete(AMURL+"/json/global-config/realms/"+realmId, "resource=1.0, protocol=2.0")
 	return err
 }
 
@@ -322,110 +266,110 @@ func (id IdAttributes) String() string {
 }
 
 // CreateIdentity creates an identity in the the given realm using the supplied attributes
-func CreateIdentity(r realm.Realm, attributes IdAttributes) error {
+func CreateIdentity(attributes IdAttributes) error {
 	payload, err := json.Marshal(attributes)
 	if err != nil {
 		return err
 	}
 	_, err = crestCreate(
-		urlRealm(r, "users"),
+		AMURL+"/json/users",
 		userEndpointVersion,
 		bytes.NewBuffer(payload))
 	return err
 }
 
 // DeleteIdentity deletes the identity from AM
-func DeleteIdentity(r realm.Realm, name string) (err error) {
+func DeleteIdentity() (err error) {
 	_, err = crestDelete(
-		urlRealm(r, "users", name),
+		AMURL+"/json/users",
 		userEndpointVersion)
 	return err
 }
 
 // CreateTreeNode creates an auth tree node in the realm
-func CreateTreeNode(r realm.Realm, node trees.Node) (err error) {
+func CreateTreeNode(realm string, node trees.Node) (err error) {
 	_, err = putCreate(
-		urlTreeNodes(r, node.Type, node.Id),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/nodes/%s/%s?realm=%s", AMURL, node.Type, node.Id, realm),
 		realmConfigEndpointVersion,
 		bytes.NewReader(node.Config))
 	return err
 }
 
 // DeleteTreeNode deletes the auth tree node from the realm
-func DeleteTreeNode(r realm.Realm, node trees.Node) (err error) {
+func DeleteTreeNode(realm string, node trees.Node) (err error) {
 	_, err = crestDelete(
-		urlTreeNodes(r, node.Type, node.Id),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/nodes/%s/%s?realm=%s", AMURL, node.Type, node.Id, realm),
 		realmConfigEndpointVersion)
 	return err
 }
 
 // CreateTree creates an auth tree in the realm
-func CreateTree(r realm.Realm, tree trees.Tree) (err error) {
+func CreateTree(realm string, tree trees.Tree) (err error) {
 	_, err = putCreate(
-		urlTrees(r, tree.Id),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/trees/%s?realm=%s", AMURL, tree.Id, realm),
 		realmConfigEndpointVersion,
 		bytes.NewReader(tree.Config))
 	return err
 }
 
 // DeleteTree deletes the auth tree from the realm
-func DeleteTree(r realm.Realm, tree trees.Tree) (err error) {
+func DeleteTree(realm string, tree trees.Tree) (err error) {
 	_, err = crestDelete(
-		urlTrees(r, tree.Id),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/trees/%s?realm=%s", AMURL, tree.Id, realm),
 		realmConfigEndpointVersion)
 	return err
 }
 
 // CreateService creates a service in the realm
-func CreateService(r realm.Realm, serviceName, payloadPath string) (err error) {
+func CreateService(realm, serviceName, payloadPath string) (err error) {
 	b, err := ioutil.ReadFile(payloadPath)
 	if err != nil {
 		return err
 	}
 	_, err = crestCreate(
-		urlRealmConfig(r, "services/"+serviceName),
+		fmt.Sprintf("%s/json/realm-config/services/%s?realm=%s", AMURL, serviceName, realm),
 		realmConfigEndpointVersion,
 		bytes.NewReader(b))
 	return err
 }
 
 // DeleteService deletes the service from the realm
-func DeleteService(r realm.Realm, serviceName string) (err error) {
+func DeleteService(realm string, serviceName string) (err error) {
 	_, err = crestDelete(
-		urlRealmConfig(r, "services/"+serviceName),
+		fmt.Sprintf("%s/json/realm-config/services/%s?realm=%s", AMURL, serviceName, realm),
 		realmConfigEndpointVersion)
 	return err
 }
 
 // CreateAgent creates an agent (OAuth 2.0 Client, JWT Issuer etc) in the realm
-func CreateAgent(r realm.Realm, agentName, payloadPath string) (err error) {
+func CreateAgent(realm, agentName, payloadPath string) (err error) {
 	b, err := ioutil.ReadFile(payloadPath)
 	if err != nil {
 		return err
 	}
 	_, err = putCreate(
-		urlRealmConfig(r, "agents/"+agentName),
+		fmt.Sprintf("%s/json/realm-config/agents/%s?realm=%s", AMURL, agentName, realm),
 		realmConfigEndpointVersion,
 		bytes.NewReader(b))
 	return err
 }
 
 // DeleteAgent deletes the agent from the realm
-func DeleteAgent(r realm.Realm, agentName string) (err error) {
+func DeleteAgent(realm string, agentName string) (err error) {
 	_, err = crestDelete(
-		urlRealmConfig(r, "agents/"+agentName),
+		fmt.Sprintf("%s/json/realm-config/agents/%s?realm=%s", AMURL, agentName, realm),
 		realmConfigEndpointVersion)
 	return err
 }
 
 // UpdateAgent updates an agent's (OAuth 2.0 Client, JWT Issuer etc) configuration in AM
-func UpdateAgent(r realm.Realm, agentName, payloadPath string) (err error) {
+func UpdateAgent(realm, agentName, payloadPath string) (err error) {
 	b, err := ioutil.ReadFile(payloadPath)
 	if err != nil {
 		return err
 	}
 	_, err = crestUpdate(
-		urlRealmConfig(r, "agents/"+agentName),
+		fmt.Sprintf("%s/json/realm-config/agents/%s?realm=%s", AMURL, agentName, realm),
 		realmConfigEndpointVersion,
 		bytes.NewReader(b))
 	return err
