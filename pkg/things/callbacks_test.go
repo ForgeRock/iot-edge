@@ -17,15 +17,9 @@
 package things
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/asn1"
-	"encoding/base64"
-	"gopkg.in/square/go-jose.v2"
-	"math/big"
 	"testing"
 )
 
@@ -61,10 +55,6 @@ func TestCallbackHandler_Match(t *testing.T) {
 	attributes := make(map[string]string)
 	attributes["thingMode"] = "test"
 
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
 	tests := []struct {
 		name    string
 		cb      Callback
@@ -82,16 +72,6 @@ func TestCallbackHandler_Match(t *testing.T) {
 		{name: "Attribute/False/WrongType", cb: dummyCB(TypeNameCallback), handler: AttributeHandler{Attributes: attributes}, want: false},
 		{name: "Attribute/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: AttributeHandler{Attributes: attributes}, want: false},
 		{name: "Attribute/True", cb: dummyCB(TypeTextInputCallback, "thingMode"), handler: AttributeHandler{Attributes: attributes}, want: true},
-		// X509CertificateHandler
-		{name: "X509Cert/False/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: X509CertificateHandler{Cert: []byte("12345")}, want: false},
-		{name: "X509Cert/False/WrongType", cb: dummyCB(TypeNameCallback, PromptX509CertCallback), handler: X509CertificateHandler{Cert: []byte("12345")}, want: false},
-		{name: "X509Cert/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: X509CertificateHandler{Cert: []byte("12345")}, want: false},
-		{name: "X509Cert/True", cb: dummyCB(TypeTextInputCallback, PromptX509CertCallback), handler: X509CertificateHandler{Cert: []byte("12345")}, want: true},
-		// ProofOfPossessionCallbackHandler
-		{name: "ProofOfPossession/False/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: false},
-		{name: "ProofOfPossession/False/WrongType", cb: dummyCB(TypeNameCallback, PromptProofOfPossessionCallback), handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: false},
-		{name: "ProofOfPossession/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: false},
-		{name: "ProofOfPossession/True", cb: dummyCB(TypeTextInputCallback, PromptProofOfPossessionCallback), handler: PoPHandler{Hash: crypto.SHA256, Signer: key}, want: true},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -113,34 +93,11 @@ func TestCallbackHandler_Respond_NoInput(t *testing.T) {
 		{name: "Name", handler: NameHandler{Name: "Odysseus"}},
 		{name: "Password", handler: PasswordHandler{Password: "password"}},
 		{name: "Attribute", handler: AttributeHandler{Attributes: attributes}},
-		{name: "X509Cert", handler: X509CertificateHandler{Cert: []byte("12345")}},
 	}
 	for _, subtest := range tests {
 		cb := Callback{}
 		t.Run(subtest.name, func(t *testing.T) {
 			if err := subtest.handler.Respond(cb); err == nil {
-				t.Errorf("Expected an error")
-			}
-		})
-	}
-}
-
-func TestPoPCallbackHandler_Respond_MissingEntries(t *testing.T) {
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tests := []struct {
-		name string
-		cb   Callback
-	}{
-		{name: "NoInput", cb: Callback{Type: TypeTextInputCallback, Output: make([]Entry, 2)}},
-		{name: "NoOutput", cb: Callback{Type: TypeTextInputCallback, Input: make([]Entry, 2)}},
-	}
-	handler := PoPHandler{Hash: crypto.SHA256, Signer: key}
-	for _, subtest := range tests {
-		t.Run(subtest.name, func(t *testing.T) {
-			if err := handler.Respond(subtest.cb); err == nil {
 				t.Errorf("Expected an error")
 			}
 		})
@@ -171,18 +128,6 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	}
 }
 
-func TestX509CertCallbackHandler_Respond(t *testing.T) {
-	c := "12345"
-	handler := X509CertificateHandler{Cert: []byte(c)}
-	cb := dummyCB(TypeNameCallback)
-	if err := handler.Respond(cb); err != nil {
-		t.Fatal(err)
-	}
-	if cb.Input[0].Value != c {
-		t.Error("Certificate not updated")
-	}
-}
-
 func TestAttributeCallbackHandler_Respond(t *testing.T) {
 	k := "thingMode"
 	v := "test"
@@ -195,35 +140,6 @@ func TestAttributeCallbackHandler_Respond(t *testing.T) {
 	}
 	if cb.Input[0].Value != v {
 		t.Error("Attribute not updated")
-	}
-}
-
-func TestPoPCallbackHandler_Respond(t *testing.T) {
-	challenge := "12345"
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	handler := PoPHandler{crypto.SHA256, key}
-	cb := dummyCB(TypeTextInputCallback, PromptProofOfPossessionCallback, challenge)
-	if err := handler.Respond(cb); err != nil {
-		t.Fatal(err)
-	}
-	challengeResponse, err := base64.StdEncoding.DecodeString(cb.Input[0].Value)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sig := struct {
-		R, S *big.Int
-	}{}
-	_, err = asn1.Unmarshal([]byte(challengeResponse), &sig)
-	if err != nil {
-		t.Fatal(err)
-	}
-	d := sha256.Sum256([]byte(challenge))
-	if !ecdsa.Verify(&key.PublicKey, d[:], sig.R, sig.S) {
-		t.Error("Signature verification has failed")
 	}
 }
 
@@ -255,14 +171,14 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 }
 
-func TestJWTAssertion_Match(t *testing.T) {
+func TestJWTPoPAuthHandler_Match(t *testing.T) {
 	handler := JWTPoPAuthHandler{}
 	if !handler.Match(jwtVerifyCB(false)) {
 		t.Error("expected true")
 	}
 }
 
-func TestJWTAssertion_Respond(t *testing.T) {
+func TestJWTPoPAuthHandler_Respond(t *testing.T) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -309,63 +225,5 @@ func TestJWTAssertion_Respond(t *testing.T) {
 	}
 	if claims.CNF.KID != kid {
 		t.Fatal("incorrect kid")
-	}
-}
-
-func TestJWTPoPRegHandler_Match(t *testing.T) {
-	handler := JWTPoPRegHandler{}
-	if !handler.Match(jwtVerifyCB(true)) {
-		t.Error("expected true")
-	}
-}
-
-func TestJWTPoPRegHandler_Respond(t *testing.T) {
-
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	kid := "testKID"
-	h := JWTPoPRegHandler{KID: kid, Signer: key, ThingId: "thingOne", Realm: "/", ThingType: "device"}
-	cb := jwtVerifyCB(false)
-	if err := h.Respond(cb); err != nil {
-		t.Fatal(err)
-	}
-	response := cb.Input[0].Value
-	claims := struct {
-		Sub       string `json:"sub"`
-		Aud       string `json:"aud"`
-		ThingType string `json:"thingType"`
-		Iat       int64  `json:"iat"`
-		Exp       int64  `json:"exp"`
-		Nonce     string `json:"nonce"`
-		CNF       struct {
-			JWK jose.JSONWebKey `json:"jwk"`
-		} `json:"cnf"`
-	}{}
-	err = extractJWTPayload(response, &claims)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if claims.Sub == "" {
-		t.Error("missing subject")
-	}
-	if claims.Aud == "" {
-		t.Error("missing audience")
-	}
-	if claims.ThingType != "device" {
-		t.Error("missing thing type")
-	}
-	if claims.Iat == 0 {
-		t.Error("missing issue time")
-	}
-	if claims.Exp == 0 {
-		t.Error("missing expiry time")
-	}
-	if claims.Nonce == "" {
-		t.Error("missing nonce")
-	}
-	if claims.CNF.JWK.KeyID == "" {
-		t.Error("missing JWK:KID")
 	}
 }
