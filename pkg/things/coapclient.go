@@ -23,7 +23,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/pion/dtls/v2"
@@ -119,7 +118,7 @@ func (c *IECClient) Initialise() (err error) {
 }
 
 // Authenticate with the AM authTree using the given payload
-func (c *IECClient) Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error) {
+func (c *IECClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return reply, err
@@ -152,7 +151,7 @@ func (c *IECClient) Authenticate(payload payload.Authenticate) (reply payload.Au
 }
 
 // IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-func (c *IECClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
+func (c *IECClient) IoTEndpointInfo() (info IoTEndpoint, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return info, err

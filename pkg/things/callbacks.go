@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package callback
+package things
 
 import (
 	"crypto"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/cryptosigner"
+	"gopkg.in/square/go-jose.v2/jwt"
+	"time"
 )
 
 var (
@@ -57,6 +59,19 @@ type Callback struct {
 
 func (c Callback) String() string {
 	return fmt.Sprintf("{Callback Type:%v Output:%v Input:%v}", c.Type, c.Output, c.Input)
+}
+
+// ID returns the ID value of the callback if one exists
+func (c Callback) ID() string {
+	if c.Type != "HiddenValueCallback" {
+		return ""
+	}
+	for _, e := range c.Output {
+		if e.Name == "id" {
+			return e.Value
+		}
+	}
+	return ""
 }
 
 // CallbackHandler is an interface for an AM callback handler
@@ -152,57 +167,59 @@ func (h AttributeHandler) Respond(c Callback) error {
 	return nil
 }
 
-// X509CertificateHandler handles an AM Certificate Collector callback
-type X509CertificateHandler struct {
-	// Certificate
-	Cert []byte
+type JWTPoPAuthHandler struct {
+	KID             string
+	ConfirmationKey crypto.Signer
+	ThingID         string
+	ThingType       string
+	Realm           string
 }
 
-func (h X509CertificateHandler) Match(c Callback) bool {
-	return c.Type == TypeTextInputCallback &&
-		len(c.Output) > 0 && c.Output[0].Value == PromptX509CertCallback
+func (h JWTPoPAuthHandler) Match(c Callback) bool {
+	return c.ID() == "jwt-pop-authentication"
 }
-func (h X509CertificateHandler) Respond(c Callback) error {
+
+func (h JWTPoPAuthHandler) Respond(c Callback) error {
 	if len(c.Input) == 0 {
 		return ErrNoInput
 	}
-	c.Input[0].Value = string(h.Cert)
-	return nil
-}
-
-// PoPHandler handles an AM private key proof of possession challenge
-type PoPHandler struct {
-	// Hash function used to hash the challenge
-	Hash crypto.Hash
-	// Signer function used to sign the challenge
-	Signer crypto.Signer
-}
-
-func (h PoPHandler) Match(c Callback) bool {
-	return c.Type == TypeTextInputCallback &&
-		len(c.Output) > 0 && c.Output[0].Value == PromptProofOfPossessionCallback
-}
-func (h PoPHandler) Respond(c Callback) error {
-	if len(c.Input) == 0 {
-		return ErrNoInput
+	var challenge string
+	for _, e := range c.Output {
+		if e.Name == "value" {
+			challenge = e.Value
+			break
+		}
 	}
-	if len(c.Output) < 2 {
+	if challenge == "" {
 		return ErrNoOutput
 	}
-	challenge := []byte(c.Output[1].Value)
 
-	// hash challenge if hash function is available
-	if h.Hash.Available() {
-		h1 := h.Hash.New()
-		h1.Write(challenge)
-		challenge = h1.Sum(nil)
-	}
-	// sign challenge
-	signedChallenge, err := h.Signer.Sign(rand.Reader, challenge, crypto.SHA256)
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("typ", "JWT")
+
+	// check that the signer is supported
+	alg, err := signingJWAFromKey(h.ConfirmationKey)
 	if err != nil {
 		return err
 	}
-	// base64 encode
-	c.Input[0].Value = base64.StdEncoding.EncodeToString(signedChallenge)
-	return nil
+
+	// create a jose.OpaqueSigner from the crypto.Signer
+	opaque := cryptosigner.Opaque(h.ConfirmationKey)
+
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+	if err != nil {
+		return err
+	}
+	claims := jwtVerifyClaims{}
+	claims.Sub = h.ThingID
+	claims.Aud = h.Realm
+	claims.ThingType = h.ThingType
+	claims.Nonce = challenge
+	claims.CNF.KID = h.KID
+	claims.Iat = time.Now().Unix()
+	claims.Exp = time.Now().Add(5 * time.Minute).Unix()
+	builder := jwt.Signed(sig).Claims(claims)
+	response, err := builder.CompactSerialize()
+	c.Input[0].Value = response
+	return err
 }

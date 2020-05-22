@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -91,7 +90,7 @@ func (c *AMClient) Initialise() error {
 
 // Authenticate with the AM authTree using the given payload
 // This is a single round trip
-func (c *AMClient) Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error) {
+func (c *AMClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
@@ -179,8 +178,8 @@ func (c *AMClient) iotURL() string {
 }
 
 // IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-func (c *AMClient) IoTEndpointInfo() (info payload.IoTEndpoint, err error) {
-	return payload.IoTEndpoint{
+func (c *AMClient) IoTEndpointInfo() (info IoTEndpoint, err error) {
+	return IoTEndpoint{
 		URL:     c.iotURL(),
 		Version: commandEndpointVersion,
 	}, nil

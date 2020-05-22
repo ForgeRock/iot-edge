@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
+	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -40,11 +40,11 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
+	thing := jwtPoPAuthThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -71,11 +71,11 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
+	thing := jwtPoPAuthThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -102,11 +102,11 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
+	thing := jwtPoPAuthThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -134,11 +134,11 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 		return data, false
 	}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
+	thing := jwtPoPAuthThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -171,11 +171,11 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 	}
 	data.Id.ThingType = "Device"
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
+	thing := jwtPoPAuthThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -188,7 +188,7 @@ func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.Thin
 	return verifyAccessTokenResponse(response, data.Id.Name, "create", "modify", "delete")
 }
 
-func verifyAccessTokenResponse(response payload.AccessTokenResponse, subject string, requestedScopes ...string) bool {
+func verifyAccessTokenResponse(response things.AccessTokenResponse, subject string, requestedScopes ...string) bool {
 	token, err := response.AccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println(err)

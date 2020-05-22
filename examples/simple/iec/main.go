@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"log"
 	"os"
 )
@@ -33,9 +32,8 @@ import (
 var (
 	amURL    = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
 	amRealm  = flag.String("realm", "example", "AM Realm")
-	authTree = flag.String("tree", "iot-user-pwd", "Authentication tree")
+	authTree = flag.String("tree", "iot-tree", "Authentication tree")
 	iecName  = flag.String("name", "simple-iec", "IEC name")
-	iecPwd   = flag.String("pwd", "password", "IEC password")
 	address  = flag.String("address", "127.0.0.1:5688", "CoAP Address of IEC")
 )
 
@@ -44,7 +42,7 @@ var (
 // Example setup:
 // Start up the AM test container
 // Create a realm called "example"
-// Create the IoT username-password tree in the "example" realm and call it "iot-user-pwd"
+// Create the IoT tree in the "example" realm and call it "iot-tree"
 // Create an identity with
 //	name: simple-iec
 //	password: password
@@ -56,9 +54,14 @@ func simpleIEC() error {
 	if err != nil {
 		return err
 	}
-	controller := things.NewIEC(amKey, *amURL, *amRealm, *authTree, []callback.Handler{
-		callback.NameHandler{Name: *iecName},
-		callback.PasswordHandler{Password: *iecPwd},
+	controller := things.NewIEC(amKey, *amURL, *amRealm, *authTree, []things.Handler{
+		things.JWTPoPAuthHandler{
+			KID:             "pop.cnf",
+			ConfirmationKey: amKey,
+			ThingID:         *iecName,
+			ThingType:       "device",
+			Realm:           *amRealm,
+		},
 	})
 
 	err = controller.Initialise()

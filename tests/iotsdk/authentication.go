@@ -18,36 +18,44 @@ package main
 
 import (
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 )
 
-func userPwdThing(state anvil.TestState, data anvil.ThingData) *things.Thing {
-	return things.NewThing(state.InitClients("Anvil-User-Pwd"), data.Signer, []callback.Handler{
-		callback.NameHandler{Name: data.Id.Name},
-		callback.PasswordHandler{Password: data.Id.Password},
+func jwtPoPAuthThing(state anvil.TestState, data anvil.ThingData) *things.Thing {
+	kid := "pop.cnf"
+	if len(data.Id.ThingKeys.Keys) > 0 {
+		kid = data.Id.ThingKeys.Keys[0].KeyID
+	}
+	return things.NewThing(state.InitClients(jwtPopAuthTree), data.Signer, []things.Handler{
+		things.JWTPoPAuthHandler{
+			KID:             kid,
+			ConfirmationKey: data.Signer,
+			ThingID:         data.Id.Name,
+			ThingType:       data.Id.ThingType,
+			Realm:           state.Realm(),
+		},
 	})
 }
 
-// AuthenticateWithUsernameAndPassword tests the authentication of a pre-registered device
-type AuthenticateWithUsernameAndPassword struct {
+// AuthenticateWithJWTPoP tests the authentication of a pre-registered device
+type AuthenticateWithJWTPoP struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func (t *AuthenticateWithJWTPoP) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	data.Id.ThingType = "device"
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AuthenticateWithUsernameAndPassword) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
+func (t *AuthenticateWithJWTPoP) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := jwtPoPAuthThing(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -62,14 +70,22 @@ type AuthenticateWithoutConfirmationKey struct {
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	data.Id.ThingType = "device"
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := userPwdThing(state, data)
-	err := thing.Initialise()
+	// add a signer to the thing data. AM will not know this key
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return false
+	}
+	thing := jwtPoPAuthThing(state, data)
+	err = thing.Initialise()
 	if err != things.ErrUnauthorised {
+		anvil.DebugLogger.Println(err)
 		return false
 	}
 	return true

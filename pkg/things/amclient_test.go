@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -141,7 +140,7 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 		return err
 	}
 
-	reply, err := c.Authenticate(payload.Authenticate{})
+	reply, err := c.Authenticate(AuthenticatePayload{})
 	if err != nil {
 		return err
 	}
@@ -152,7 +151,7 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 }
 
 func TestAMClient_Authenticate(t *testing.T) {
-	info := payload.Authenticate{
+	info := AuthenticatePayload{
 		TokenId: "12345",
 	}
 	b, err := json.Marshal(info)

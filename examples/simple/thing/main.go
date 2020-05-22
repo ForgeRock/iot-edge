@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"log"
 	"os"
 )
@@ -32,9 +31,8 @@ import (
 var (
 	amURL      = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
 	amRealm    = flag.String("realm", "example", "AM Realm")
-	authTree   = flag.String("tree", "iot-user-pwd", "Authentication tree")
+	authTree   = flag.String("tree", "iot-tree", "Authentication tree")
 	thingName  = flag.String("name", "simple-thing", "Thing name")
-	thingPwd   = flag.String("pwd", "password", "Thing password")
 	server     = flag.String("server", "am", "Server to connect to, am or iec")
 	iecAddress = flag.String("address", "127.0.0.1:5688", "Address of IEC")
 )
@@ -45,7 +43,7 @@ var (
 // Example setup:
 // Start up the AM test container
 // Create a realm called "example"
-// Create the IoT username-password tree in the "example" realm and call it "iot-user-pwd"
+// Create the IoT tree in the "example" realm and call it "iot-tree"
 // Create an identity with
 //	name: simple-thing
 //	password: password
@@ -77,9 +75,14 @@ func simpleThing() error {
 	}
 
 	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.NewThing(client, key, []callback.Handler{
-		callback.NameHandler{Name: *thingName},
-		callback.PasswordHandler{Password: *thingPwd},
+	thing := things.NewThing(client, key, []things.Handler{
+		things.JWTPoPAuthHandler{
+			KID:             "pop.cnf",
+			ConfirmationKey: key,
+			ThingID:         *thingName,
+			ThingType:       "device",
+			Realm:           *amRealm,
+		},
 	})
 	err = thing.Initialise()
 	if err != nil {

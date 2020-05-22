@@ -22,8 +22,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"net"
 	"time"
@@ -40,7 +38,7 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(signer crypto.Signer, baseURL string, realm string, authTree string, handlers []callback.Handler) *IEC {
+func NewIEC(signer crypto.Signer, baseURL string, realm string, authTree string, handlers []Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
 			confirmationKey: signer,
@@ -57,7 +55,7 @@ func (c *IEC) Initialise() error {
 }
 
 // Authenticate a Thing with AM using the given payload
-func (c *IEC) Authenticate(auth payload.Authenticate) (reply payload.Authenticate, err error) {
+func (c *IEC) Authenticate(auth AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
