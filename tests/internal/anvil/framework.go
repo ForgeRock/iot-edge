@@ -195,11 +195,11 @@ func TestIEC(realm string, authTree string) (*things.IEC, error) {
 	}
 	return things.NewIEC(signer, am.AMURL, realm, authTree, []things.Handler{
 		things.JWTPoPAuthHandler{
-			KID:       attributes.ThingKeys.Keys[0].KeyID,
-			Signer:    signer,
-			ThingId:   attributes.Name,
-			ThingType: attributes.ThingType,
-			Realm:     realm,
+			KID:             attributes.ThingKeys.Keys[0].KeyID,
+			ConfirmationKey: signer,
+			ThingID:         attributes.Name,
+			ThingType:       attributes.ThingType,
+			Realm:           realm,
 		},
 	}), nil
 }

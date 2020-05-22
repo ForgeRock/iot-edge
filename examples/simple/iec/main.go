@@ -56,11 +56,11 @@ func simpleIEC() error {
 	}
 	controller := things.NewIEC(amKey, *amURL, *amRealm, *authTree, []things.Handler{
 		things.JWTPoPAuthHandler{
-			KID:       "pop.cnf",
-			Signer:    amKey,
-			ThingId:   *iecName,
-			ThingType: "device",
-			Realm:     *amRealm,
+			KID:             "pop.cnf",
+			ConfirmationKey: amKey,
+			ThingID:         *iecName,
+			ThingType:       "device",
+			Realm:           *amRealm,
 		},
 	})
 

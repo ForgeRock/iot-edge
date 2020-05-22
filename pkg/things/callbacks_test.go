@@ -184,7 +184,7 @@ func TestJWTPoPAuthHandler_Respond(t *testing.T) {
 		t.Fatal(err)
 	}
 	kid := "testKID"
-	h := JWTPoPAuthHandler{KID: kid, Signer: key, ThingId: "thingOne", Realm: "/", ThingType: "device"}
+	h := JWTPoPAuthHandler{KID: kid, ConfirmationKey: key, ThingID: "thingOne", Realm: "/", ThingType: "device"}
 	cb := jwtVerifyCB(false)
 	if err := h.Respond(cb); err != nil {
 		t.Fatal(err)

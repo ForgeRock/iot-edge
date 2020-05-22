@@ -77,11 +77,11 @@ func simpleThing() error {
 	fmt.Printf("Initialising %s... ", *thingName)
 	thing := things.NewThing(client, key, []things.Handler{
 		things.JWTPoPAuthHandler{
-			KID:       "pop.cnf",
-			Signer:    key,
-			ThingId:   *thingName,
-			ThingType: "device",
-			Realm:     *amRealm,
+			KID:             "pop.cnf",
+			ConfirmationKey: key,
+			ThingID:         *thingName,
+			ThingType:       "device",
+			Realm:           *amRealm,
 		},
 	})
 	err = thing.Initialise()

@@ -61,7 +61,8 @@ func (c Callback) String() string {
 	return fmt.Sprintf("{Callback Type:%v Output:%v Input:%v}", c.Type, c.Output, c.Input)
 }
 
-func (c Callback) Id() string {
+// ID returns the ID value of the callback if one exists
+func (c Callback) ID() string {
 	if c.Type != "HiddenValueCallback" {
 		return ""
 	}
@@ -167,16 +168,15 @@ func (h AttributeHandler) Respond(c Callback) error {
 }
 
 type JWTPoPAuthHandler struct {
-	KID string
-	// Signer function used to sign the challenge
-	Signer    crypto.Signer
-	ThingId   string
-	ThingType string
-	Realm     string
+	KID             string
+	ConfirmationKey crypto.Signer
+	ThingID         string
+	ThingType       string
+	Realm           string
 }
 
 func (h JWTPoPAuthHandler) Match(c Callback) bool {
-	return c.Id() == "jwt-pop-authentication"
+	return c.ID() == "jwt-pop-authentication"
 }
 
 func (h JWTPoPAuthHandler) Respond(c Callback) error {
@@ -198,20 +198,20 @@ func (h JWTPoPAuthHandler) Respond(c Callback) error {
 	opts.WithHeader("typ", "JWT")
 
 	// check that the signer is supported
-	alg, err := signingJWAFromKey(h.Signer)
+	alg, err := signingJWAFromKey(h.ConfirmationKey)
 	if err != nil {
 		return err
 	}
 
 	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(h.Signer)
+	opaque := cryptosigner.Opaque(h.ConfirmationKey)
 
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
 		return err
 	}
 	claims := jwtVerifyClaims{}
-	claims.Sub = h.ThingId
+	claims.Sub = h.ThingID
 	claims.Aud = h.Realm
 	claims.ThingType = h.ThingType
 	claims.Nonce = challenge

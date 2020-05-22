@@ -29,11 +29,11 @@ func jwtPoPAuthThing(state anvil.TestState, data anvil.ThingData) *things.Thing 
 	}
 	return things.NewThing(state.InitClients(jwtPopAuthTree), data.Signer, []things.Handler{
 		things.JWTPoPAuthHandler{
-			KID:       kid,
-			Signer:    data.Signer,
-			ThingId:   data.Id.Name,
-			ThingType: data.Id.ThingType,
-			Realm:     state.Realm(),
+			KID:             kid,
+			ConfirmationKey: data.Signer,
+			ThingID:         data.Id.Name,
+			ThingType:       data.Id.ThingType,
+			Realm:           state.Realm(),
 		},
 	})
 }
