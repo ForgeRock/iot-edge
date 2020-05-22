@@ -33,11 +33,14 @@ const (
 	execDir     = "./tests/iotsdk"
 	testdataDir = execDir + "/testdata"
 	debugDir    = execDir + "/debug"
+
+	// Auth trees
+	jwtPopAuthTree = "Anvil-JWT-Auth"
 )
 
 // define the full test set
 var tests = []anvil.SDKTest{
-	&AuthenticateWithUsernameAndPassword{},
+	&AuthenticateWithJWTPoP{},
 	&AuthenticateWithoutConfirmationKey{},
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},
@@ -89,7 +92,7 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
 
 	// run the IEC
-	controller, err := anvil.TestIEC(realm)
+	controller, err := anvil.TestIEC(realm, jwtPopAuthTree)
 	if err != nil {
 		return false, err
 	}

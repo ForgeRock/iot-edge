@@ -20,12 +20,26 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/square/go-jose.v2"
 	"strings"
 )
 
 // sendCommandClaims defines the claims expected in the signed JWT provided with a Send Command request
 type sendCommandClaims struct {
 	CSRF string `json:"csrf"`
+}
+
+type jwtVerifyClaims struct {
+	Sub       string `json:"sub"`
+	Aud       string `json:"aud"`
+	ThingType string `json:"thingType"`
+	Iat       int64  `json:"iat"`
+	Exp       int64  `json:"exp"`
+	Nonce     string `json:"nonce"`
+	CNF       struct {
+		KID string           `json:"kid,omitempty"`
+		JWK *jose.JSONWebKey `json:"jwk,omitempty"`
+	} `json:"cnf"`
 }
 
 // extractJWTPayload parses a signed JWT and unmarshals the payload into the supplied claims

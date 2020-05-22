@@ -24,7 +24,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
@@ -179,7 +178,7 @@ func DeleteRealms(ids []string) (err error) {
 }
 
 // TestIEC creates a test IEC
-func TestIEC(realm string) (*things.IEC, error) {
+func TestIEC(realm string, authTree string) (*things.IEC, error) {
 	jwk, signer, err := GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
@@ -190,13 +189,18 @@ func TestIEC(realm string) (*things.IEC, error) {
 		ThingType: "iec",
 		ThingKeys: jwk,
 	}
-	err = am.CreateIdentity(attributes)
+	err = am.CreateIdentity(realm, attributes)
 	if err != nil {
 		return nil, err
 	}
-	return things.NewIEC(signer, am.AMURL, realm, "Anvil-User-Pwd", []callback.Handler{
-		callback.NameHandler{Name: attributes.Name},
-		callback.PasswordHandler{Password: attributes.Password},
+	return things.NewIEC(signer, am.AMURL, realm, authTree, []things.Handler{
+		things.JWTPoPAuthHandler{
+			KID:       attributes.ThingKeys.Keys[0].KeyID,
+			Signer:    signer,
+			ThingId:   attributes.Name,
+			ThingType: attributes.ThingType,
+			Realm:     realm,
+		},
 	}), nil
 }
 
@@ -291,14 +295,14 @@ func (t NopSetupCleanup) NameSuffix() string {
 
 // Create an identity in AM from the supplied data
 // uses sensible defaults for certain fields if none have been set
-func CreateIdentity(data ThingData) (ThingData, bool) {
+func CreateIdentity(realm string, data ThingData) (ThingData, bool) {
 	if data.Id.Name == "" {
 		data.Id.Name = RandomName()
 	}
 	if data.Id.Password == "" {
 		data.Id.Password = RandomName()
 	}
-	return data, am.CreateIdentity(data.Id) == nil
+	return data, am.CreateIdentity(realm, data.Id) == nil
 }
 
 // resultSprint formats the result string output for a test

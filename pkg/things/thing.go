@@ -20,8 +20,6 @@ import (
 	"crypto"
 	"encoding/json"
 	"errors"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -43,10 +41,10 @@ type Client interface {
 	Initialise() error
 
 	// Authenticate sends an Authenticate request to the ForgeRock platform
-	Authenticate(payload payload.Authenticate) (reply payload.Authenticate, err error)
+	Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error)
 
 	// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-	IoTEndpointInfo() (info payload.IoTEndpoint, err error)
+	IoTEndpointInfo() (info IoTEndpoint, err error)
 
 	// SendCommand sends the signed JWT to the IoT Command Endpoint
 	SendCommand(tokenID string, jws string) (reply []byte, err error)
@@ -57,11 +55,11 @@ type Client interface {
 type Thing struct {
 	Client          Client
 	confirmationKey crypto.Signer // see restrictions
-	handlers        []callback.Handler
+	handlers        []Handler
 }
 
 // NewThing creates a new Thing
-func NewThing(client Client, confirmationKey crypto.Signer, handlers []callback.Handler) *Thing {
+func NewThing(client Client, confirmationKey crypto.Signer, handlers []Handler) *Thing {
 	return &Thing{
 		Client:          client,
 		confirmationKey: confirmationKey,
@@ -71,7 +69,7 @@ func NewThing(client Client, confirmationKey crypto.Signer, handlers []callback.
 
 // authenticate the Thing
 func (t *Thing) authenticate() (tokenID string, err error) {
-	auth := payload.Authenticate{}
+	auth := AuthenticatePayload{}
 	for {
 		if auth, err = t.Client.Authenticate(auth); err != nil {
 			return tokenID, err
@@ -80,7 +78,7 @@ func (t *Thing) authenticate() (tokenID string, err error) {
 		if auth.HasSessionToken() {
 			return auth.TokenId, nil
 		}
-		if err = callback.ProcessCallbacks(auth.Callbacks, t.handlers); err != nil {
+		if err = ProcessCallbacks(auth.Callbacks, t.handlers); err != nil {
 			return tokenID, err
 		}
 	}
@@ -127,7 +125,7 @@ func signedJWTBody(signer crypto.Signer, url, version, tokenID string, body inte
 // RequestAccessToken requests an OAuth 2.0 access token for a thing. The provided scopes will be included in the token
 // if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
 // will include the default scopes configured in the OAuth 2.0 Client.
-func (t *Thing) RequestAccessToken(scopes ...string) (response payload.AccessTokenResponse, err error) {
+func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error) {
 	tokenID, err := t.authenticate()
 	if err != nil {
 		return
@@ -136,7 +134,7 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response payload.AccessTok
 	if err != nil {
 		return
 	}
-	requestBody, err := signedJWTBody(t.confirmationKey, iotInfo.URL, iotInfo.Version, tokenID, payload.NewGetAccessTokenV1(scopes))
+	requestBody, err := signedJWTBody(t.confirmationKey, iotInfo.URL, iotInfo.Version, tokenID, NewGetAccessTokenV1(scopes))
 	if err != nil {
 		return
 	}

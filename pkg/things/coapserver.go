@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/go-ocf/go-coap/net"
@@ -42,7 +41,7 @@ var HeartBeat time.Duration = time.Millisecond * 100
 // authenticateHandler handles authentication requests
 func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler")
-	var auth payload.Authenticate
+	var auth AuthenticatePayload
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
 		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)

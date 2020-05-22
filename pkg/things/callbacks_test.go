@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package callback
+package things
 
 import (
 	"crypto"
@@ -24,6 +24,7 @@ import (
 	"crypto/sha256"
 	"encoding/asn1"
 	"encoding/base64"
+	"gopkg.in/square/go-jose.v2"
 	"math/big"
 	"testing"
 )
@@ -42,6 +43,18 @@ func dummyCB(callbackType string, prompts ...string) Callback {
 		cb.Output[i].Value = p
 	}
 	return cb
+}
+
+func jwtVerifyCB(register bool) Callback {
+	id := "jwt-pop-authentication"
+	if register {
+		id = "jwt-pop-registration"
+	}
+	return Callback{
+		Type:   "HiddenValueCallback",
+		Output: []Entry{{Name: "value", Value: "12345"}, {Name: "id", Value: id}},
+		Input:  []Entry{{Name: "IDToken1", Value: "jwt-pop-authentication"}},
+	}
 }
 
 func TestCallbackHandler_Match(t *testing.T) {
@@ -239,5 +252,120 @@ func TestProcessCallbacks(t *testing.T) {
 
 			}
 		})
+	}
+}
+
+func TestJWTAssertion_Match(t *testing.T) {
+	handler := JWTPoPAuthHandler{}
+	if !handler.Match(jwtVerifyCB(false)) {
+		t.Error("expected true")
+	}
+}
+
+func TestJWTAssertion_Respond(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kid := "testKID"
+	h := JWTPoPAuthHandler{KID: kid, Signer: key, ThingId: "thingOne", Realm: "/", ThingType: "device"}
+	cb := jwtVerifyCB(false)
+	if err := h.Respond(cb); err != nil {
+		t.Fatal(err)
+	}
+	response := cb.Input[0].Value
+	claims := struct {
+		Sub string `json:"sub"`
+		Aud string `json:"aud"`
+		CNF struct {
+			KID string `json:"kid"`
+		} `json:"cnf"`
+		ThingType string `json:"thingType"`
+		Iat       int64  `json:"iat"`
+		Exp       int64  `json:"exp"`
+		Nonce     string `json:"nonce"`
+	}{}
+	err = extractJWTPayload(response, &claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claims.Sub == "" {
+		t.Fatal("missing subject")
+	}
+	if claims.Aud == "" {
+		t.Fatal("missing audience")
+	}
+	if claims.ThingType != "device" {
+		t.Fatal("missing thing type")
+	}
+	if claims.Iat == 0 {
+		t.Fatal("missing issue time")
+	}
+	if claims.Exp == 0 {
+		t.Fatal("missing expiry time")
+	}
+	if claims.Nonce == "" {
+		t.Fatal("missing nonce")
+	}
+	if claims.CNF.KID != kid {
+		t.Fatal("incorrect kid")
+	}
+}
+
+func TestJWTPoPRegHandler_Match(t *testing.T) {
+	handler := JWTPoPRegHandler{}
+	if !handler.Match(jwtVerifyCB(true)) {
+		t.Error("expected true")
+	}
+}
+
+func TestJWTPoPRegHandler_Respond(t *testing.T) {
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kid := "testKID"
+	h := JWTPoPRegHandler{KID: kid, Signer: key, ThingId: "thingOne", Realm: "/", ThingType: "device"}
+	cb := jwtVerifyCB(false)
+	if err := h.Respond(cb); err != nil {
+		t.Fatal(err)
+	}
+	response := cb.Input[0].Value
+	claims := struct {
+		Sub       string `json:"sub"`
+		Aud       string `json:"aud"`
+		ThingType string `json:"thingType"`
+		Iat       int64  `json:"iat"`
+		Exp       int64  `json:"exp"`
+		Nonce     string `json:"nonce"`
+		CNF       struct {
+			JWK jose.JSONWebKey `json:"jwk"`
+		} `json:"cnf"`
+	}{}
+	err = extractJWTPayload(response, &claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claims.Sub == "" {
+		t.Error("missing subject")
+	}
+	if claims.Aud == "" {
+		t.Error("missing audience")
+	}
+	if claims.ThingType != "device" {
+		t.Error("missing thing type")
+	}
+	if claims.Iat == 0 {
+		t.Error("missing issue time")
+	}
+	if claims.Exp == 0 {
+		t.Error("missing expiry time")
+	}
+	if claims.Nonce == "" {
+		t.Error("missing nonce")
+	}
+	if claims.CNF.JWK.KeyID == "" {
+		t.Error("missing JWK:KID")
 	}
 }

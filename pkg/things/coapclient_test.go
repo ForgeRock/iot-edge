@@ -23,7 +23,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/go-ocf/go-coap/net"
@@ -172,12 +171,12 @@ func testIECClientAuthenticate(client *IECClient, server *testCoAPServer) (err e
 	if err != nil {
 		return err
 	}
-	_, err = client.Authenticate(payload.Authenticate{})
+	_, err = client.Authenticate(AuthenticatePayload{})
 	return err
 }
 
 func TestIECClient_Authenticate(t *testing.T) {
-	info := payload.Authenticate{
+	info := AuthenticatePayload{
 		TokenId: "12345",
 	}
 	b, err := json.Marshal(info)
@@ -232,7 +231,7 @@ func testIECClientIoTEndpointInfo(client *IECClient, server *testCoAPServer) (er
 }
 
 func TestIECClient_IoTEndpointInfo(t *testing.T) {
-	info := payload.IoTEndpoint{
+	info := IoTEndpoint{
 		URL:     "/iot",
 		Version: "1",
 	}

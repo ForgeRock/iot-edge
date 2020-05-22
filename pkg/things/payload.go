@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package payload
+package things
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things/callback"
 )
 
 // IoTEndpoint contains the information used to securely connect to the IoT Endpoint
@@ -30,17 +29,17 @@ type IoTEndpoint struct {
 	Version string
 }
 
-// Authenticate represents the outbound and inbound data during an authentication request
-type Authenticate struct {
-	TokenId   string              `json:"tokenId,omitempty"`
-	AuthId    string              `json:"authId,omitempty"`
-	AuthIDKey string              `json:"auth_id_digest,omitempty"`
-	Callbacks []callback.Callback `json:"callbacks,omitempty"`
+// AuthenticatePayload represents the outbound and inbound data during an authentication request
+type AuthenticatePayload struct {
+	TokenId   string     `json:"tokenId,omitempty"`
+	AuthId    string     `json:"authId,omitempty"`
+	AuthIDKey string     `json:"auth_id_digest,omitempty"`
+	Callbacks []Callback `json:"callbacks,omitempty"`
 }
 
 // HasSessionToken returns true if the payload contains a session token
 // Indicates that the authentication workflow has completed successfully
-func (p Authenticate) HasSessionToken() bool {
+func (p AuthenticatePayload) HasSessionToken() bool {
 	return p.TokenId != ""
 }
 
@@ -68,7 +67,7 @@ func NewGetAccessTokenV1(scope []string) CommandRequestPayload {
 	}
 }
 
-func (p Authenticate) String() string {
+func (p AuthenticatePayload) String() string {
 	return payloadToString(p)
 }
 

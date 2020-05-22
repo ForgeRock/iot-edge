@@ -58,13 +58,13 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
 	data.Id.ThingType = "Device"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
 	var server string
 	var iecAddress string
-	switch c := state.InitClients("Anvil-User-Pwd").(type) {
+	switch c := state.InitClients(jwtPopAuthTree).(type) {
 	case *things.AMClient:
 		server = "am"
 	case *things.IECClient:
@@ -74,9 +74,8 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/simple/thing",
 		"-url", am.AMURL,
 		"-realm", fmt.Sprintf("%s", state.Realm()),
-		"-tree", "Anvil-User-Pwd",
+		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
-		"-pwd", data.Id.Password,
 		"-server", server,
 		"-address", iecAddress)
 
@@ -118,11 +117,11 @@ func (t *SimpleIECExample) Setup(state anvil.TestState) (data anvil.ThingData, o
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
 	data.Id.ThingType = "iec"
-	return anvil.CreateIdentity(data)
+	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *SimpleIECExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	switch state.InitClients("Anvil-User-Pwd").(type) {
+	switch state.InitClients(jwtPopAuthTree).(type) {
 	case *things.IECClient:
 		// as this example involves an IEC there is no benefit of running it again during the IEC test set
 		return true
@@ -131,9 +130,8 @@ func (t *SimpleIECExample) Run(state anvil.TestState, data anvil.ThingData) bool
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/simple/iec",
 		"-url", am.AMURL,
 		"-realm", fmt.Sprintf("%s", state.Realm()),
-		"-tree", "Anvil-User-Pwd",
+		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
-		"-pwd", data.Id.Password,
 		"-address", ":0")
 
 	// send standard out and error to debugger

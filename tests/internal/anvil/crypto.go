@@ -23,6 +23,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"fmt"
 	jose "gopkg.in/square/go-jose.v2"
 )
@@ -51,7 +52,12 @@ func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSO
 	if err != nil {
 		return public, private, err
 	}
-	return jose.JSONWebKeySet{
-		Keys: []jose.JSONWebKey{{KeyID: "pop.cnf", Key: private.Public(), Algorithm: string(algorithm), Use: "sig"}},
-	}, private, nil
+
+	webKey := jose.JSONWebKey{Key: private.Public(), Algorithm: string(algorithm), Use: "sig"}
+	kid, err := webKey.Thumbprint(crypto.SHA256)
+	if err != nil {
+		return public, private, err
+	}
+	webKey.KeyID = base64.URLEncoding.EncodeToString(kid)
+	return jose.JSONWebKeySet{Keys: []jose.JSONWebKey{webKey}}, private, nil
 }

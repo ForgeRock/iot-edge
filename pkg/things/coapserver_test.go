@@ -23,7 +23,6 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"errors"
-	"github.com/ForgeRock/iot-edge/pkg/things/payload"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
@@ -102,7 +101,7 @@ func testCOAPServerAuthenticate(m *mockClient) (err error) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = client.Authenticate(payload.Authenticate{})
+	_, err = client.Authenticate(AuthenticatePayload{})
 	return err
 }
 
@@ -113,8 +112,8 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(payload.Authenticate) (authenticate payload.Authenticate, err error) {
-			return payload.Authenticate{}, errors.New("AM auth error")
+		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(AuthenticatePayload) (authenticate AuthenticatePayload, err error) {
+			return AuthenticatePayload{}, errors.New("AM auth error")
 		}}},
 	}
 	for _, subtest := range tests {
@@ -130,7 +129,7 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 	}
 }
 
-func testCOAPServerIoTEndpointInfo(m *mockClient) (info payload.IoTEndpoint, err error) {
+func testCOAPServerIoTEndpointInfo(m *mockClient) (info IoTEndpoint, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	iec := testIEC(m)
 	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
@@ -154,7 +153,7 @@ func TestCOAPServer_IoTEndpointInfo(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "endpoint-error", client: &mockClient{iotEndpointInfoFunc: func() (endpoint payload.IoTEndpoint, err error) {
+		{name: "endpoint-error", client: &mockClient{iotEndpointInfoFunc: func() (endpoint IoTEndpoint, err error) {
 			return endpoint, errors.New("AM endpoint info error")
 		}}},
 	}

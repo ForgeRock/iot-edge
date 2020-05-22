@@ -266,13 +266,13 @@ func (id IdAttributes) String() string {
 }
 
 // CreateIdentity creates an identity in the the given realm using the supplied attributes
-func CreateIdentity(attributes IdAttributes) error {
+func CreateIdentity(realm string, attributes IdAttributes) error {
 	payload, err := json.Marshal(attributes)
 	if err != nil {
 		return err
 	}
 	_, err = crestCreate(
-		AMURL+"/json/users",
+		AMURL+"/json/users?realm="+realm,
 		userEndpointVersion,
 		bytes.NewBuffer(payload))
 	return err
