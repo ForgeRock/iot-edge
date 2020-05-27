@@ -23,10 +23,11 @@ import (
 	"fmt"
 )
 
-// IoTEndpoint contains the information used to securely connect to the IoT Endpoint
-type IoTEndpoint struct {
-	URL     string
-	Version string
+// AMInfoSet contains the information required to construct valid signed JWTs
+type AMInfoSet struct {
+	Realm      string
+	IoTURL     string
+	IoTVersion string
 }
 
 // AuthenticatePayload represents the outbound and inbound data during an authentication request

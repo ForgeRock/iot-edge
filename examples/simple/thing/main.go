@@ -75,15 +75,8 @@ func simpleThing() error {
 	}
 
 	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.NewThing(client, key, []things.Handler{
-		things.JWTPoPAuthHandler{
-			KID:             "pop.cnf",
-			ConfirmationKey: key,
-			ThingID:         *thingName,
-			ThingType:       "device",
-			Realm:           *amRealm,
-		},
-	})
+	thing := things.NewThing(client, things.SigningKey{KID: "pop.cnf", Signer: key},
+		[]things.Handler{things.ThingJWTHandler{ThingID: *thingName}})
 	err = thing.Initialise()
 	if err != nil {
 		return err

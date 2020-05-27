@@ -49,7 +49,7 @@ dirLoop:
 		if !entry.IsDir() {
 			continue dirLoop
 		}
-		subdirectory := filepath.Join(directory,entry.Name())
+		subdirectory := filepath.Join(directory, entry.Name())
 		files, err := ioutil.ReadDir(subdirectory)
 		if err != nil {
 			return nodes, err
@@ -64,7 +64,7 @@ dirLoop:
 			if err != nil {
 				return nodes, err
 			}
-			nodes = append(nodes, Node{Id: nameWithoutExtension(file), Type:entry.Name(), Config:b})
+			nodes = append(nodes, Node{Id: nameWithoutExtension(file), Type: entry.Name(), Config: b})
 		}
 	}
 	return nodes, err
@@ -75,8 +75,8 @@ dirLoop:
 // Only .json files are read
 // Independent nodes are returned before dependent nodes
 func ReadNodes(rootDirectory string) (nodes []Node, err error) {
-	independent := filepath.Join(rootDirectory,"independent")
-	dependent := filepath.Join(rootDirectory,"dependent")
+	independent := filepath.Join(rootDirectory, "independent")
+	dependent := filepath.Join(rootDirectory, "dependent")
 	if _, err := os.Stat(independent); err == nil {
 		nodes, err = readNodeSet(nodes, independent)
 		if err != nil {
@@ -107,7 +107,7 @@ func ReadTrees(dirname string) (trees []Tree, err error) {
 		if err != nil {
 			return
 		}
-		trees = append(trees, Tree{Id: nameWithoutExtension(f), Config:b})
+		trees = append(trees, Tree{Id: nameWithoutExtension(f), Config: b})
 	}
 	return
 }

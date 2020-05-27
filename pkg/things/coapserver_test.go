@@ -129,7 +129,7 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 	}
 }
 
-func testCOAPServerIoTEndpointInfo(m *mockClient) (info IoTEndpoint, err error) {
+func testCOAPServerAMInfo(m *mockClient) (info AMInfoSet, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	iec := testIEC(m)
 	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
@@ -143,28 +143,28 @@ func testCOAPServerIoTEndpointInfo(m *mockClient) (info IoTEndpoint, err error) 
 	if err != nil {
 		panic(err)
 	}
-	return client.IoTEndpointInfo()
+	return client.AMInfo()
 }
 
-func TestCOAPServer_IoTEndpointInfo(t *testing.T) {
+func TestCOAPServer_AMInfo(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "endpoint-error", client: &mockClient{iotEndpointInfoFunc: func() (endpoint IoTEndpoint, err error) {
+		{name: "endpoint-error", client: &mockClient{amInfoFunc: func() (endpoint AMInfoSet, err error) {
 			return endpoint, errors.New("AM endpoint info error")
 		}}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			info, err := testCOAPServerIoTEndpointInfo(subtest.client)
+			info, err := testCOAPServerAMInfo(subtest.client)
 			if subtest.successful {
 				if err != nil {
 					t.Error(err)
-				} else if info != subtest.client.iotEndpointInfo {
-					t.Errorf("Expected info %v, got %v", subtest.client.iotEndpointInfo, info)
+				} else if info != subtest.client.amInfo {
+					t.Errorf("Expected info %v, got %v", subtest.client.amInfo, info)
 				}
 				return
 			}

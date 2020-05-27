@@ -23,6 +23,24 @@ import (
 	"testing"
 )
 
+var testKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+var testKID = "testKID"
+
+type mockThingIdentity struct {
+}
+
+func (id mockThingIdentity) ConfirmationKey() SigningKey {
+	return SigningKey{testKID, testKey}
+}
+
+func (id mockThingIdentity) Type() ThingType {
+	return TypeDevice
+}
+
+func (id mockThingIdentity) Realm() string {
+	return "testRealm"
+}
+
 func dummyCB(callbackType string, prompts ...string) Callback {
 	l := len(prompts)
 	if l == 0 {
@@ -51,53 +69,43 @@ func jwtVerifyCB(register bool) Callback {
 	}
 }
 
-func TestCallbackHandler_Match(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes["thingMode"] = "test"
-
+func TestCallbackHandler_HandleResult(t *testing.T) {
 	tests := []struct {
 		name    string
 		cb      Callback
 		handler Handler
-		want    bool
+		err     error
 	}{
 		// NameHandler
-		{name: "Name/True", cb: dummyCB(TypeNameCallback), handler: NameHandler{Name: "Odysseus"}, want: true},
-		{name: "Name/False", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, want: false},
+		{name: "Name/ok", cb: dummyCB(TypeNameCallback), handler: NameHandler{Name: "Odysseus"}, err: nil},
+		{name: "Name/notHandled", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, err: errNotHandled},
 		// PasswordHandler
-		{name: "Password/True", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, want: true},
-		{name: "Password/False", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, want: false},
-		// AttributeHandler
-		{name: "Attribute/NoOutput", cb: Callback{Type: TypeTextInputCallback}, handler: AttributeHandler{Attributes: attributes}, want: false},
-		{name: "Attribute/False/WrongType", cb: dummyCB(TypeNameCallback), handler: AttributeHandler{Attributes: attributes}, want: false},
-		{name: "Attribute/False/WrongPrompt", cb: dummyCB(TypeTextInputCallback, "Wrong prompt"), handler: AttributeHandler{Attributes: attributes}, want: false},
-		{name: "Attribute/True", cb: dummyCB(TypeTextInputCallback, "thingMode"), handler: AttributeHandler{Attributes: attributes}, want: true},
+		{name: "Password/ok", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, err: nil},
+		{name: "Password/notHandled", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, err: errNotHandled},
+		// ThingJWTHandler
+		{name: "ThingJWT/notHandled", cb: dummyCB(TypeNameCallback), handler: ThingJWTHandler{ThingID: "Odysseus"}, err: errNotHandled},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			if got := subtest.handler.Match(subtest.cb); got != subtest.want {
-				t.Errorf("Match() = %v, want %v", got, subtest.want)
+			if got := subtest.handler.Handle(nil, subtest.cb); got != subtest.err {
+				t.Errorf("Handle() = %v, want %v", got, subtest.err)
 			}
 		})
 	}
 }
 
 func TestCallbackHandler_Respond_NoInput(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes["thingMode"] = "test"
-
 	tests := []struct {
 		name    string
 		handler Handler
 	}{
 		{name: "Name", handler: NameHandler{Name: "Odysseus"}},
 		{name: "Password", handler: PasswordHandler{Password: "password"}},
-		{name: "Attribute", handler: AttributeHandler{Attributes: attributes}},
 	}
 	for _, subtest := range tests {
 		cb := Callback{}
 		t.Run(subtest.name, func(t *testing.T) {
-			if err := subtest.handler.Respond(cb); err == nil {
+			if err := subtest.handler.Handle(nil, cb); err == nil {
 				t.Errorf("Expected an error")
 			}
 		})
@@ -108,7 +116,7 @@ func TestNameCallbackHandler_Respond(t *testing.T) {
 	name := "Odysseus"
 	handler := NameHandler{Name: name}
 	cb := dummyCB(TypeNameCallback)
-	if err := handler.Respond(cb); err != nil {
+	if err := handler.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != name {
@@ -119,27 +127,12 @@ func TestNameCallbackHandler_Respond(t *testing.T) {
 func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	p := "password"
 	handler := PasswordHandler{Password: p}
-	cb := dummyCB(TypeNameCallback)
-	if err := handler.Respond(cb); err != nil {
+	cb := dummyCB(TypePasswordCallback)
+	if err := handler.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != p {
 		t.Error("Password not updated")
-	}
-}
-
-func TestAttributeCallbackHandler_Respond(t *testing.T) {
-	k := "thingMode"
-	v := "test"
-	attributes := make(map[string]string)
-	attributes[k] = v
-	handler := AttributeHandler{attributes}
-	cb := dummyCB(TypeNameCallback, k)
-	if err := handler.Respond(cb); err != nil {
-		t.Fatal(err)
-	}
-	if cb.Input[0].Value != v {
-		t.Error("Attribute not updated")
 	}
 }
 
@@ -159,7 +152,7 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := ProcessCallbacks(subtest.callbacks, subtest.handlers)
+			err := ProcessCallbacks(mockThingIdentity{}, subtest.handlers, subtest.callbacks)
 			if subtest.ok && err != nil {
 				t.Errorf("unexpected error but got: %v", err)
 
@@ -171,22 +164,11 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 }
 
-func TestJWTPoPAuthHandler_Match(t *testing.T) {
-	handler := JWTPoPAuthHandler{}
-	if !handler.Match(jwtVerifyCB(false)) {
-		t.Error("expected true")
-	}
-}
-
 func TestJWTPoPAuthHandler_Respond(t *testing.T) {
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	kid := "testKID"
-	h := JWTPoPAuthHandler{KID: kid, ConfirmationKey: key, ThingID: "thingOne", Realm: "/", ThingType: "device"}
+	thingID := "thingOne"
+	h := ThingJWTHandler{ThingID: thingID}
 	cb := jwtVerifyCB(false)
-	if err := h.Respond(cb); err != nil {
+	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
@@ -205,7 +187,7 @@ func TestJWTPoPAuthHandler_Respond(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if claims.Sub == "" {
+	if claims.Sub != thingID {
 		t.Fatal("missing subject")
 	}
 	if claims.Aud == "" {
@@ -223,7 +205,7 @@ func TestJWTPoPAuthHandler_Respond(t *testing.T) {
 	if claims.Nonce == "" {
 		t.Fatal("missing nonce")
 	}
-	if claims.CNF.KID != kid {
-		t.Fatal("incorrect kid")
+	if claims.CNF.KID != testKID {
+		t.Fatal("incorrect KID")
 	}
 }

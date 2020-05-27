@@ -25,27 +25,28 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/things"
 	jose "gopkg.in/square/go-jose.v2"
 )
 
 // GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
-func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private crypto.Signer, err error) {
+func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private things.SigningKey, err error) {
 	// create a new key
 	switch algorithm {
 	case jose.ES256:
-		private, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		private.Signer, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	case jose.ES384:
-		private, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		private.Signer, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	case jose.ES512:
-		private, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		private.Signer, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	case jose.EdDSA:
-		_, private, err = ed25519.GenerateKey(rand.Reader)
+		_, private.Signer, err = ed25519.GenerateKey(rand.Reader)
 	case jose.PS256:
-		private, err = rsa.GenerateKey(rand.Reader, 2048)
+		private.Signer, err = rsa.GenerateKey(rand.Reader, 2048)
 	case jose.PS384:
-		private, err = rsa.GenerateKey(rand.Reader, 3072)
+		private.Signer, err = rsa.GenerateKey(rand.Reader, 3072)
 	case jose.PS512:
-		private, err = rsa.GenerateKey(rand.Reader, 4096)
+		private.Signer, err = rsa.GenerateKey(rand.Reader, 4096)
 	default:
 		err = fmt.Errorf("unsupported signing algorithm %s", algorithm)
 	}
@@ -53,11 +54,12 @@ func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSO
 		return public, private, err
 	}
 
-	webKey := jose.JSONWebKey{Key: private.Public(), Algorithm: string(algorithm), Use: "sig"}
+	webKey := jose.JSONWebKey{Key: private.Signer.Public(), Algorithm: string(algorithm), Use: "sig"}
 	kid, err := webKey.Thumbprint(crypto.SHA256)
 	if err != nil {
 		return public, private, err
 	}
 	webKey.KeyID = base64.URLEncoding.EncodeToString(kid)
+	private.KID = webKey.KeyID
 	return jose.JSONWebKeySet{Keys: []jose.JSONWebKey{webKey}}, private, nil
 }

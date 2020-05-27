@@ -18,7 +18,6 @@
 package anvil
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -194,20 +193,14 @@ func TestIEC(realm string, authTree string) (*things.IEC, error) {
 		return nil, err
 	}
 	return things.NewIEC(signer, am.AMURL, realm, authTree, []things.Handler{
-		things.JWTPoPAuthHandler{
-			KID:             attributes.ThingKeys.Keys[0].KeyID,
-			ConfirmationKey: signer,
-			ThingID:         attributes.Name,
-			ThingType:       attributes.ThingType,
-			Realm:           realm,
-		},
+		things.ThingJWTHandler{ThingID: attributes.Name},
 	}), nil
 }
 
 // ThingData holds information about a Thing used in a test
 type ThingData struct {
 	Id     am.IdAttributes
-	Signer crypto.Signer
+	Signer things.SigningKey
 }
 
 // TestState contains client and realm data required to run a test

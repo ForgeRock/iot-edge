@@ -177,11 +177,12 @@ func (c *AMClient) iotURL() string {
 	return c.BaseURL + "/json/iot?_action=command&realm=" + c.Realm
 }
 
-// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-func (c *AMClient) IoTEndpointInfo() (info IoTEndpoint, err error) {
-	return IoTEndpoint{
-		URL:     c.iotURL(),
-		Version: commandEndpointVersion,
+// AMInfo returns AM related information to the client
+func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
+	return AMInfoSet{
+		Realm:      c.Realm,
+		IoTURL:     c.iotURL(),
+		IoTVersion: commandEndpointVersion,
 	}, nil
 }
 

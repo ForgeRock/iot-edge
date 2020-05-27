@@ -22,40 +22,59 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
-func jwtPoPAuthThing(state anvil.TestState, data anvil.ThingData) *things.Thing {
-	kid := "pop.cnf"
-	if len(data.Id.ThingKeys.Keys) > 0 {
-		kid = data.Id.ThingKeys.Keys[0].KeyID
-	}
+func thingJWTAuth(state anvil.TestState, data anvil.ThingData) *things.Thing {
 	return things.NewThing(state.InitClients(jwtPopAuthTree), data.Signer, []things.Handler{
-		things.JWTPoPAuthHandler{
-			KID:             kid,
-			ConfirmationKey: data.Signer,
-			ThingID:         data.Id.Name,
-			ThingType:       data.Id.ThingType,
-			Realm:           state.Realm(),
-		},
+		things.ThingJWTHandler{ThingID: data.Id.Name},
 	})
 }
 
-// AuthenticateWithJWTPoP tests the authentication of a pre-registered device
-type AuthenticateWithJWTPoP struct {
+// AuthenticateThingJWT tests the authentication of a pre-registered device
+type AuthenticateThingJWT struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *AuthenticateWithJWTPoP) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *AuthenticateWithJWTPoP) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := jwtPoPAuthThing(state, data)
+func (t *AuthenticateThingJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := thingJWTAuth(state, data)
+	err := thing.Initialise()
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// AuthenticateThingJWTNonDefaultKID tests the authentication of a pre-registered device with a non-default key id
+type AuthenticateThingJWTNonDefaultKID struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateThingJWTNonDefaultKID) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	// use a non-default key id
+	data.Id.ThingKeys.Keys[0].KeyID = "pop.cnf"
+	data.Signer.KID = "pop.cnf"
+
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AuthenticateThingJWTNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := thingJWTAuth(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -70,7 +89,7 @@ type AuthenticateWithoutConfirmationKey struct {
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = "device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -82,7 +101,7 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return false
 	}
-	thing := jwtPoPAuthThing(state, data)
+	thing := thingJWTAuth(state, data)
 	err = thing.Initialise()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)

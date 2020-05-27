@@ -30,12 +30,12 @@ type sendCommandClaims struct {
 }
 
 type jwtVerifyClaims struct {
-	Sub       string `json:"sub"`
-	Aud       string `json:"aud"`
-	ThingType string `json:"thingType"`
-	Iat       int64  `json:"iat"`
-	Exp       int64  `json:"exp"`
-	Nonce     string `json:"nonce"`
+	Sub       string    `json:"sub"`
+	Aud       string    `json:"aud"`
+	ThingType ThingType `json:"thingType"`
+	Iat       int64     `json:"iat"`
+	Exp       int64     `json:"exp"`
+	Nonce     string    `json:"nonce"`
 	CNF       struct {
 		KID string           `json:"kid,omitempty"`
 		JWK *jose.JSONWebKey `json:"jwk,omitempty"`
