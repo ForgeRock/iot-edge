@@ -39,12 +39,12 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "Device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := jwtPoPAuthThing(state, data)
+	thing := thingJWTAuth(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -70,12 +70,12 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "Device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := jwtPoPAuthThing(state, data)
+	thing := thingJWTAuth(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -101,12 +101,12 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "Device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := jwtPoPAuthThing(state, data)
+	thing := thingJWTAuth(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -133,12 +133,12 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "Device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := jwtPoPAuthThing(state, data)
+	thing := thingJWTAuth(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false
@@ -169,13 +169,13 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = "Device"
+	data.Id.ThingType = things.TypeDevice
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := jwtPoPAuthThing(state, data)
+	thing := thingJWTAuth(state, data)
 	err := thing.Initialise()
 	if err != nil {
 		return false

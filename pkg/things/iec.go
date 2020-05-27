@@ -17,7 +17,6 @@
 package things
 
 import (
-	"crypto"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
@@ -38,12 +37,13 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(signer crypto.Signer, baseURL string, realm string, authTree string, handlers []Handler) *IEC {
+func NewIEC(confirmationKey SigningKey, baseURL string, realm string, authTree string, handlers []Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
-			confirmationKey: signer,
+			confirmationKey: confirmationKey,
 			handlers:        handlers,
 			Client:          NewAMClient(baseURL, realm, authTree),
+			thingType:       TypeIEC,
 		},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}

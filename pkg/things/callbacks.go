@@ -17,7 +17,6 @@
 package things
 
 import (
-	"crypto"
 	"errors"
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
@@ -27,17 +26,15 @@ import (
 )
 
 var (
-	ErrNoInput  = errors.New("no input Entry to put response")
-	ErrNoOutput = errors.New("no output Entry for response")
+	ErrNoInput    = errors.New("no input Entry to put response")
+	ErrNoOutput   = errors.New("no output Entry for response")
+	errNotHandled = errors.New("callback not handled")
 )
 
 const (
 	TypeNameCallback      = "NameCallback"
 	TypePasswordCallback  = "PasswordCallback"
 	TypeTextInputCallback = "TextInputCallback"
-
-	PromptX509CertCallback          = "PEM encoded X.509 Certificate"
-	PromptProofOfPossessionCallback = "challenge"
 )
 
 // Entry represents an Input or Output Entry in a Callback
@@ -74,12 +71,21 @@ func (c Callback) ID() string {
 	return ""
 }
 
+// ThingIdentity allows a callback handler to request information from the Thing
+// This is especially important for dynamic data
+type ThingIdentity interface {
+	// Realm returns the realm that the identity belongs
+	Realm() string
+	// Type returns the Thing type
+	Type() ThingType
+	// ConfirmationKey returns the Thing's confirmation key
+	ConfirmationKey() SigningKey
+}
+
 // CallbackHandler is an interface for an AM callback handler
 type Handler interface {
-	// Match returns true if the handler should respond to the callback
-	Match(Callback) bool
-	// Respond by modifying the callback
-	Respond(Callback) error
+	// Handle the callback by modifying it
+	Handle(id ThingIdentity, cb Callback) error
 }
 
 // ErrMissingHandler is returned when the callback cannot be handled
@@ -92,20 +98,21 @@ func (e ErrMissingHandler) Error() string {
 }
 
 // ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
-func ProcessCallbacks(callbacks []Callback, handlers []Handler) error {
+func ProcessCallbacks(id ThingIdentity, handlers []Handler, callbacks []Callback) (err error) {
 	for _, cb := range callbacks {
-		matched := false
 	handlerLoop:
 		for _, h := range handlers {
-			if matched = h.Match(cb); matched {
-				err := h.Respond(cb)
-				if err != nil {
-					return err
-				}
+			switch err = h.Handle(id, cb); err {
+			case errNotHandled:
+				continue
+			case nil:
 				break handlerLoop
+			default:
+				DebugLogger.Println(err)
+				continue
 			}
 		}
-		if !matched {
+		if err != nil {
 			return ErrMissingHandler{callback: cb}
 		}
 	}
@@ -118,14 +125,14 @@ type NameHandler struct {
 	Name string
 }
 
-func (h NameHandler) Match(c Callback) bool {
-	return c.Type == TypeNameCallback
-}
-func (h NameHandler) Respond(c Callback) error {
-	if len(c.Input) == 0 {
+func (h NameHandler) Handle(id ThingIdentity, cb Callback) error {
+	if cb.Type != TypeNameCallback {
+		return errNotHandled
+	}
+	if len(cb.Input) == 0 {
 		return ErrNoInput
 	}
-	c.Input[0].Value = h.Name
+	cb.Input[0].Value = h.Name
 	return nil
 }
 
@@ -135,56 +142,32 @@ type PasswordHandler struct {
 	Password string
 }
 
-func (h PasswordHandler) Match(c Callback) bool {
-	return c.Type == TypePasswordCallback
-}
-func (h PasswordHandler) Respond(c Callback) error {
-	if len(c.Input) == 0 {
+func (h PasswordHandler) Handle(id ThingIdentity, cb Callback) error {
+	if cb.Type != TypePasswordCallback {
+		return errNotHandled
+	}
+	if len(cb.Input) == 0 {
 		return ErrNoInput
 	}
-	c.Input[0].Value = h.Password
+	cb.Input[0].Value = h.Password
 	return nil
 }
 
-// AttributeHandler handles an AM attribute collector callback
-type AttributeHandler struct {
-	// Attributes is a key-value map containing Thing attributes. Keys should match those requested by AM
-	Attributes map[string]string
+type ThingJWTHandler struct {
+	ThingID string
 }
 
-func (h AttributeHandler) Match(c Callback) bool {
-	if c.Type != TypeTextInputCallback || len(c.Output) == 0 {
-		return false
+func (h ThingJWTHandler) Handle(id ThingIdentity, cb Callback) error {
+	switch cb.ID() {
+	case "jwt-pop-authentication":
+	default:
+		return errNotHandled
 	}
-	_, ok := h.Attributes[c.Output[0].Value]
-	return ok
-}
-func (h AttributeHandler) Respond(c Callback) error {
-	if len(c.Input) == 0 {
-		return ErrNoInput
-	}
-	c.Input[0].Value, _ = h.Attributes[c.Output[0].Value]
-	return nil
-}
-
-type JWTPoPAuthHandler struct {
-	KID             string
-	ConfirmationKey crypto.Signer
-	ThingID         string
-	ThingType       string
-	Realm           string
-}
-
-func (h JWTPoPAuthHandler) Match(c Callback) bool {
-	return c.ID() == "jwt-pop-authentication"
-}
-
-func (h JWTPoPAuthHandler) Respond(c Callback) error {
-	if len(c.Input) == 0 {
+	if len(cb.Input) == 0 {
 		return ErrNoInput
 	}
 	var challenge string
-	for _, e := range c.Output {
+	for _, e := range cb.Output {
 		if e.Name == "value" {
 			challenge = e.Value
 			break
@@ -194,17 +177,19 @@ func (h JWTPoPAuthHandler) Respond(c Callback) error {
 		return ErrNoOutput
 	}
 
+	key := id.ConfirmationKey()
+
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
 	// check that the signer is supported
-	alg, err := signingJWAFromKey(h.ConfirmationKey)
+	alg, err := signingJWAFromKey(key.Signer)
 	if err != nil {
 		return err
 	}
 
 	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(h.ConfirmationKey)
+	opaque := cryptosigner.Opaque(key.Signer)
 
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
@@ -212,14 +197,14 @@ func (h JWTPoPAuthHandler) Respond(c Callback) error {
 	}
 	claims := jwtVerifyClaims{}
 	claims.Sub = h.ThingID
-	claims.Aud = h.Realm
-	claims.ThingType = h.ThingType
+	claims.Aud = id.Realm()
+	claims.ThingType = id.Type()
 	claims.Nonce = challenge
-	claims.CNF.KID = h.KID
+	claims.CNF.KID = key.KID
 	claims.Iat = time.Now().Unix()
 	claims.Exp = time.Now().Add(5 * time.Minute).Unix()
 	builder := jwt.Signed(sig).Claims(claims)
 	response, err := builder.CompactSerialize()
-	c.Input[0].Value = response
+	cb.Input[0].Value = response
 	return err
 }

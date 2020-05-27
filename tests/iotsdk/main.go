@@ -40,7 +40,8 @@ const (
 
 // define the full test set
 var tests = []anvil.SDKTest{
-	&AuthenticateWithJWTPoP{},
+	&AuthenticateThingJWT{},
+	&AuthenticateThingJWTNonDefaultKID{},
 	&AuthenticateWithoutConfirmationKey{},
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},

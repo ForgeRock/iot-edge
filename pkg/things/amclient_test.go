@@ -181,24 +181,26 @@ func TestAMClient_Authenticate(t *testing.T) {
 	}
 }
 
-func TestAMClient_IoTEndpointInfo(t *testing.T) {
+func TestAMClient_AMInfo(t *testing.T) {
 	url := "http://same-path.org"
 	client := NewAMClient(url, testRealm, testTree)
-	info, err := client.IoTEndpointInfo()
+	info, err := client.AMInfo()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Version != commandEndpointVersion {
+	if info.Realm != testRealm {
+		t.Error("incorrect realm")
+	}
+	if info.IoTVersion != commandEndpointVersion {
 		t.Error("incorrect command endpoint version")
 	}
-	if info.URL != client.iotURL() {
+	if info.IoTURL != client.iotURL() {
 		t.Error("incorrect command endpoint url")
 	}
 }
 
 func testSendCommandHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	mux = testServerInfoHTTPMux(http.StatusOK, testServerInfo())
-	fmt.Println(testHTTPCommandEndpoint)
 	mux.HandleFunc(testHTTPCommandEndpoint, func(writer http.ResponseWriter, request *http.Request) {
 		if code != http.StatusOK {
 			http.Error(writer, string(response), code)

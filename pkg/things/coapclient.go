@@ -150,8 +150,8 @@ func (c *IECClient) Authenticate(payload AuthenticatePayload) (reply Authenticat
 	return reply, nil
 }
 
-// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-func (c *IECClient) IoTEndpointInfo() (info IoTEndpoint, err error) {
+// AMInfo makes a request to the IEC for AM related information
+func (c *IECClient) AMInfo() (info AMInfoSet, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return info, err
@@ -160,7 +160,7 @@ func (c *IECClient) IoTEndpointInfo() (info IoTEndpoint, err error) {
 	ctx, cancel := c.context()
 	defer cancel()
 
-	response, err := conn.GetWithContext(ctx, "/iotendpointinfo")
+	response, err := conn.GetWithContext(ctx, "/aminfo")
 	if err != nil {
 		return info, err
 	} else if response.Code() != codes.Content {

@@ -57,7 +57,7 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 		return data, false
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
-	data.Id.ThingType = "Device"
+	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -116,7 +116,7 @@ func (t *SimpleIECExample) Setup(state anvil.TestState) (data anvil.ThingData, o
 		return data, false
 	}
 	data.Id.ThingKeys = jose.JSONWebKeySet{Keys: []jose.JSONWebKey{verifier}}
-	data.Id.ThingType = "iec"
+	data.Id.ThingType = things.TypeIEC
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 

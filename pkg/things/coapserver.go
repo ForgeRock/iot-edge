@@ -72,7 +72,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 // iotEndpointInfoHandler handles IoT Endpoint Info requests
 func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("iotEndpointInfoHandler")
-	info, err := c.Thing.Client.IoTEndpointInfo()
+	info, err := c.Thing.Client.AMInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(""))
@@ -133,7 +133,7 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 	c.coapChan = make(chan error, 1)
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
-	mux.HandleFunc("/iotendpointinfo", c.iotEndpointInfoHandler)
+	mux.HandleFunc("/aminfo", c.iotEndpointInfoHandler)
 	mux.HandleFunc("/sendcommand", c.sendCommandHandler)
 
 	cert, err := publicKeyCertificate(key)

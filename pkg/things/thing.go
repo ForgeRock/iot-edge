@@ -18,6 +18,7 @@ package things
 
 import (
 	"crypto"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"gopkg.in/square/go-jose.v2"
@@ -43,27 +44,43 @@ type Client interface {
 	// Authenticate sends an Authenticate request to the ForgeRock platform
 	Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error)
 
-	// IoTEndpointInfo returns the information required to create a valid signed JWT for the IoT endpoint
-	IoTEndpointInfo() (info IoTEndpoint, err error)
+	// AMInfo returns the information required to construct valid signed JWTs
+	AMInfo() (info AMInfoSet, err error)
 
 	// SendCommand sends the signed JWT to the IoT Command Endpoint
 	SendCommand(tokenID string, jws string) (reply []byte, err error)
+}
+
+// ThingType describes the Thing type
+type ThingType string
+
+const (
+	TypeDevice ThingType = "device"
+	TypeIEC    ThingType = "iec"
+)
+
+// SigningKey describes a key used for signing messages sent to AM
+type SigningKey struct {
+	KID    string
+	Signer crypto.Signer
 }
 
 // Thing represents an AM Thing identity
 // Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
 type Thing struct {
 	Client          Client
-	confirmationKey crypto.Signer // see restrictions
+	confirmationKey SigningKey // see restrictions
 	handlers        []Handler
+	thingType       ThingType
 }
 
 // NewThing creates a new Thing
-func NewThing(client Client, confirmationKey crypto.Signer, handlers []Handler) *Thing {
+func NewThing(client Client, confirmationKey SigningKey, handlers []Handler) *Thing {
 	return &Thing{
 		Client:          client,
 		confirmationKey: confirmationKey,
 		handlers:        handlers,
+		thingType:       TypeDevice,
 	}
 }
 
@@ -78,7 +95,7 @@ func (t *Thing) authenticate() (tokenID string, err error) {
 		if auth.HasSessionToken() {
 			return auth.TokenId, nil
 		}
-		if err = ProcessCallbacks(auth.Callbacks, t.handlers); err != nil {
+		if err = ProcessCallbacks(t, t.handlers, auth.Callbacks); err != nil {
 			return tokenID, err
 		}
 	}
@@ -86,6 +103,12 @@ func (t *Thing) authenticate() (tokenID string, err error) {
 
 // Initialise the Thing
 func (t *Thing) Initialise() (err error) {
+	if t.confirmationKey.KID == "" {
+		t.confirmationKey.KID, err = createKID(t.confirmationKey.Signer)
+		if err != nil {
+			return err
+		}
+	}
 	err = t.Client.Initialise()
 	if err != nil {
 		return err
@@ -130,11 +153,11 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	if err != nil {
 		return
 	}
-	iotInfo, err := t.Client.IoTEndpointInfo()
+	info, err := t.Client.AMInfo()
 	if err != nil {
 		return
 	}
-	requestBody, err := signedJWTBody(t.confirmationKey, iotInfo.URL, iotInfo.Version, tokenID, NewGetAccessTokenV1(scopes))
+	requestBody, err := signedJWTBody(t.confirmationKey.Signer, info.IoTURL, info.IoTVersion, tokenID, NewGetAccessTokenV1(scopes))
 	if err != nil {
 		return
 	}
@@ -148,4 +171,44 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	err = json.Unmarshal(reply, &response.Content)
 	DebugLogger.Println("RequestAccessToken request completed successfully")
 	return
+}
+
+// Realm returns the Thing's AM realm
+func (t *Thing) Realm() string {
+	info, err := t.Client.AMInfo()
+	if err != nil {
+		DebugLogger.Println(err)
+	}
+	return info.Realm
+}
+
+// Type returns the Thing's type
+func (t *Thing) Type() ThingType {
+	return t.thingType
+}
+
+// ConfirmationKey returns the Thing's confirmation signing key
+func (t *Thing) ConfirmationKey() SigningKey {
+	return t.confirmationKey
+}
+
+// createKID creates a key ID for a signer
+func createKID(key crypto.Signer) (string, error) {
+	thumbprint, err := (&jose.JSONWebKey{Key: key.Public()}).Thumbprint(crypto.SHA256)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(thumbprint), nil
+}
+
+// SetConfirmationKey sets the Thing's confirmation key
+func (t *Thing) SetConfirmationKey(key SigningKey) (err error) {
+	if key.KID == "" {
+		key.KID, err = createKID(key.Signer)
+		if err != nil {
+			return err
+		}
+	}
+	t.confirmationKey = key
+	return nil
 }

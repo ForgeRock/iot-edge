@@ -26,16 +26,16 @@ import (
 
 // mockClient mocks a thing.mockClient
 type mockClient struct {
-	AuthenticateFunc    func(AuthenticatePayload) (AuthenticatePayload, error)
-	iotEndpointInfoFunc func() (IoTEndpoint, error)
-	iotEndpointInfo     IoTEndpoint
-	sendCommandFunc     func(string, string) ([]byte, error)
+	AuthenticateFunc func(AuthenticatePayload) (AuthenticatePayload, error)
+	amInfoFunc       func() (AMInfoSet, error)
+	amInfo           AMInfoSet
+	sendCommandFunc  func(string, string) ([]byte, error)
 }
 
 func (m *mockClient) Initialise() error {
-	m.iotEndpointInfo = IoTEndpoint{
-		URL:     "/info",
-		Version: "1",
+	m.amInfo = AMInfoSet{
+		IoTURL:     "/info",
+		IoTVersion: "1",
 	}
 	return nil
 }
@@ -48,11 +48,11 @@ func (m *mockClient) Authenticate(payload AuthenticatePayload) (reply Authentica
 	return reply, nil
 }
 
-func (m *mockClient) IoTEndpointInfo() (info IoTEndpoint, err error) {
-	if m.iotEndpointInfoFunc != nil {
-		return m.iotEndpointInfoFunc()
+func (m *mockClient) AMInfo() (info AMInfoSet, err error) {
+	if m.amInfoFunc != nil {
+		return m.amInfoFunc()
 	}
-	return m.iotEndpointInfo, nil
+	return m.amInfo, nil
 }
 
 func (m *mockClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
