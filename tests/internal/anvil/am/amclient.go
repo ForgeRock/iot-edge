@@ -116,7 +116,7 @@ func crestUpdate(endpoint string, version string, payload io.Reader) (reply []by
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
 		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
@@ -372,6 +372,23 @@ func UpdateAgent(realm, agentName, payloadPath string) (err error) {
 	_, err = crestUpdate(
 		fmt.Sprintf("%s/json/realm-config/agents/%s?realm=%s", AMURL, agentName, realm),
 		realmConfigEndpointVersion,
+		bytes.NewReader(b))
+	return err
+}
+
+// CreateSecretMapping creates or updates the secret mapping in the default keystore
+func CreateSecretMapping(secretID string, aliases []string) (err error) {
+	mapping := struct {
+		SecretID string   `json:"secretId"`
+		Aliases  []string `json:"aliases"`
+	}{SecretID: secretID, Aliases: aliases}
+	b, err := json.Marshal(mapping)
+	if err != nil {
+		return err
+	}
+	_, err = crestUpdate(
+		fmt.Sprintf("%s/json/global-config/secrets/stores/KeyStoreSecretStore/default-keystore/mappings/%s", AMURL, secretID),
+		"protocol=2.0,resource=1.0",
 		bytes.NewReader(b))
 	return err
 }

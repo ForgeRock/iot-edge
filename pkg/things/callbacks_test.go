@@ -20,7 +20,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"gopkg.in/square/go-jose.v2"
+	"math/big"
 	"testing"
+	"time"
 )
 
 var testKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -164,7 +169,7 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 }
 
-func TestJWTPoPAuthHandler_Respond(t *testing.T) {
+func TestThingJWTHandler_Auth(t *testing.T) {
 	thingID := "thingOne"
 	h := ThingJWTHandler{ThingID: thingID}
 	cb := jwtVerifyCB(false)
@@ -207,5 +212,76 @@ func TestJWTPoPAuthHandler_Respond(t *testing.T) {
 	}
 	if claims.CNF.KID != testKID {
 		t.Fatal("incorrect KID")
+	}
+}
+
+func TestThingWTHandler_Register(t *testing.T) {
+	thingID := "thingOne"
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	certTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: thingID},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		IsCA:         true,
+	}
+	certBytes, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, key.Public(), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := ThingJWTHandler{ThingID: thingID, Certificates: []*x509.Certificate{cert}}
+	cb := jwtVerifyCB(true)
+	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
+		t.Fatal(err)
+	}
+	response := cb.Input[0].Value
+	claims := struct {
+		Sub string `json:"sub"`
+		Aud string `json:"aud"`
+		CNF struct {
+			JWK *jose.JSONWebKey `json:"jwk,omitempty"`
+		} `json:"cnf"`
+		ThingType string `json:"thingType"`
+		Iat       int64  `json:"iat"`
+		Exp       int64  `json:"exp"`
+		Nonce     string `json:"nonce"`
+	}{}
+	err = extractJWTPayload(response, &claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claims.Sub != thingID {
+		t.Fatal("missing subject")
+	}
+	if claims.Aud == "" {
+		t.Fatal("missing audience")
+	}
+	if claims.ThingType != "device" {
+		t.Fatal("missing thing type")
+	}
+	if claims.Iat == 0 {
+		t.Fatal("missing issue time")
+	}
+	if claims.Exp == 0 {
+		t.Fatal("missing expiry time")
+	}
+	if claims.Nonce == "" {
+		t.Fatal("missing nonce")
+	}
+	if claims.CNF.JWK == nil {
+		t.Fatal("missing JWT")
+	}
+	if claims.CNF.JWK.Key == nil {
+		t.Fatal("missing JWT-Key")
+	}
+	if claims.CNF.JWK.KeyID == "" {
+		t.Fatal("missing JWT-KeyID")
+	}
+	if len(claims.CNF.JWK.Certificates) == 0 {
+		t.Fatal("missing JWT-Certs")
 	}
 }

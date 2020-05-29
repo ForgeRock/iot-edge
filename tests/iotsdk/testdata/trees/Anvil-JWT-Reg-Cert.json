@@ -1,0 +1,45 @@
+{
+  "_id": "Anvil-JWT-Reg-Cert",
+  "uiConfig": {},
+  "staticNodes": {
+    "startNode": {
+      "x": 50,
+      "y": 47.5
+    },
+    "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+      "x": 681.0625,
+      "y": 47.5
+    }
+  },
+  "entryNodeId": "3b645117-4cf7-497f-b972-7999687da92c",
+  "nodes": {
+    "3b645117-4cf7-497f-b972-7999687da92c": {
+      "displayName": "Verify Thing JWT",
+      "nodeType": "IotJwtProofOfPossessionNode",
+      "x": 152.078125,
+      "y": 25,
+      "connections": {
+        "AUTHENTICATE": "03490e69-af68-4515-94c6-17756e6bdd21",
+        "REGISTER": "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92"
+      }
+    },
+    "03490e69-af68-4515-94c6-17756e6bdd21": {
+      "displayName": "Authenticate Thing",
+      "nodeType": "IotAuthenticationNode",
+      "x": 491.578125,
+      "y": 47.5,
+      "connections": {
+        "outcome": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+      }
+    },
+    "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92": {
+      "displayName": "Register Thing",
+      "nodeType": "IotRegistrationNode",
+      "x": 335,
+      "y": 138,
+      "connections": {
+        "outcome": "03490e69-af68-4515-94c6-17756e6bdd21"
+      }
+    }
+  }
+}

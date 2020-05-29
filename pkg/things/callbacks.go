@@ -17,6 +17,7 @@
 package things
 
 import (
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
@@ -154,12 +155,17 @@ func (h PasswordHandler) Handle(id ThingIdentity, cb Callback) error {
 }
 
 type ThingJWTHandler struct {
-	ThingID string
+	ThingID      string
+	Certificates []*x509.Certificate
 }
 
 func (h ThingJWTHandler) Handle(id ThingIdentity, cb Callback) error {
+	var registration bool
 	switch cb.ID() {
 	case "jwt-pop-authentication":
+		registration = false
+	case "jwt-pop-registration":
+		registration = true
 	default:
 		return errNotHandled
 	}
@@ -200,7 +206,17 @@ func (h ThingJWTHandler) Handle(id ThingIdentity, cb Callback) error {
 	claims.Aud = id.Realm()
 	claims.ThingType = id.Type()
 	claims.Nonce = challenge
-	claims.CNF.KID = key.KID
+	if registration {
+		claims.CNF.JWK = &jose.JSONWebKey{
+			Key:          key.Signer.Public(),
+			Certificates: h.Certificates,
+			KeyID:        key.KID,
+			Algorithm:    string(alg),
+			Use:          "sig",
+		}
+	} else {
+		claims.CNF.KID = key.KID
+	}
 	claims.Iat = time.Now().Unix()
 	claims.Exp = time.Now().Add(5 * time.Minute).Unix()
 	builder := jwt.Signed(sig).Claims(claims)
