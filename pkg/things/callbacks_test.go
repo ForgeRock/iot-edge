@@ -215,7 +215,7 @@ func TestThingJWTHandler_Auth(t *testing.T) {
 	}
 }
 
-func TestThingWTHandler_Register(t *testing.T) {
+func TestThingJWTHandler_Register(t *testing.T) {
 	thingID := "thingOne"
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	certTemplate := &x509.Certificate{
