@@ -42,6 +42,10 @@ type jwtVerifyClaims struct {
 	} `json:"cnf"`
 }
 
+func (c jwtVerifyClaims) String() string {
+	return fmt.Sprintf("{sub:%s, aud:%s, ThingType:%s}", c.Sub, c.Aud, c.ThingType)
+}
+
 // extractJWTPayload parses a signed JWT and unmarshals the payload into the supplied claims
 // The signature is NOT checked so these claims are unverified.
 // This function exists because the JOSE library fails when parsing a signed token with a non-string nonce,

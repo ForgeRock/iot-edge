@@ -18,9 +18,13 @@
 package anvil
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
@@ -29,6 +33,7 @@ import (
 	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -176,6 +181,59 @@ func DeleteRealms(ids []string) (err error) {
 	return nil
 }
 
+// CreateCertVerificationMapping maps the IoT certification verification secret to the test key
+func CreateCertVerificationMapping() error {
+	return am.CreateSecretMapping("am.services.iot.cert.verification", []string{"es256test"})
+}
+
+// CertVerificationKey returns the test JSON web key used by AM to verify certificates
+func CertVerificationKey() (*jose.JSONWebKey, error) {
+	ec256TestBytes := []byte(`{"kty": "EC",
+		"kid": "Fol7IpdKeLZmzKtCEgi1LDhSIzM=",
+		"x": "N7MtObVf92FJTwYvY2ZvTVT3rgZp7a7XDtzT_9Rw7IA",
+		"y": "uxNmyoocPopYh4k1FCc41yuJZVohxlhMo3KTIJVTP3c",
+		"crv": "P-256",
+		"alg": "ES256",
+		"d": "w9rAMaNcP7cA0e5SECc4Tk1PDQEY66ml9y9-6E8fmR4",
+		"x5c": ["MIIBwjCCAWkCCQCw3GyPBTSiGzAJBgcqhkjOPQQBMGoxCzAJBgNVBAYTAlVLMRAwDgYDVQQIEwdCcmlzdG9sMRAwDgYDVQQHEwdCcmlzdG9sMRIwEAYDVQQKEwlGb3JnZVJvY2sxDzANBgNVBAsTBk9wZW5BTTESMBAGA1UEAxMJZXMyNTZ0ZXN0MB4XDTE3MDIwMzA5MzQ0NloXDTIwMTAzMDA5MzQ0NlowajELMAkGA1UEBhMCVUsxEDAOBgNVBAgTB0JyaXN0b2wxEDAOBgNVBAcTB0JyaXN0b2wxEjAQBgNVBAoTCUZvcmdlUm9jazEPMA0GA1UECxMGT3BlbkFNMRIwEAYDVQQDEwllczI1NnRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3sy05tV/3YUlPBi9jZm9NVPeuBmntrtcO3NP/1HDsgLsTZsqKHD6KWIeJNRQnONcriWVaIcZYTKNykyCVUz93MAkGByqGSM49BAEDSAAwRQIgZhTox7WpCb9krZMyHfgCzHwfu0FVqaJsO2Nl2ArhCX0CIQC5GgWD5jjCRlIWSEFSDo4DZgoQFXaQkJUSUbJZYpi9dA=="]
+	}`)
+	var key jose.JSONWebKey
+	if err := json.Unmarshal(ec256TestBytes, &key); err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
+var maxSerialNumber = new(big.Int).Exp(big.NewInt(2), big.NewInt(159), nil)
+
+// CreateCertificate creates a certificate for a Thing signed by the given CA JSON web key
+func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypto.Signer) (*x509.Certificate, error) {
+	// check that server web key contains a certificate
+	if len(caWebKey.Certificates) == 0 {
+		return nil, fmt.Errorf("server WebKey does not contain a certificate")
+	}
+
+	serialNumber, err := rand.Int(rand.Reader, maxSerialNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := x509.CreateCertificate(rand.Reader,
+		&x509.Certificate{
+			SerialNumber: serialNumber,
+			Subject:      pkix.Name{CommonName: thingID},
+			NotBefore:    time.Now(),
+			NotAfter:     time.Now().Add(24 * time.Hour),
+		},
+		caWebKey.Certificates[0],
+		thingKey.Public(),
+		caWebKey.Key)
+	if err != nil {
+		return nil, err
+	}
+	return x509.ParseCertificate(cert)
+}
+
 // TestIEC creates a test IEC
 func TestIEC(realm string, authTree string) (*things.IEC, error) {
 	jwk, signer, err := GenerateConfirmationKey(jose.ES256)
@@ -199,8 +257,9 @@ func TestIEC(realm string, authTree string) (*things.IEC, error) {
 
 // ThingData holds information about a Thing used in a test
 type ThingData struct {
-	Id     am.IdAttributes
-	Signer things.SigningKey
+	Id           am.IdAttributes
+	Signer       things.SigningKey
+	Certificates []*x509.Certificate
 }
 
 // TestState contains client and realm data required to run a test

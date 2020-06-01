@@ -35,7 +35,8 @@ const (
 	debugDir    = execDir + "/debug"
 
 	// Auth trees
-	jwtPopAuthTree = "Anvil-JWT-Auth"
+	jwtPopAuthTree    = "Anvil-JWT-Auth"
+	jwtPopRegCertTree = "Anvil-JWT-Reg-Cert"
 )
 
 // define the full test set
@@ -43,6 +44,8 @@ var tests = []anvil.SDKTest{
 	&AuthenticateThingJWT{},
 	&AuthenticateThingJWTNonDefaultKID{},
 	&AuthenticateWithoutConfirmationKey{},
+	&RegisterThingCert{},
+	&RegisterThingWithoutCert{},
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},
 	&AccessTokenWithUnsupportedScopes{},
@@ -129,6 +132,11 @@ func runTests() (err error) {
 	defer func() {
 		_ = logfile.Close()
 	}()
+
+	err = anvil.CreateCertVerificationMapping()
+	if err != nil {
+		return err
+	}
 
 	// create test realms
 	subRealm, realmIds, err := anvil.CreateRealmHierarchy(anvil.RandomName())
