@@ -24,7 +24,7 @@ import (
 
 func thingJWTAuth(state anvil.TestState, data anvil.ThingData) *things.Thing {
 	return things.NewThing(state.InitClients(jwtPopAuthTree), data.Signer, []things.Handler{
-		things.ThingJWTHandler{ThingID: data.Id.Name},
+		things.AuthenticateHandler{ThingID: data.Id.Name},
 	})
 }
 

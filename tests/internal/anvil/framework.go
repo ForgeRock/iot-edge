@@ -251,7 +251,7 @@ func TestIEC(realm string, authTree string) (*things.IEC, error) {
 		return nil, err
 	}
 	return things.NewIEC(signer, am.AMURL, realm, authTree, []things.Handler{
-		things.ThingJWTHandler{ThingID: attributes.Name},
+		things.AuthenticateHandler{ThingID: attributes.Name},
 	}), nil
 }
 

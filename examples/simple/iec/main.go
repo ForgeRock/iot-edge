@@ -55,7 +55,7 @@ func simpleIEC() error {
 		return err
 	}
 	controller := things.NewIEC(things.SigningKey{KID: "pop.cnf", Signer: amKey}, *amURL, *amRealm, *authTree, []things.Handler{
-		things.ThingJWTHandler{ThingID: *iecName},
+		things.AuthenticateHandler{ThingID: *iecName},
 	})
 
 	err = controller.Initialise()
