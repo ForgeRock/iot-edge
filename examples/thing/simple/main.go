@@ -17,13 +17,16 @@
 package main
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -35,16 +38,38 @@ var (
 	thingName  = flag.String("name", "simple-thing", "Thing name")
 	server     = flag.String("server", "am", "Server to connect to, am or iec")
 	iecAddress = flag.String("address", "127.0.0.1:5688", "Address of IEC")
+	key        = flag.String("key", "", "The Thing's key in PEM format")
+	keyID      = flag.String("keyid", "pop.cnf", "The Thing's key ID")
+	keyFile    = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
 )
+
+func loadKey() (crypto.Signer, error) {
+	var err error
+	var keyBytes []byte
+	if *key != "" {
+		keyBytes = []byte(*key)
+	} else {
+		keyBytes, err = ioutil.ReadFile(*keyFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		return nil, fmt.Errorf("unable to decode key")
+	}
+	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return privateKey.(crypto.Signer), nil
+}
 
 // simpleThing initialises a Thing with AM.
 // A successful initialisation means that the Thing has successfully authenticated with AM.
 //
-// Example setup:
-// Start up the AM test container
-// Create a realm called "example"
-// Create the IoT tree in the "example" realm and call it "iot-tree"
-// Create an identity with
+// To pre-provision an identity in AM, create an identity with
 //	name: simple-thing
 //	password: password
 // Modify the "simple-thing" entry in DS
@@ -69,13 +94,13 @@ func simpleThing() error {
 		log.Fatal("server not supported")
 	}
 
-	key, err := crypto.LoadECPrivateKey("./examples/resources/eckey1.key.pem")
+	key, err := loadKey()
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.NewThing(client, things.SigningKey{KID: "pop.cnf", Signer: key},
+	thing := things.NewThing(client, things.SigningKey{KID: *keyID, Signer: key},
 		[]things.Handler{things.AuthenticateHandler{ThingID: *thingName}})
 	err = thing.Initialise()
 	if err != nil {

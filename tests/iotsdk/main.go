@@ -60,6 +60,7 @@ var tests = []anvil.SDKTest{
 	&AccessTokenFromCustomClient{},
 	&SimpleThingExample{},
 	&SimpleIECExample{},
+	&CertRegistrationExample{},
 }
 
 // run the full test set for a single client

@@ -18,13 +18,16 @@ package main
 
 import (
 	"bufio"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/pkg/things"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -35,28 +38,51 @@ var (
 	authTree = flag.String("tree", "iot-tree", "Authentication tree")
 	iecName  = flag.String("name", "simple-iec", "IEC name")
 	address  = flag.String("address", "127.0.0.1:5688", "CoAP Address of IEC")
+	key      = flag.String("key", "", "The IEC's key in PEM format")
+	keyID    = flag.String("keyid", "pop.cnf", "The IEC's key ID")
+	keyFile  = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the IEC's key")
 )
+
+func loadKey() (crypto.Signer, error) {
+	var err error
+	var keyBytes []byte
+	if *key != "" {
+		keyBytes = []byte(*key)
+	} else {
+		keyBytes, err = ioutil.ReadFile(*keyFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		return nil, fmt.Errorf("unable to decode key")
+	}
+	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return privateKey.(crypto.Signer), nil
+}
 
 // simpleIEC initialises an IEC with AM.
 //
-// Example setup:
-// Start up the AM test container
-// Create a realm called "example"
-// Create the IoT tree in the "example" realm and call it "iot-tree"
-// Create an identity with
+// To pre-provision an identity in AM, create an identity with
 //	name: simple-iec
 //	password: password
 // Modify the "simple-iec" entry in DS
 //	thingType: IEC
 //	thingKeys: <see examples/resources/eckey1.jwks>
 func simpleIEC() error {
-	amKey, err := crypto.LoadECPrivateKey("./examples/resources/eckey1.key.pem")
+	amKey, err := loadKey()
 	if err != nil {
 		return err
 	}
-	controller := things.NewIEC(things.SigningKey{KID: "pop.cnf", Signer: amKey}, *amURL, *amRealm, *authTree, []things.Handler{
-		things.AuthenticateHandler{ThingID: *iecName},
-	})
+	controller := things.NewIEC(things.SigningKey{KID: *keyID, Signer: amKey}, *amURL, *amRealm, *authTree,
+		[]things.Handler{
+			things.AuthenticateHandler{ThingID: *iecName},
+		})
 
 	err = controller.Initialise()
 	if err != nil {
