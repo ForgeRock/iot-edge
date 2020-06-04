@@ -4,31 +4,28 @@
   "staticNodes": {
     "startNode": {
       "x": 50,
-      "y": 25
+      "y": 58.5
     },
     "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
-      "x": 518.578125,
-      "y": 25
+      "x": 338,
+      "y": 29
+    },
+    "e301438c-0bd0-429c-ab0c-66126501069a": {
+      "x": 339,
+      "y": 90
     }
   },
-  "entryNodeId": "c3db973d-20e9-4f51-978d-67533bee5cc9",
+  "entryNodeId": "158825d9-05cb-48df-9fd8-b08762f21840",
   "nodes": {
-    "c3db973d-20e9-4f51-978d-67533bee5cc9": {
-      "displayName": "Verify Thing JWT",
-      "nodeType": "IotJwtProofOfPossessionNode",
-      "x": 152.078125,
-      "y": 25,
-      "connections": {
-        "AUTHENTICATE": "158825d9-05cb-48df-9fd8-b08762f21840"
-      }
-    },
     "158825d9-05cb-48df-9fd8-b08762f21840": {
       "displayName": "Authenticate Thing",
       "nodeType": "IotAuthenticationNode",
-      "x": 329.09375,
-      "y": 25,
+      "x": 152.078125,
+      "y": 27.5,
       "connections": {
-        "outcome": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+        "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+        "register": "e301438c-0bd0-429c-ab0c-66126501069a"
       }
     }
   }

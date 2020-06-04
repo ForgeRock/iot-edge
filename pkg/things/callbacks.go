@@ -154,19 +154,23 @@ func (h PasswordHandler) Handle(id ThingIdentity, cb Callback) error {
 	return nil
 }
 
-type ThingJWTHandler struct {
-	ThingID      string
-	Certificates []*x509.Certificate
+type AuthenticateHandler struct {
+	ThingID string
 }
 
-func (h ThingJWTHandler) Handle(id ThingIdentity, cb Callback) error {
-	var registration bool
-	switch cb.ID() {
-	case "jwt-pop-authentication":
-		registration = false
-	case "jwt-pop-registration":
-		registration = true
-	default:
+func baseJWTClaims(thingID, realm string, thingType ThingType, challenge string) jwtVerifyClaims {
+	return jwtVerifyClaims{
+		Sub:       thingID,
+		Aud:       realm,
+		ThingType: thingType,
+		Iat:       time.Now().Unix(),
+		Exp:       time.Now().Add(5 * time.Minute).Unix(),
+		Nonce:     challenge,
+	}
+}
+
+func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback) error {
+	if cb.ID() != "jwt-pop-authentication" {
 		return errNotHandled
 	}
 	if len(cb.Input) == 0 {
@@ -201,24 +205,63 @@ func (h ThingJWTHandler) Handle(id ThingIdentity, cb Callback) error {
 	if err != nil {
 		return err
 	}
-	claims := jwtVerifyClaims{}
-	claims.Sub = h.ThingID
-	claims.Aud = id.Realm()
-	claims.ThingType = id.Type()
-	claims.Nonce = challenge
-	if registration {
-		claims.CNF.JWK = &jose.JSONWebKey{
-			Key:          key.Signer.Public(),
-			Certificates: h.Certificates,
-			KeyID:        key.KID,
-			Algorithm:    string(alg),
-			Use:          "sig",
-		}
-	} else {
-		claims.CNF.KID = key.KID
+	claims := baseJWTClaims(h.ThingID, id.Realm(), id.Type(), challenge)
+	claims.CNF.KID = key.KID
+	builder := jwt.Signed(sig).Claims(claims)
+	response, err := builder.CompactSerialize()
+	cb.Input[0].Value = response
+	return err
+}
+
+type RegisterHandler struct {
+	ThingID      string
+	Certificates []*x509.Certificate
+}
+
+func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
+	if cb.ID() != "jwt-pop-registration" {
+		return errNotHandled
 	}
-	claims.Iat = time.Now().Unix()
-	claims.Exp = time.Now().Add(5 * time.Minute).Unix()
+	if len(cb.Input) == 0 {
+		return ErrNoInput
+	}
+	var challenge string
+	for _, e := range cb.Output {
+		if e.Name == "value" {
+			challenge = e.Value
+			break
+		}
+	}
+	if challenge == "" {
+		return ErrNoOutput
+	}
+
+	key := id.ConfirmationKey()
+
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("typ", "JWT")
+
+	// check that the signer is supported
+	alg, err := signingJWAFromKey(key.Signer)
+	if err != nil {
+		return err
+	}
+
+	// create a jose.OpaqueSigner from the crypto.Signer
+	opaque := cryptosigner.Opaque(key.Signer)
+
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+	if err != nil {
+		return err
+	}
+	claims := baseJWTClaims(h.ThingID, id.Realm(), id.Type(), challenge)
+	claims.CNF.JWK = &jose.JSONWebKey{
+		Key:          key.Signer.Public(),
+		Certificates: h.Certificates,
+		KeyID:        key.KID,
+		Algorithm:    string(alg),
+		Use:          "sig",
+	}
 	builder := jwt.Signed(sig).Claims(claims)
 	response, err := builder.CompactSerialize()
 	cb.Input[0].Value = response

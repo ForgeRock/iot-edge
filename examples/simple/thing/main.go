@@ -76,7 +76,7 @@ func simpleThing() error {
 
 	fmt.Printf("Initialising %s... ", *thingName)
 	thing := things.NewThing(client, things.SigningKey{KID: "pop.cnf", Signer: key},
-		[]things.Handler{things.ThingJWTHandler{ThingID: *thingName}})
+		[]things.Handler{things.AuthenticateHandler{ThingID: *thingName}})
 	err = thing.Initialise()
 	if err != nil {
 		return err

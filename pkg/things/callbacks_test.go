@@ -87,8 +87,9 @@ func TestCallbackHandler_HandleResult(t *testing.T) {
 		// PasswordHandler
 		{name: "Password/ok", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, err: nil},
 		{name: "Password/notHandled", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, err: errNotHandled},
-		// ThingJWTHandler
-		{name: "ThingJWT/notHandled", cb: dummyCB(TypeNameCallback), handler: ThingJWTHandler{ThingID: "Odysseus"}, err: errNotHandled},
+		// AuthenticateHandler
+		{name: "Authenticate/notHandled", cb: dummyCB(TypeNameCallback), handler: AuthenticateHandler{ThingID: "Odysseus"}, err: errNotHandled},
+		{name: "Register/notHandled", cb: dummyCB(TypeNameCallback), handler: RegisterHandler{ThingID: "Odysseus"}, err: errNotHandled},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -169,9 +170,9 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 }
 
-func TestThingJWTHandler_Auth(t *testing.T) {
+func TestAuthenticateHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
-	h := ThingJWTHandler{ThingID: thingID}
+	h := AuthenticateHandler{ThingID: thingID}
 	cb := jwtVerifyCB(false)
 	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
@@ -215,7 +216,7 @@ func TestThingJWTHandler_Auth(t *testing.T) {
 	}
 }
 
-func TestThingJWTHandler_Register(t *testing.T) {
+func TestRegisterHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	certTemplate := &x509.Certificate{
@@ -233,7 +234,7 @@ func TestThingJWTHandler_Register(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := ThingJWTHandler{ThingID: thingID, Certificates: []*x509.Certificate{cert}}
+	h := RegisterHandler{ThingID: thingID, Certificates: []*x509.Certificate{cert}}
 	cb := jwtVerifyCB(true)
 	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
