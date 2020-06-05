@@ -43,7 +43,6 @@ func NewIEC(confirmationKey SigningKey, baseURL string, realm string, authTree s
 			confirmationKey: confirmationKey,
 			handlers:        handlers,
 			Client:          NewAMClient(baseURL, realm, authTree),
-			thingType:       TypeIEC,
 		},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}

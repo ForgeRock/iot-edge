@@ -77,8 +77,6 @@ func (c Callback) ID() string {
 type ThingIdentity interface {
 	// Realm returns the realm that the identity belongs
 	Realm() string
-	// Type returns the Thing type
-	Type() ThingType
 	// ConfirmationKey returns the Thing's confirmation key
 	ConfirmationKey() SigningKey
 }
@@ -158,14 +156,13 @@ type AuthenticateHandler struct {
 	ThingID string
 }
 
-func baseJWTClaims(thingID, realm string, thingType ThingType, challenge string) jwtVerifyClaims {
+func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
 	return jwtVerifyClaims{
-		Sub:       thingID,
-		Aud:       realm,
-		ThingType: thingType,
-		Iat:       time.Now().Unix(),
-		Exp:       time.Now().Add(5 * time.Minute).Unix(),
-		Nonce:     challenge,
+		Sub:   thingID,
+		Aud:   realm,
+		Iat:   time.Now().Unix(),
+		Exp:   time.Now().Add(5 * time.Minute).Unix(),
+		Nonce: challenge,
 	}
 }
 
@@ -205,7 +202,7 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback) error {
 	if err != nil {
 		return err
 	}
-	claims := baseJWTClaims(h.ThingID, id.Realm(), id.Type(), challenge)
+	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
 	claims.CNF.KID = key.KID
 	builder := jwt.Signed(sig).Claims(claims)
 	response, err := builder.CompactSerialize()
@@ -215,6 +212,7 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback) error {
 
 type RegisterHandler struct {
 	ThingID      string
+	ThingType    ThingType
 	Certificates []*x509.Certificate
 }
 
@@ -254,7 +252,8 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
 	if err != nil {
 		return err
 	}
-	claims := baseJWTClaims(h.ThingID, id.Realm(), id.Type(), challenge)
+	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
+	claims.ThingType = h.ThingType
 	claims.CNF.JWK = &jose.JSONWebKey{
 		Key:          key.Signer.Public(),
 		Certificates: h.Certificates,

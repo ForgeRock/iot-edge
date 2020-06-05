@@ -53,7 +53,7 @@ func (t *RegisterThingCert) Setup(state anvil.TestState) (data anvil.ThingData, 
 func (t *RegisterThingCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
 		things.AuthenticateHandler{ThingID: data.Id.Name},
-		things.RegisterHandler{ThingID: data.Id.Name, Certificates: data.Certificates},
+		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates},
 	})
 	err := thing.Initialise()
 	if err != nil {
@@ -83,7 +83,7 @@ func (t *RegisterThingWithoutCert) Setup(state anvil.TestState) (data anvil.Thin
 func (t *RegisterThingWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
 		things.AuthenticateHandler{ThingID: data.Id.Name},
-		things.RegisterHandler{ThingID: data.Id.Name, Certificates: data.Certificates},
+		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates},
 	})
 	err := thing.Initialise()
 	if err != things.ErrUnauthorised {
