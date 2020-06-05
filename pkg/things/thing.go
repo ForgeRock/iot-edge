@@ -71,7 +71,6 @@ type Thing struct {
 	Client          Client
 	confirmationKey SigningKey // see restrictions
 	handlers        []Handler
-	thingType       ThingType
 }
 
 // NewThing creates a new Thing
@@ -80,7 +79,6 @@ func NewThing(client Client, confirmationKey SigningKey, handlers []Handler) *Th
 		Client:          client,
 		confirmationKey: confirmationKey,
 		handlers:        handlers,
-		thingType:       TypeDevice,
 	}
 }
 
@@ -180,11 +178,6 @@ func (t *Thing) Realm() string {
 		DebugLogger.Println(err)
 	}
 	return info.Realm
-}
-
-// Type returns the Thing's type
-func (t *Thing) Type() ThingType {
-	return t.thingType
 }
 
 // ConfirmationKey returns the Thing's confirmation signing key

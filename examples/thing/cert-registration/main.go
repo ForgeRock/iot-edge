@@ -128,7 +128,7 @@ func certRegThing() (err error) {
 	thing := things.NewThing(client, things.SigningKey{KID: *keyID, Signer: signer},
 		[]things.Handler{
 			things.AuthenticateHandler{ThingID: *thingName},
-			things.RegisterHandler{ThingID: *thingName, Certificates: certs},
+			things.RegisterHandler{ThingID: *thingName, ThingType: things.TypeDevice, Certificates: certs},
 		})
 	err = thing.Initialise()
 	if err != nil {

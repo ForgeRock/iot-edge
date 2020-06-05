@@ -38,10 +38,6 @@ func (id mockThingIdentity) ConfirmationKey() SigningKey {
 	return SigningKey{testKID, testKey}
 }
 
-func (id mockThingIdentity) Type() ThingType {
-	return TypeDevice
-}
-
 func (id mockThingIdentity) Realm() string {
 	return "testRealm"
 }
@@ -199,9 +195,6 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	if claims.Aud == "" {
 		t.Fatal("missing audience")
 	}
-	if claims.ThingType != "device" {
-		t.Fatal("missing thing type")
-	}
 	if claims.Iat == 0 {
 		t.Fatal("missing issue time")
 	}
@@ -234,7 +227,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := RegisterHandler{ThingID: thingID, Certificates: []*x509.Certificate{cert}}
+	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, Certificates: []*x509.Certificate{cert}}
 	cb := jwtVerifyCB(true)
 	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
