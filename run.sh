@@ -35,7 +35,7 @@ test)
 	;;
 example)
   # Run the example program
-  go run github.com/ForgeRock/iot-edge/examples/"$2"
+  go run github.com/ForgeRock/iot-edge/examples/"$2" "${@:3}"
 	;;
 coverage)
   go tool cover -html=coverage.out
