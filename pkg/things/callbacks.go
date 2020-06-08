@@ -214,7 +214,7 @@ type RegisterHandler struct {
 	ThingID      string
 	ThingType    ThingType
 	Certificates []*x509.Certificate
-	Attributes   func() interface{}
+	Claims       func() interface{}
 }
 
 func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
@@ -263,8 +263,8 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
 		Use:          "sig",
 	}
 	builder := jwt.Signed(sig).Claims(claims)
-	if h.Attributes != nil {
-		builder = builder.Claims(h.Attributes())
+	if h.Claims != nil {
+		builder = builder.Claims(h.Claims())
 	}
 	response, err := builder.CompactSerialize()
 	cb.Input[0].Value = response

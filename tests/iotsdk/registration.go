@@ -131,7 +131,7 @@ func (t *RegisterThingWithAttributes) Run(state anvil.TestState, data anvil.Thin
 	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
 		things.AuthenticateHandler{ThingID: data.Id.Name},
 		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates,
-			Attributes: func() interface{} {
+			Claims: func() interface{} {
 				return sdkAttribute
 			}},
 	})

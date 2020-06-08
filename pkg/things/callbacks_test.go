@@ -229,7 +229,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, Certificates: []*x509.Certificate{cert},
-		Attributes: func() interface{} {
+		Claims: func() interface{} {
 			return struct {
 				SerialNumber string `json:"serialNumber"`
 			}{SerialNumber: serialNumber}
