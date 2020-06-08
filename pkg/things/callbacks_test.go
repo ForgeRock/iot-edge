@@ -211,6 +211,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 
 func TestRegisterHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
+	serialNumber := "12345"
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	certTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
@@ -227,7 +228,12 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, Certificates: []*x509.Certificate{cert}}
+	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, Certificates: []*x509.Certificate{cert},
+		Attributes: func() interface{} {
+			return struct {
+				SerialNumber string `json:"serialNumber"`
+			}{SerialNumber: serialNumber}
+		}}
 	cb := jwtVerifyCB(true)
 	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
@@ -239,10 +245,11 @@ func TestRegisterHandler_Handle(t *testing.T) {
 		CNF struct {
 			JWK *jose.JSONWebKey `json:"jwk,omitempty"`
 		} `json:"cnf"`
-		ThingType string `json:"thingType"`
-		Iat       int64  `json:"iat"`
-		Exp       int64  `json:"exp"`
-		Nonce     string `json:"nonce"`
+		ThingType    string `json:"thingType"`
+		Iat          int64  `json:"iat"`
+		Exp          int64  `json:"exp"`
+		Nonce        string `json:"nonce"`
+		SerialNumber string `json:"serialNumber"`
 	}{}
 	err = extractJWTPayload(response, &claims)
 	if err != nil {
@@ -277,5 +284,8 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	}
 	if len(claims.CNF.JWK.Certificates) == 0 {
 		t.Fatal("missing JWT-Certs")
+	}
+	if claims.SerialNumber != serialNumber {
+		t.Fatal("incorrect serial number")
 	}
 }

@@ -92,3 +92,61 @@ func (t *RegisterThingWithoutCert) Run(state anvil.TestState, data anvil.ThingDa
 	}
 	return true
 }
+
+// RegisterThingWithAttributes tests the dynamic registration of a device with custom sttributes
+type RegisterThingWithAttributes struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *RegisterThingWithAttributes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.Name = anvil.RandomName()
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	serverWebKey, err := anvil.CertVerificationKey()
+	if err != nil {
+		return data, false
+	}
+
+	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	if err != nil {
+		return data, false
+	}
+	data.Certificates = []*x509.Certificate{certificate}
+	data.Id.ThingType = things.TypeDevice
+	return data, true
+}
+
+func (t *RegisterThingWithAttributes) Run(state anvil.TestState, data anvil.ThingData) bool {
+	// 'serialNumber' is mapped to 'employeeNumber' in the registration node
+	sdkAttribute := struct {
+		SerialNumber string `json:"serialNumber"`
+	}{SerialNumber: "987654321"}
+	amAttribute := struct {
+		EmployeeNumber []string `json:"employeeNumber"`
+	}{}
+	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name},
+		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates,
+			Attributes: func() interface{} {
+				return sdkAttribute
+			}},
+	})
+	err := thing.Initialise()
+	if err != nil {
+		return false
+	}
+	err = anvil.GetIdentityAttributes(state.Realm(), data.Id.Name, &amAttribute)
+	if err != nil {
+		anvil.DebugLogger.Printf("Getting attribute %s failed; %s", amAttribute, err)
+		return false
+	}
+	if len(amAttribute.EmployeeNumber) == 0 || amAttribute.EmployeeNumber[0] != sdkAttribute.SerialNumber {
+		anvil.DebugLogger.Printf("Expected attribute value %s; got %s", sdkAttribute.SerialNumber, amAttribute)
+		return false
+	}
+	return true
+}

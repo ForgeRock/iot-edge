@@ -357,6 +357,18 @@ func CreateIdentity(realm string, data ThingData) (ThingData, bool) {
 	return data, am.CreateIdentity(realm, data.Id) == nil
 }
 
+// GetIdentityAttributes gets the identity and unmarshals its attributes into the supplied struct
+func GetIdentityAttributes(realm, name string, attributes interface{}) error {
+	response, err := am.GetIdentity(realm, name)
+	if err != nil {
+		return err
+	}
+	if err = json.Unmarshal(response, &attributes); err != nil {
+		return err
+	}
+	return nil
+}
+
 // resultSprint formats the result string output for a test
 func resultSprint(pass bool, testName string, startTime time.Time) string {
 	var resStr string

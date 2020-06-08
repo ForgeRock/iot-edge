@@ -1,6 +1,8 @@
 {
   "allowAttributeOverwrite": false,
-  "claimToAttributeMapping": {},
+  "claimToAttributeMapping": {
+    "serialNumber":"employeeNumber"
+  },
   "createIdentity": true,
   "allowKeyRotation": false,
   "_id": "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92"
