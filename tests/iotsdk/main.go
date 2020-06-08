@@ -45,6 +45,7 @@ var tests = []anvil.SDKTest{
 	&AuthenticateThingJWTNonDefaultKID{},
 	&AuthenticateWithoutConfirmationKey{},
 	&RegisterThingCert{},
+	&RegisterThingWithAttributes{},
 	&RegisterThingWithoutCert{},
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},

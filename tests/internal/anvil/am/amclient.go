@@ -196,6 +196,38 @@ func putCreate(endpoint string, version string, payload io.Reader) (reply []byte
 	return reply, nil
 }
 
+// get makes a GET request to AM with an admin SSO token
+func get(endpoint string, version string) (reply []byte, err error) {
+	// get SSO token
+	ssoToken, err := getSSOToken()
+	if err != nil {
+		return reply, err
+	}
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return reply, err
+	}
+	req.Header.Set(headerCookie, ssoToken)
+	req.Header.Set(headerAPIVersion, version)
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		dumpHTTPRoundTrip(req, res)
+		return reply, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		dumpHTTPRoundTrip(req, res)
+		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
+	}
+
+	reply, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return reply, err
+	}
+	return reply, nil
+}
+
 // getSSOToken gets an SSO token using the AM Admin's credentials
 func getSSOToken() (token string, err error) {
 	req, err := http.NewRequest(http.MethodPost, AMURL+"/json/realms/root/authenticate", nil)
@@ -277,6 +309,11 @@ func CreateIdentity(realm string, attributes IdAttributes) error {
 		userEndpointVersion,
 		bytes.NewBuffer(payload))
 	return err
+}
+
+// GetIdentity gets the identity from AM
+func GetIdentity(realm, name string) ([]byte, error) {
+	return get(fmt.Sprintf("%s/json/users/%s?realm=%s", AMURL, name, realm), userEndpointVersion)
 }
 
 // DeleteIdentity deletes the identity from AM
