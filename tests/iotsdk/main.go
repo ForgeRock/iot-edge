@@ -35,8 +35,9 @@ const (
 	debugDir    = execDir + "/debug"
 
 	// Auth trees
-	jwtPopAuthTree    = "Anvil-JWT-Auth"
-	jwtPopRegCertTree = "Anvil-JWT-Reg-Cert"
+	jwtPopAuthTree             = "Anvil-JWT-Auth"
+	jwtPopAuthTreeCustomClaims = "Anvil-JWT-Auth-Custom-Claims"
+	jwtPopRegCertTree          = "Anvil-JWT-Reg-Cert"
 )
 
 // define the full test set
@@ -44,6 +45,8 @@ var tests = []anvil.SDKTest{
 	&AuthenticateThingJWT{},
 	&AuthenticateThingJWTNonDefaultKID{},
 	&AuthenticateWithoutConfirmationKey{},
+	&AuthenticateWithCustomClaims{},
+	&AuthenticateWithIncorrectCustomClaim{},
 	&RegisterThingCert{},
 	&RegisterThingWithAttributes{},
 	&RegisterThingWithoutCert{},

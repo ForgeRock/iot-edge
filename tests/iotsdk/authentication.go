@@ -109,3 +109,68 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 	}
 	return true
 }
+
+// AuthenticateWithCustomClaims tests the authentication of a pre-registered device with a custom claim that is checked
+// by a scripted decision node
+type AuthenticateWithCustomClaims struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := things.NewThing(state.InitClients(jwtPopAuthTreeCustomClaims), data.Signer, []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, Claims: func() interface{} {
+			return struct {
+				LifeUniverseEverything string `json:"life_universe_everything"`
+			}{"42"}
+		}},
+	})
+	err := thing.Initialise()
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// AuthenticateWithCustomClaims tests the authentication of a pre-registered device fails when the value of a checked
+// custom claim is incorrect
+type AuthenticateWithIncorrectCustomClaim struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := things.NewThing(state.InitClients(jwtPopAuthTreeCustomClaims), data.Signer, []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, Claims: func() interface{} {
+			return struct {
+				LifeUniverseEverything string `json:"life_universe_everything"`
+			}{"0"}
+		}},
+	})
+	err := thing.Initialise()
+	if err != things.ErrUnauthorised {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	return true
+}

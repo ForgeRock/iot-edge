@@ -154,6 +154,7 @@ func (h PasswordHandler) Handle(id ThingIdentity, cb Callback) error {
 
 type AuthenticateHandler struct {
 	ThingID string
+	Claims  func() interface{}
 }
 
 func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
@@ -205,6 +206,9 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback) error {
 	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
 	claims.CNF.KID = key.KID
 	builder := jwt.Signed(sig).Claims(claims)
+	if h.Claims != nil {
+		builder = builder.Claims(h.Claims())
+	}
 	response, err := builder.CompactSerialize()
 	cb.Input[0].Value = response
 	return err

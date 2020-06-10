@@ -1,0 +1,12 @@
+{
+  "_id": "6e822929-a6b8-4ee0-af4b-11815ad6340c",
+  "name": "thing claims check",
+  "description": "",
+  "script": "LyoKICAtIERhdGEgbWFkZSBhdmFpbGFibGUgYnkgbm9kZXMgdGhhdCBoYXZlIGFscmVhZHkgZXhlY3V0ZWQgYXJlIGF2YWlsYWJsZSBpbiB0aGUgc2hhcmVkU3RhdGUgdmFyaWFibGUuCiAgLSBUaGUgc2NyaXB0IHNob3VsZCBzZXQgb3V0Y29tZSB0byBlaXRoZXIgInRydWUiIG9yICJmYWxzZSIuCiAqLwoKb3V0Y29tZSA9ICJ0cnVlIgoKZGVmIHZlcmlmaWVkQ2xhaW1zID0gdHJhbnNpZW50U3RhdGUuZ2V0KCJvcmcuZm9yZ2Vyb2NrLmFtLmlvdC5qd3QucG9wLnZlcmlmaWVkX2NsYWltcyIpCgppZiAoIHZlcmlmaWVkQ2xhaW1zID0gbnVsbCB8fCB2ZXJpZmllZENsYWltcy5nZXQoImxpZmVfdW5pdmVyc2VfZXZlcnl0aGluZyIpICE9ICI0MiIpIHsKICAgIGxvZ2dlci5lcnJvcigiQ3VzdG9tIGNsYWltICdsaWZlX3VuaXZlcnNlX2V2ZXJ5dGhpbmcnIG5vdCBjb3JyZWN0IikKICAgIG91dGNvbWUgPSAiZmFsc2UiCn0=",
+  "language": "GROOVY",
+  "context": "AUTHENTICATION_TREE_DECISION_NODE",
+  "createdBy": "null",
+  "creationDate": 0,
+  "lastModifiedBy": "null",
+  "lastModifiedDate": 0
+}

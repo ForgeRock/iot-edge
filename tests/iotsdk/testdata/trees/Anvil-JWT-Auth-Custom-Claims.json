@@ -1,0 +1,42 @@
+{
+  "_id": "Anvil-JWT-Auth-Custom-Claims",
+  "uiConfig": {},
+  "staticNodes": {
+    "startNode": {
+      "x": 50,
+      "y": 58.5
+    },
+    "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+      "x": 524,
+      "y": 20
+    },
+    "e301438c-0bd0-429c-ab0c-66126501069a": {
+      "x": 523,
+      "y": 176
+    }
+  },
+  "entryNodeId": "ea585883-1f67-4525-a377-411f245acca9",
+  "nodes": {
+    "ea585883-1f67-4525-a377-411f245acca9": {
+      "displayName": "Authenticate Thing",
+      "nodeType": "IotAuthenticationNode",
+      "x": 152,
+      "y": 96,
+      "connections": {
+        "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+        "register": "e301438c-0bd0-429c-ab0c-66126501069a",
+        "success": "7f3011bd-9cac-4dbd-9ec1-df34aca6eb90"
+      }
+    },
+    "7f3011bd-9cac-4dbd-9ec1-df34aca6eb90": {
+      "displayName": "Scripted Decision",
+      "nodeType": "ScriptedDecisionNode",
+      "x": 341.5625,
+      "y": 36,
+      "connections": {
+        "true": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+        "false": "e301438c-0bd0-429c-ab0c-66126501069a"
+      }
+    }
+  }
+}

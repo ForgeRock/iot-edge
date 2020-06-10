@@ -168,7 +168,12 @@ func TestProcessCallbacks(t *testing.T) {
 
 func TestAuthenticateHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
-	h := AuthenticateHandler{ThingID: thingID}
+	lue := "42"
+	h := AuthenticateHandler{ThingID: thingID, Claims: func() interface{} {
+		return struct {
+			LifeUniverseEverything string `json:"life_universe_everything"`
+		}{LifeUniverseEverything: lue}
+	}}
 	cb := jwtVerifyCB(false)
 	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
 		t.Fatal(err)
@@ -180,10 +185,11 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 		CNF struct {
 			KID string `json:"kid"`
 		} `json:"cnf"`
-		ThingType string `json:"thingType"`
-		Iat       int64  `json:"iat"`
-		Exp       int64  `json:"exp"`
-		Nonce     string `json:"nonce"`
+		ThingType              string `json:"thingType"`
+		Iat                    int64  `json:"iat"`
+		Exp                    int64  `json:"exp"`
+		Nonce                  string `json:"nonce"`
+		LifeUniverseEverything string `json:"life_universe_everything"` // custom value
 	}{}
 	err = extractJWTPayload(response, &claims)
 	if err != nil {
@@ -206,6 +212,9 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	}
 	if claims.CNF.KID != testKID {
 		t.Fatal("incorrect KID")
+	}
+	if claims.LifeUniverseEverything != lue {
+		t.Fatal("incorrect custom claim")
 	}
 }
 
