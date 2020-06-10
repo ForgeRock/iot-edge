@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"github.com/dchest/uniuri"
 	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
@@ -71,42 +70,102 @@ func CreateRealmHierarchy(names ...string) (fullName string, ids []string, err e
 	return fullName, ids, nil
 }
 
-// ConfigureTestRealm configures the realm by loading all the data in the testDataDir
-func ConfigureTestRealm(realm string, testDataDir string) (err error) {
-	// add tree nodes
-	nodes, err := trees.ReadNodes(filepath.Join(testDataDir, "nodes"))
+// nameWithoutExtension returns the name of the file without the file extension
+func nameWithoutExtension(path string) string {
+	_, file := filepath.Split(path)
+	return strings.TrimSuffix(file, filepath.Ext(file))
+}
+
+// parentName returns the name of the directory that contains the file described by the path
+func parentName(path string) string {
+	return filepath.Base(filepath.Dir(path))
+}
+
+// forAllJSONFilesInDirectory calls the supplied function for all JSON files in the given directory, including subdirectories
+func forAllJSONFilesInDirectory(dirname string, f func(path string) error) error {
+	if _, err := os.Stat(dirname); err != nil {
+		return nil
+	}
+	info, err := ioutil.ReadDir(dirname)
 	if err != nil {
 		return err
 	}
-	for _, node := range nodes {
-		err = am.CreateTreeNode(realm, node)
-		if err != nil {
-			return err
+	for _, i := range info {
+		path := filepath.Join(dirname, i.Name())
+		if i.IsDir() {
+			err = forAllJSONFilesInDirectory(path, f)
+		} else if filepath.Ext(i.Name()) == ".json" {
+			err = f(path)
+			if err != nil {
+				return err
+			}
 		}
+	}
+	return nil
+}
+
+// ConfigureTestRealm configures the realm by loading all the data in the testDataDir
+func ConfigureTestRealm(realm string, testDataDir string) (err error) {
+	// add scripts
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "scripts"),
+		func(path string) error {
+			config, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer config.Close()
+			return am.CreateScript(realm, config)
+		})
+	if err != nil {
+		return err
+	}
+
+	// add tree nodes
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "nodes"),
+		func(path string) error {
+			config, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer config.Close()
+			return am.CreateTreeNode(realm, parentName(path), nameWithoutExtension(path), config)
+		})
+	if err != nil {
+		return err
 	}
 
 	// add trees
-	loadTrees, err := trees.ReadTrees(filepath.Join(testDataDir, "trees"))
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "trees"),
+		func(path string) error {
+			config, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer config.Close()
+			return am.CreateTree(realm, nameWithoutExtension(path), config)
+		})
 	if err != nil {
 		return err
-	}
-	for _, tree := range loadTrees {
-		err = am.CreateTree(realm, tree)
-		if err != nil {
-			return err
-		}
 	}
 
-	// add IoT Service
-	err = am.CreateService(realm, "iot", filepath.Join(testDataDir, "services/iot.json"))
+	// create services
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "services"),
+		func(path string) error {
+			config, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer config.Close()
+			return am.CreateService(realm, parentName(path), config)
+		})
 	if err != nil {
 		return err
 	}
-	// add OAuth 2.0 Service
-	err = am.CreateService(realm, "oauth-oidc", filepath.Join(testDataDir, "services/oauth2.json"))
-	if err != nil {
-		return err
-	}
+
 	// update the OAuth 2.0 Client with test specific config
 	err = am.UpdateAgent(realm, "OAuth2Client/forgerock-iot-oauth2-client",
 		filepath.Join(testDataDir, "agents/forgerock-iot-oauth2-client.json"))
@@ -126,11 +185,13 @@ func ConfigureTestRealm(realm string, testDataDir string) (err error) {
 // RestoreTestRealm restores the configuration of the realm to a pre-test state
 func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	// delete the various services
-	for _, service := range []string{"oauth-oidc", "iot"} {
-		err = am.DeleteService(realm, service)
-		if err != nil {
-			return err
-		}
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "services"),
+		func(path string) error {
+			return am.DeleteService(realm, parentName(path))
+		})
+	if err != nil {
+		return err
 	}
 
 	// delete the OAuth 2.0 agents
@@ -143,29 +204,34 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	}
 
 	// remove the trees
-	loadTrees, err := trees.ReadTrees(filepath.Join(testDataDir, "trees"))
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "trees"),
+		func(path string) error {
+			return am.DeleteTree(realm, nameWithoutExtension(path))
+		})
 	if err != nil {
 		return err
-	}
-	for _, tree := range loadTrees {
-		err = am.DeleteTree(realm, tree)
-		if err != nil {
-			return err
-		}
 	}
 
 	// delete the tree nodes
-	nodes, err := trees.ReadNodes(filepath.Join(testDataDir, "nodes"))
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "nodes"),
+		func(path string) error {
+			return am.DeleteTreeNode(realm, parentName(path), nameWithoutExtension(path))
+		})
 	if err != nil {
 		return err
 	}
-	for _, node := range nodes {
-		err = am.DeleteTreeNode(realm, node)
-		if err != nil {
-			return err
-		}
-	}
 
+	// delete the scripts
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "scripts"),
+		func(path string) error {
+			return am.DeleteScript(realm, nameWithoutExtension(path))
+		})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

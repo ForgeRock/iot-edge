@@ -305,7 +305,6 @@
     "devicePollInterval": 5,
     "deviceCodeLifetime": 300
   },
-  "_id": "",
   "_type": {
     "_id": "oauth-oidc",
     "name": "OAuth2 Provider",

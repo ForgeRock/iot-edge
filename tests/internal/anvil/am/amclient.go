@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/pkg/things"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/trees"
 	"io"
 	"io/ioutil"
 	"log"
@@ -325,49 +324,45 @@ func DeleteIdentity() (err error) {
 }
 
 // CreateTreeNode creates an auth tree node in the realm
-func CreateTreeNode(realm string, node trees.Node) (err error) {
+func CreateTreeNode(realm, nodeType, id string, config io.Reader) (err error) {
 	_, err = putCreate(
-		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/nodes/%s/%s?realm=%s", AMURL, node.Type, node.Id, realm),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/nodes/%s/%s?realm=%s", AMURL, nodeType, id, realm),
 		realmConfigEndpointVersion,
-		bytes.NewReader(node.Config))
+		config)
 	return err
 }
 
 // DeleteTreeNode deletes the auth tree node from the realm
-func DeleteTreeNode(realm string, node trees.Node) (err error) {
+func DeleteTreeNode(realm, nodeType, id string) (err error) {
 	_, err = crestDelete(
-		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/nodes/%s/%s?realm=%s", AMURL, node.Type, node.Id, realm),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/nodes/%s/%s?realm=%s", AMURL, nodeType, id, realm),
 		realmConfigEndpointVersion)
 	return err
 }
 
 // CreateTree creates an auth tree in the realm
-func CreateTree(realm string, tree trees.Tree) (err error) {
+func CreateTree(realm, id string, config io.Reader) (err error) {
 	_, err = putCreate(
-		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/trees/%s?realm=%s", AMURL, tree.Id, realm),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/trees/%s?realm=%s", AMURL, id, realm),
 		realmConfigEndpointVersion,
-		bytes.NewReader(tree.Config))
+		config)
 	return err
 }
 
 // DeleteTree deletes the auth tree from the realm
-func DeleteTree(realm string, tree trees.Tree) (err error) {
+func DeleteTree(realm, id string) (err error) {
 	_, err = crestDelete(
-		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/trees/%s?realm=%s", AMURL, tree.Id, realm),
+		fmt.Sprintf("%s/json/realm-config/authentication/authenticationtrees/trees/%s?realm=%s", AMURL, id, realm),
 		realmConfigEndpointVersion)
 	return err
 }
 
 // CreateService creates a service in the realm
-func CreateService(realm, serviceName, payloadPath string) (err error) {
-	b, err := ioutil.ReadFile(payloadPath)
-	if err != nil {
-		return err
-	}
+func CreateService(realm, serviceType string, config io.Reader) (err error) {
 	_, err = crestCreate(
-		fmt.Sprintf("%s/json/realm-config/services/%s?realm=%s", AMURL, serviceName, realm),
+		fmt.Sprintf("%s/json/realm-config/services/%s?realm=%s", AMURL, serviceType, realm),
 		realmConfigEndpointVersion,
-		bytes.NewReader(b))
+		config)
 	return err
 }
 
@@ -397,6 +392,23 @@ func DeleteAgent(realm string, agentName string) (err error) {
 	_, err = crestDelete(
 		fmt.Sprintf("%s/json/realm-config/agents/%s?realm=%s", AMURL, agentName, realm),
 		realmConfigEndpointVersion)
+	return err
+}
+
+// CreateScript creates the script in the realm
+func CreateScript(realm string, config io.Reader) (err error) {
+	_, err = crestCreate(
+		fmt.Sprintf("%s/json/scripts?realm=%s", AMURL, realm),
+		"protocol=1.0,resource=1.0",
+		config)
+	return err
+}
+
+// DeleteScript deletes the script from the realm
+func DeleteScript(realm string, id string) (err error) {
+	_, err = crestDelete(
+		fmt.Sprintf("%s/json/scripts/%s?realm=%s", AMURL, id, realm),
+		"protocol=1.0,resource=1.0")
 	return err
 }
 
