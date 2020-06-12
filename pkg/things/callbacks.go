@@ -17,7 +17,9 @@
 package things
 
 import (
+	"crypto"
 	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
@@ -77,14 +79,12 @@ func (c Callback) ID() string {
 type ThingIdentity interface {
 	// Realm returns the realm that the identity belongs
 	Realm() string
-	// ConfirmationKey returns the Thing's confirmation key
-	ConfirmationKey() SigningKey
 }
 
 // CallbackHandler is an interface for an AM callback handler
 type Handler interface {
 	// Handle the callback by modifying it
-	Handle(id ThingIdentity, cb Callback) error
+	Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error
 }
 
 // ErrMissingHandler is returned when the callback cannot be handled
@@ -96,12 +96,16 @@ func (e ErrMissingHandler) Error() string {
 	return fmt.Sprintf("can not respond to %v", e.callback)
 }
 
+type AuthMetadata struct {
+	ConfirmationKey crypto.Signer
+}
+
 // ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
-func ProcessCallbacks(id ThingIdentity, handlers []Handler, callbacks []Callback) (err error) {
+func ProcessCallbacks(id ThingIdentity, handlers []Handler, callbacks []Callback, metadata *AuthMetadata) (err error) {
 	for _, cb := range callbacks {
 	handlerLoop:
 		for _, h := range handlers {
-			switch err = h.Handle(id, cb); err {
+			switch err = h.Handle(id, cb, metadata); err {
 			case errNotHandled:
 				continue
 			case nil:
@@ -124,7 +128,7 @@ type NameHandler struct {
 	Name string
 }
 
-func (h NameHandler) Handle(id ThingIdentity, cb Callback) error {
+func (h NameHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.Type != TypeNameCallback {
 		return errNotHandled
 	}
@@ -141,7 +145,7 @@ type PasswordHandler struct {
 	Password string
 }
 
-func (h PasswordHandler) Handle(id ThingIdentity, cb Callback) error {
+func (h PasswordHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.Type != TypePasswordCallback {
 		return errNotHandled
 	}
@@ -153,8 +157,11 @@ func (h PasswordHandler) Handle(id ThingIdentity, cb Callback) error {
 }
 
 type AuthenticateHandler struct {
-	ThingID string
-	Claims  func() interface{}
+	ThingID           string
+	ConfirmationKeyID string
+	// Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
+	ConfirmationKey crypto.Signer
+	Claims          func() interface{}
 }
 
 func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
@@ -167,7 +174,7 @@ func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
 	}
 }
 
-func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback) error {
+func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.ID() != "jwt-pop-authentication" {
 		return errNotHandled
 	}
@@ -185,43 +192,58 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback) error {
 		return ErrNoOutput
 	}
 
-	key := id.ConfirmationKey()
-
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
 	// check that the signer is supported
-	alg, err := signingJWAFromKey(key.Signer)
+	alg, err := signingJWAFromKey(h.ConfirmationKey)
 	if err != nil {
 		return err
 	}
 
 	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(key.Signer)
+	opaque := cryptosigner.Opaque(h.ConfirmationKey)
 
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
 		return err
 	}
 	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
-	claims.CNF.KID = key.KID
+	claims.CNF.KID = h.ConfirmationKeyID
 	builder := jwt.Signed(sig).Claims(claims)
 	if h.Claims != nil {
 		builder = builder.Claims(h.Claims())
 	}
 	response, err := builder.CompactSerialize()
+	if err != nil {
+		return err
+	}
+
 	cb.Input[0].Value = response
-	return err
+	metadata.ConfirmationKey = h.ConfirmationKey
+	return nil
 }
 
 type RegisterHandler struct {
-	ThingID      string
-	ThingType    ThingType
-	Certificates []*x509.Certificate
-	Claims       func() interface{}
+	ThingID           string
+	ThingType         ThingType
+	ConfirmationKeyID string
+	// Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
+	ConfirmationKey crypto.Signer
+	Certificates    []*x509.Certificate
+	Claims          func() interface{}
 }
 
-func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
+// createKID creates a key ID for a signer
+func createKID(key crypto.Signer) (string, error) {
+	thumbprint, err := (&jose.JSONWebKey{Key: key.Public()}).Thumbprint(crypto.SHA256)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(thumbprint), nil
+}
+
+func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.ID() != "jwt-pop-registration" {
 		return errNotHandled
 	}
@@ -239,19 +261,17 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
 		return ErrNoOutput
 	}
 
-	key := id.ConfirmationKey()
-
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
 	// check that the signer is supported
-	alg, err := signingJWAFromKey(key.Signer)
+	alg, err := signingJWAFromKey(h.ConfirmationKey)
 	if err != nil {
 		return err
 	}
 
 	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(key.Signer)
+	opaque := cryptosigner.Opaque(h.ConfirmationKey)
 
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
@@ -260,9 +280,9 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
 	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
 	claims.ThingType = h.ThingType
 	claims.CNF.JWK = &jose.JSONWebKey{
-		Key:          key.Signer.Public(),
+		Key:          h.ConfirmationKey.Public(),
 		Certificates: h.Certificates,
-		KeyID:        key.KID,
+		KeyID:        h.ConfirmationKeyID,
 		Algorithm:    string(alg),
 		Use:          "sig",
 	}
@@ -271,6 +291,11 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback) error {
 		builder = builder.Claims(h.Claims())
 	}
 	response, err := builder.CompactSerialize()
+	if err != nil {
+		return err
+	}
+
 	cb.Input[0].Value = response
-	return err
+	metadata.ConfirmationKey = h.ConfirmationKey
+	return nil
 }

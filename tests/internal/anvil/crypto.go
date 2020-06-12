@@ -25,12 +25,11 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things"
 	jose "gopkg.in/square/go-jose.v2"
 )
 
 // GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
-func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private things.SigningKey, err error) {
+func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private SigningKey, err error) {
 	// create a new key
 	switch algorithm {
 	case jose.ES256:
@@ -62,4 +61,10 @@ func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSO
 	webKey.KeyID = base64.URLEncoding.EncodeToString(kid)
 	private.KID = webKey.KeyID
 	return jose.JSONWebKeySet{Keys: []jose.JSONWebKey{webKey}}, private, nil
+}
+
+// SigningKey describes a key used for signing messages sent to AM
+type SigningKey struct {
+	KID    string
+	Signer crypto.Signer
 }

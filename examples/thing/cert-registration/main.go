@@ -102,7 +102,6 @@ func certRegThing() (err error) {
 
 	var client things.Client
 	if *server == "am" {
-		fmt.Println(*authTree)
 		client = things.NewAMClient(*amURL, *amRealm, *authTree)
 	} else if *server == "iec" {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -124,16 +123,12 @@ func certRegThing() (err error) {
 		return err
 	}
 
-	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.NewThing(client, things.SigningKey{KID: *keyID, Signer: signer},
-		[]things.Handler{
-			things.AuthenticateHandler{ThingID: *thingName},
-			things.RegisterHandler{ThingID: *thingName, ThingType: things.TypeDevice, Certificates: certs},
-		})
-	err = thing.Initialise()
-	if err != nil {
-		return err
-	}
+	fmt.Printf("Creating Thing %s... ", *thingName)
+	thing := things.NewThing(client, []things.Handler{
+		things.AuthenticateHandler{ThingID: *thingName, ConfirmationKeyID: *keyID, ConfirmationKey: signer},
+		things.RegisterHandler{ThingID: *thingName, ThingType: things.TypeDevice, ConfirmationKeyID: *keyID,
+			ConfirmationKey: signer, Certificates: certs},
+	})
 	fmt.Printf("Done\n")
 
 	fmt.Printf("Requesting access token... ")

@@ -51,11 +51,12 @@ func (t *RegisterThingCert) Setup(state anvil.TestState) (data anvil.ThingData, 
 }
 
 func (t *RegisterThingCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name},
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates},
+	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
+		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
+			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates},
 	})
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != nil {
 		return false
 	}
@@ -81,11 +82,12 @@ func (t *RegisterThingWithoutCert) Setup(state anvil.TestState) (data anvil.Thin
 }
 
 func (t *RegisterThingWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name},
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates},
+	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
+		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
+			ConfirmationKey: data.Signer.Signer},
 	})
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Printf("Expected Not Authorised; got %v", err)
 		return false
@@ -128,14 +130,14 @@ func (t *RegisterThingWithAttributes) Run(state anvil.TestState, data anvil.Thin
 	amAttribute := struct {
 		EmployeeNumber []string `json:"employeeNumber"`
 	}{}
-	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), data.Signer, []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name},
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, Certificates: data.Certificates,
-			Claims: func() interface{} {
+	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
+		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
+			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates, Claims: func() interface{} {
 				return sdkAttribute
 			}},
 	})
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != nil {
 		return false
 	}

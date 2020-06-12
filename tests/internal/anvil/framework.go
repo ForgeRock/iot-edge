@@ -316,15 +316,15 @@ func TestIEC(realm string, authTree string) (*things.IEC, error) {
 	if err != nil {
 		return nil, err
 	}
-	return things.NewIEC(signer, am.AMURL, realm, authTree, []things.Handler{
-		things.AuthenticateHandler{ThingID: attributes.Name},
+	return things.NewIEC(am.AMURL, realm, authTree, []things.Handler{
+		things.AuthenticateHandler{ThingID: attributes.Name, ConfirmationKeyID: signer.KID, ConfirmationKey: signer.Signer},
 	}), nil
 }
 
 // ThingData holds information about a Thing used in a test
 type ThingData struct {
 	Id           am.IdAttributes
-	Signer       things.SigningKey
+	Signer       SigningKey
 	Certificates []*x509.Certificate
 }
 

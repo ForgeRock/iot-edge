@@ -37,12 +37,11 @@ type IEC struct {
 }
 
 // NewIEC creates a new IEC
-func NewIEC(confirmationKey SigningKey, baseURL string, realm string, authTree string, handlers []Handler) *IEC {
+func NewIEC(baseURL string, realm string, authTree string, handlers []Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
-			confirmationKey: confirmationKey,
-			handlers:        handlers,
-			Client:          NewAMClient(baseURL, realm, authTree),
+			Client:   NewAMClient(baseURL, realm, authTree),
+			handlers: handlers,
 		},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
@@ -50,7 +49,8 @@ func NewIEC(confirmationKey SigningKey, baseURL string, realm string, authTree s
 
 // Initialise the IEC
 func (c *IEC) Initialise() error {
-	return c.Thing.Initialise()
+	_, err := c.Thing.Session()
+	return err
 }
 
 // Authenticate a Thing with AM using the given payload
