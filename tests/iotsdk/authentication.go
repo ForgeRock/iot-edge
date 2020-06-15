@@ -23,8 +23,8 @@ import (
 )
 
 func thingJWTAuth(state anvil.TestState, data anvil.ThingData) *things.Thing {
-	return things.NewThing(state.InitClients(jwtPopAuthTree), data.Signer, []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name},
+	return things.NewThing(state.InitClients(jwtPopAuthTree), []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
 	})
 }
 
@@ -46,7 +46,7 @@ func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingDat
 
 func (t *AuthenticateThingJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != nil {
 		return false
 	}
@@ -75,7 +75,7 @@ func (t *AuthenticateThingJWTNonDefaultKID) Setup(state anvil.TestState) (data a
 
 func (t *AuthenticateThingJWTNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != nil {
 		return false
 	}
@@ -102,7 +102,7 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 		return false
 	}
 	thing := thingJWTAuth(state, data)
-	err = thing.Initialise()
+	_, err = thing.Session()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -128,14 +128,15 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 }
 
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := things.NewThing(state.InitClients(jwtPopAuthTreeCustomClaims), data.Signer, []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name, Claims: func() interface{} {
-			return struct {
-				LifeUniverseEverything string `json:"life_universe_everything"`
-			}{"42"}
-		}},
+	thing := things.NewThing(state.InitClients(jwtPopAuthTreeCustomClaims), []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer,
+			Claims: func() interface{} {
+				return struct {
+					LifeUniverseEverything string `json:"life_universe_everything"`
+				}{"42"}
+			}},
 	})
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != nil {
 		return false
 	}
@@ -160,14 +161,15 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 }
 
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := things.NewThing(state.InitClients(jwtPopAuthTreeCustomClaims), data.Signer, []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name, Claims: func() interface{} {
-			return struct {
-				LifeUniverseEverything string `json:"life_universe_everything"`
-			}{"0"}
-		}},
+	thing := things.NewThing(state.InitClients(jwtPopAuthTreeCustomClaims), []things.Handler{
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer,
+			Claims: func() interface{} {
+				return struct {
+					LifeUniverseEverything string `json:"life_universe_everything"`
+				}{"0"}
+			}},
 	})
-	err := thing.Initialise()
+	_, err := thing.Session()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false

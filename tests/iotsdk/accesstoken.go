@@ -45,10 +45,6 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
-	if err != nil {
-		return false
-	}
 	response, err := thing.RequestAccessToken("publish", "subscribe")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -76,10 +72,6 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
-	if err != nil {
-		return false
-	}
 	response, err := thing.RequestAccessToken("publish")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -107,11 +99,7 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
-	if err != nil {
-		return false
-	}
-	_, err = thing.RequestAccessToken("publish", "subscribe", "delete")
+	_, err := thing.RequestAccessToken("publish", "subscribe", "delete")
 	if err != nil && strings.Contains(err.Error(), "Unknown/invalid scope(s)") {
 		return true
 	}
@@ -139,10 +127,6 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
-	if err != nil {
-		return false
-	}
 	response, err := thing.RequestAccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -176,10 +160,6 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
 	thing := thingJWTAuth(state, data)
-	err := thing.Initialise()
-	if err != nil {
-		return false
-	}
 	response, err := thing.RequestAccessToken("create", "modify", "delete")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -218,6 +198,37 @@ func verifyAccessTokenResponse(response things.AccessTokenResponse, subject stri
 	sort.Strings(requestedScopes)
 	if !reflect.DeepEqual(requestedScopes, receivedScopes) {
 		anvil.DebugLogger.Printf("received scopes %s not equal to requested scopes %s\n", receivedScopes, requestedScopes)
+		return false
+	}
+	return true
+}
+
+// AccessTokenRepeat requests two access tokens, checking that the session is managed properly
+type AccessTokenRepeat struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thing := thingJWTAuth(state, data)
+	_, err := thing.RequestAccessToken("publish", "subscribe")
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	_, err = thing.RequestAccessToken("publish", "subscribe")
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
 	return true

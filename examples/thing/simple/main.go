@@ -99,13 +99,10 @@ func simpleThing() error {
 		return err
 	}
 
-	fmt.Printf("Initialising %s... ", *thingName)
-	thing := things.NewThing(client, things.SigningKey{KID: *keyID, Signer: key},
-		[]things.Handler{things.AuthenticateHandler{ThingID: *thingName}})
-	err = thing.Initialise()
-	if err != nil {
-		return err
-	}
+	fmt.Printf("Creating Thing %s... ", *thingName)
+	thing := things.NewThing(client, []things.Handler{
+		things.AuthenticateHandler{ThingID: *thingName, ConfirmationKeyID: *keyID, ConfirmationKey: key},
+	})
 	fmt.Printf("Done\n")
 
 	fmt.Printf("Requesting access token... ")

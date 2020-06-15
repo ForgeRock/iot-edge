@@ -62,6 +62,7 @@ var tests = []anvil.SDKTest{
 	//&AccessTokenWithNoScopes{alg: jose.PS384},
 	//&AccessTokenWithNoScopes{alg: jose.PS512},
 	&AccessTokenFromCustomClient{},
+	&AccessTokenRepeat{},
 	&SimpleThingExample{},
 	&SimpleIECExample{},
 	&CertRegistrationExample{},

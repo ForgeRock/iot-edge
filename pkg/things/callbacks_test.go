@@ -34,10 +34,6 @@ var testKID = "testKID"
 type mockThingIdentity struct {
 }
 
-func (id mockThingIdentity) ConfirmationKey() SigningKey {
-	return SigningKey{testKID, testKey}
-}
-
 func (id mockThingIdentity) Realm() string {
 	return "testRealm"
 }
@@ -89,7 +85,7 @@ func TestCallbackHandler_HandleResult(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			if got := subtest.handler.Handle(nil, subtest.cb); got != subtest.err {
+			if got := subtest.handler.Handle(nil, subtest.cb, &AuthMetadata{}); got != subtest.err {
 				t.Errorf("Handle() = %v, want %v", got, subtest.err)
 			}
 		})
@@ -107,7 +103,7 @@ func TestCallbackHandler_Respond_NoInput(t *testing.T) {
 	for _, subtest := range tests {
 		cb := Callback{}
 		t.Run(subtest.name, func(t *testing.T) {
-			if err := subtest.handler.Handle(nil, cb); err == nil {
+			if err := subtest.handler.Handle(nil, cb, &AuthMetadata{}); err == nil {
 				t.Errorf("Expected an error")
 			}
 		})
@@ -118,7 +114,7 @@ func TestNameCallbackHandler_Respond(t *testing.T) {
 	name := "Odysseus"
 	handler := NameHandler{Name: name}
 	cb := dummyCB(TypeNameCallback)
-	if err := handler.Handle(mockThingIdentity{}, cb); err != nil {
+	if err := handler.Handle(mockThingIdentity{}, cb, &AuthMetadata{}); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != name {
@@ -130,7 +126,7 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	p := "password"
 	handler := PasswordHandler{Password: p}
 	cb := dummyCB(TypePasswordCallback)
-	if err := handler.Handle(mockThingIdentity{}, cb); err != nil {
+	if err := handler.Handle(mockThingIdentity{}, cb, &AuthMetadata{}); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != p {
@@ -154,7 +150,7 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := ProcessCallbacks(mockThingIdentity{}, subtest.handlers, subtest.callbacks)
+			err := ProcessCallbacks(mockThingIdentity{}, subtest.handlers, subtest.callbacks, &AuthMetadata{})
 			if subtest.ok && err != nil {
 				t.Errorf("unexpected error but got: %v", err)
 
@@ -169,13 +165,14 @@ func TestProcessCallbacks(t *testing.T) {
 func TestAuthenticateHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
 	lue := "42"
-	h := AuthenticateHandler{ThingID: thingID, Claims: func() interface{} {
+	h := AuthenticateHandler{ThingID: thingID, ConfirmationKeyID: testKID, ConfirmationKey: testKey, Claims: func() interface{} {
 		return struct {
 			LifeUniverseEverything string `json:"life_universe_everything"`
 		}{LifeUniverseEverything: lue}
 	}}
 	cb := jwtVerifyCB(false)
-	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
+	metadata := AuthMetadata{}
+	if err := h.Handle(mockThingIdentity{}, cb, &metadata); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
@@ -216,6 +213,11 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	if claims.LifeUniverseEverything != lue {
 		t.Fatal("incorrect custom claim")
 	}
+
+	// check that the confirmation key has been added to the metadata
+	if metadata.ConfirmationKey == nil {
+		t.Fatal("metadata is missing confirmation key")
+	}
 }
 
 func TestRegisterHandler_Handle(t *testing.T) {
@@ -237,14 +239,15 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, Certificates: []*x509.Certificate{cert},
-		Claims: func() interface{} {
+	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, ConfirmationKeyID: testKID, ConfirmationKey: key,
+		Certificates: []*x509.Certificate{cert}, Claims: func() interface{} {
 			return struct {
 				SerialNumber string `json:"serialNumber"`
 			}{SerialNumber: serialNumber}
 		}}
 	cb := jwtVerifyCB(true)
-	if err := h.Handle(mockThingIdentity{}, cb); err != nil {
+	metadata := AuthMetadata{}
+	if err := h.Handle(mockThingIdentity{}, cb, &metadata); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
@@ -296,5 +299,10 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	}
 	if claims.SerialNumber != serialNumber {
 		t.Fatal("incorrect serial number")
+	}
+
+	// check that the confirmation key has been added to the metadata
+	if metadata.ConfirmationKey == nil {
+		t.Fatal("metadata is missing confirmation key")
 	}
 }
