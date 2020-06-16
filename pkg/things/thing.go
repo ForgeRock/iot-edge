@@ -207,7 +207,7 @@ type Builder interface {
 	AddHandler(Handler) Builder
 	// SetTimeout sets the timeout on the communications between the Thing and AM\IEC
 	SetTimeout(time.Duration) Builder
-	// Initialises initialises a Thing instance and authenticates\registers it with AM
+	// Initialise a Thing instance and authenticates\registers it with AM
 	Initialise() (*Thing, error)
 }
 

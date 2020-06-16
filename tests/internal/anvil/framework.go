@@ -334,7 +334,7 @@ type TestState interface {
 	Realm() string
 	// ClientType returns 'am' or 'iec' depending on the type of client
 	ClientType() string
-	// Builder returns a thing builder, which builder returned is dependant on the client used for the test
+	// Builder returns a thing builder, which builder is returned is dependant on the client used for the test
 	Builder(thingAuthTree string) things.Builder
 }
 
@@ -355,7 +355,7 @@ func (a *AMTestState) Realm() string {
 	return a.TestRealm
 }
 
-// IECTestState returns a test state for testing the IEC client
+// IECTestState contains data and methods for testing the IEC client
 type IECTestState struct {
 	IEC       *things.IEC
 	TestRealm string
