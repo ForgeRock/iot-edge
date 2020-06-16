@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="1066px" preserveAspectRatio="none" style="width:934px;height:1066px;" version="1.1" viewBox="0 0 934 1066" width="934px" zoomAndPan="magnify"><defs><filter height="300%" id="f1drkp9lh792v8" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="4.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="8.0" dy="8.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><!--MD5=[20d5f9acf9ebd0b60db2a69e927bdaf0]
+cluster Edge Tier--><rect fill="#FFFFFF" filter="url(#f1drkp9lh792v8)" height="580" style="stroke: #808080; stroke-width: 3.0;" width="868" x="44" y="464"/><path d="M200,466 L200,482.9766 L180,502.9766 L44,502.9766 " fill="none" style="stroke: #808080; stroke-width: 3.0;"/><text fill="#808080" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="136" x="50" y="493.0703">Edge Tier</text><!--MD5=[370c2c8d7fbcefa4160650c06cb1c562]
+cluster Device A--><rect fill="#FFFFFF" filter="url(#f1drkp9lh792v8)" height="174" style="stroke: #808080; stroke-width: 3.0;" width="272" x="92" y="550"/><path d="M236,552 L236,568.9766 L216,588.9766 L92,588.9766 " fill="none" style="stroke: #808080; stroke-width: 3.0;"/><text fill="#808080" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="124" x="98" y="579.0703">Device A</text><!--MD5=[fa9087cf527ea1a663c2b88ff794e95f]
+cluster IoT Gateway--><rect fill="#FFFFFF" filter="url(#f1drkp9lh792v8)" height="174" style="stroke: #808080; stroke-width: 3.0;" width="452" x="412" y="550"/><path d="M610,552 L610,568.9766 L590,588.9766 L412,588.9766 " fill="none" style="stroke: #808080; stroke-width: 3.0;"/><text fill="#808080" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="178" x="418" y="579.0703">IoT Gateway</text><!--MD5=[5595512e22b84f0e8fd9dbe276a54fae]
+cluster Device B--><rect fill="#FFFFFF" filter="url(#f1drkp9lh792v8)" height="174" style="stroke: #808080; stroke-width: 3.0;" width="272" x="502" y="822"/><path d="M644,824 L644,840.9766 L624,860.9766 L502,860.9766 " fill="none" style="stroke: #808080; stroke-width: 3.0;"/><text fill="#808080" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="122" x="508" y="851.0703">Device B</text><!--MD5=[7bed505170314078f5c2ddbcc996404c]
+cluster Platform Tier--><rect fill="#FFFFFF" filter="url(#f1drkp9lh792v8)" height="318" style="stroke: #808080; stroke-width: 3.0;" width="656" x="134" y="48"/><path d="M348,50 L348,66.9766 L328,86.9766 L134,86.9766 " fill="none" style="stroke: #808080; stroke-width: 3.0;"/><text fill="#808080" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="194" x="140" y="77.0703">Platform Tier</text><!--MD5=[b7410abfeda6d42801c4da5e81ea58cb]
+cluster ForgeRock Identity Platform--><polygon fill="#FFFFFF" filter="url(#f1drkp9lh792v8)" points="182,154,202,134,742,134,742,298,722,318,182,318,182,154" style="stroke: #062B8C; stroke-width: 3.0;"/><line style="stroke: #062B8C; stroke-width: 3.0;" x1="722" x2="740" y1="154" y2="136"/><line style="stroke: #062B8C; stroke-width: 3.0;" x1="182" x2="722" y1="154" y2="154"/><line style="stroke: #062B8C; stroke-width: 3.0;" x1="722" x2="722" y1="154" y2="318"/><text fill="#062B8C" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="408" x="250" y="187.0703">ForgeRock Identity Platform</text><!--MD5=[7280a710bb3e79d271f1d5d3648efaa9]
+entity amclient--><rect fill="#FC6700" filter="url(#f1drkp9lh792v8)" height="72.9766" style="stroke: #062B8C; stroke-width: 4.0;" width="208" x="124" y="620"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="114" y="630"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="114" y="672.9766"/><text fill="#062B8C" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="168" x="144" y="667.0703">Things SDK</text><!--MD5=[5c461252e084e275460436368c24ea26]
+entity iec--><rect fill="#FC6700" filter="url(#f1drkp9lh792v8)" height="72.9766" style="stroke: #062B8C; stroke-width: 4.0;" width="386" x="445" y="620"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="435" y="630"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="435" y="672.9766"/><text fill="#062B8C" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="346" x="465" y="667.0703">Identity Edge Controller</text><!--MD5=[b1f3a5c299bd40935f1a389627de7ed4]
+entity iecclient--><rect fill="#FC6700" filter="url(#f1drkp9lh792v8)" height="72.9766" style="stroke: #062B8C; stroke-width: 4.0;" width="208" x="534" y="892"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="524" y="902"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="524" y="944.9766"/><text fill="#062B8C" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="168" x="554" y="939.0703">Things SDK</text><!--MD5=[0978f1d1852e1818626a53678cd48ddd]
+entity am--><rect fill="#FC6700" filter="url(#f1drkp9lh792v8)" height="72.9766" style="stroke: #062B8C; stroke-width: 4.0;" width="330" x="293" y="214"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="283" y="224"/><rect fill="#FC6700" height="10" style="stroke: #062B8C; stroke-width: 4.0;" width="20" x="283" y="266.9766"/><text fill="#062B8C" font-family="sans-serif" font-size="28" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="290" x="313" y="261.0703">Access Management</text><!--MD5=[4b05bee8b2bb4be90ecc36ea418c1ec8]
+reverse link am to amclient--><path d="M432.5,294.78 C415.28,323.8 392.08,363.12 372,398 C326.46,477.1 274.2,570.74 246.88,619.92 " fill="none" id="am&lt;-amclient" style="stroke: #062B8C; stroke-width: 2.0;"/><polygon fill="#062B8C" points="437.66,286.1,421.5836,297.482,432.5487,294.695,435.3356,305.6601,437.66,286.1" style="stroke: #062B8C; stroke-width: 2.0;"/><text fill="#062B8C" font-family="sans-serif" font-size="26" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="134" x="374" y="425.1367">HTTP/TLS</text><!--MD5=[5f6269e0a6f8bfc769df21b66aab4b8f]
+reverse link am to iec--><path d="M477.54,295.64 C513.64,376.26 590.04,546.9 622.7,619.82 " fill="none" id="am&lt;-iec" style="stroke: #062B8C; stroke-width: 2.0;"/><polygon fill="#062B8C" points="473.34,286.28,473.4029,305.9776,477.4306,295.4051,488.0031,299.4327,473.34,286.28" style="stroke: #062B8C; stroke-width: 2.0;"/><text fill="#062B8C" font-family="sans-serif" font-size="26" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="134" x="538" y="425.1367">HTTP/TLS</text><!--MD5=[16e19c0213c33a8a9f0885bd5b4e7625]
+reverse link iec to iecclient--><path d="M638,702.64 C638,755.82 638,843.48 638,891.64 " fill="none" id="iec&lt;-iecclient" style="stroke: #062B8C; stroke-width: 2.0;"/><polygon fill="#062B8C" points="638,692.48,630,710.48,638,702.48,646,710.48,638,692.48" style="stroke: #062B8C; stroke-width: 2.0;"/><text fill="#062B8C" font-family="sans-serif" font-size="26" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="158" x="640" y="783.1367">COAP/DTLS</text><!--MD5=[eb8f013e1d893dc7d54588dd04abb3ef]
+@startuml
+
+skinparam component {
+  FontColor #062b8c
+  FontStyle Bold
+  BackgroundColor #fc6700
+  BorderColor #062b8c
+  BorderThickness 2
+  ArrowColor #062b8c
+  ArrowFontColor #062b8c
+  ArrowFontStyle Bold
+}
+skinparam node {
+  BorderColor #062b8c
+  FontColor #062b8c
+}
+skinparam frame {
+  BorderColor Grey
+  FontColor Grey
+}
+
+frame "Edge Tier" {
+    frame "Device A" {
+        [Things SDK] as amclient
+    }
+    frame "IoT Gateway" {
+        [Identity Edge Controller] as iec
+    }
+    frame "Device B" {
+        [Things SDK] as iecclient
+    }
+}
+frame "Platform Tier" {
+    node "ForgeRock Identity Platform" {
+        [Access Management] as am
+    }
+}
+amclient -up-> am : HTTP/TLS
+iec -up-> am : HTTP/TLS
+iecclient -up-> iec : COAP/DTLS
+@enduml
+
+PlantUML version 1.2020.03beta6(Unknown compile time)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.5+10-b520.38
+Operating System: Mac OS X
+Default Encoding: UTF-8
+Language: en
+Country: GB
+--></g></svg>
