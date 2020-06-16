@@ -51,12 +51,13 @@ func (t *RegisterThingCert) Setup(state anvil.TestState) (data anvil.ThingData, 
 }
 
 func (t *RegisterThingCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
+	builder := state.Builder(jwtPopRegCertTree)
+	builder.AddHandler(things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer})
+	builder.AddHandler(
 		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
 			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates},
-	})
-	_, err := thing.Session()
+	)
+	_, err := builder.Initialise()
 	if err != nil {
 		return false
 	}
@@ -82,12 +83,14 @@ func (t *RegisterThingWithoutCert) Setup(state anvil.TestState) (data anvil.Thin
 }
 
 func (t *RegisterThingWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), []things.Handler{
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
+	builder := state.Builder(jwtPopRegCertTree)
+	builder.AddHandler(
+		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer})
+	builder.AddHandler(
 		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
-			ConfirmationKey: data.Signer.Signer},
-	})
-	_, err := thing.Session()
+			ConfirmationKey: data.Signer.Signer})
+
+	_, err := builder.Initialise()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Printf("Expected Not Authorised; got %v", err)
 		return false
@@ -130,14 +133,17 @@ func (t *RegisterThingWithAttributes) Run(state anvil.TestState, data anvil.Thin
 	amAttribute := struct {
 		EmployeeNumber []string `json:"employeeNumber"`
 	}{}
-	thing := things.NewThing(state.InitClients(jwtPopRegCertTree), []things.Handler{
+	builder := state.Builder(jwtPopRegCertTree)
+	builder.AddHandler(
 		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
+	)
+	builder.AddHandler(
 		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
 			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates, Claims: func() interface{} {
 				return sdkAttribute
 			}},
-	})
-	_, err := thing.Session()
+	)
+	_, err := builder.Initialise()
 	if err != nil {
 		return false
 	}

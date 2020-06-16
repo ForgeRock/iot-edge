@@ -332,57 +332,55 @@ type ThingData struct {
 type TestState interface {
 	// Realm returns the current test realm
 	Realm() string
-	// InitClients initialises the test clients (multiple clients in the case of IEC tests)
-	// and returns a new client to be used for testing
-	InitClients(thingAuthTree string) things.Client
+	// ClientType returns 'am' or 'iec' depending on the type of client
+	ClientType() string
+	// Builder returns a thing builder, which builder returned is dependant on the client used for the test
+	Builder(thingAuthTree string) things.Builder
 }
 
-type amTestState struct {
-	realm string
+// AMTestState contains data and methods for testing the AM client
+type AMTestState struct {
+	TestRealm string
 }
 
-func (a *amTestState) InitClients(authTree string) things.Client {
-	t := things.NewAMClient(am.AMURL, a.realm, authTree)
-	t.Timeout = StdTimeOut
-	return t
+func (a *AMTestState) ClientType() string {
+	return "am"
 }
 
-func (a *amTestState) Realm() string {
-	return a.realm
+func (a *AMTestState) Builder(thingAuthTree string) things.Builder {
+	return things.AMThing(am.AMURL, a.TestRealm, thingAuthTree).SetTimeout(StdTimeOut)
 }
 
-// AMClientTestContext returns a test state for testing the AM client
-func AMClientTestState(realm string) TestState {
-	return &amTestState{realm: realm}
+func (a *AMTestState) Realm() string {
+	return a.TestRealm
 }
 
-type iecTestState struct {
-	iec   *things.IEC
-	realm string
+// IECTestState returns a test state for testing the IEC client
+type IECTestState struct {
+	IEC       *things.IEC
+	TestRealm string
 }
 
-func (i *iecTestState) InitClients(authTree string) things.Client {
+func (i *IECTestState) ClientType() string {
+	return "iec"
+}
+
+// SetIECAuthTree sets the auth tree used by the test IEC
+func (i *IECTestState) SetIECAuthTree(thingAuthTree string) {
+	i.IEC.Thing.Client.(*things.AMClient).AuthTree = thingAuthTree
+}
+
+func (i *IECTestState) Builder(thingAuthTree string) things.Builder {
 	// set thing auth tree on the test IEC
-	amClient := i.iec.Thing.Client.(*things.AMClient)
-	amClient.AuthTree = authTree
+	i.SetIECAuthTree(thingAuthTree)
 
 	// create a new IEC client
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	c := things.NewIECClient(i.iec.Address(), key)
-	c.Timeout = StdTimeOut
-	return c
+	return things.IECThing(i.IEC.Address(), key).SetTimeout(StdTimeOut)
 }
 
-func (i *iecTestState) Realm() string {
-	return i.realm
-}
-
-// IECClientTestState returns a test state for testing the IEC client
-func IECClientTestState(realm string, iec *things.IEC) TestState {
-	return &iecTestState{
-		iec:   iec,
-		realm: realm,
-	}
+func (i *IECTestState) Realm() string {
+	return i.TestRealm
 }
 
 // SDKTest defines the interface required by a SDK API test

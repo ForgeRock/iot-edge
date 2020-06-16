@@ -40,7 +40,7 @@ type IEC struct {
 func NewIEC(baseURL string, realm string, authTree string, handlers []Handler) *IEC {
 	return &IEC{
 		Thing: Thing{
-			Client:   NewAMClient(baseURL, realm, authTree),
+			Client:   &AMClient{BaseURL: baseURL, Realm: realm, AuthTree: authTree},
 			handlers: handlers,
 		},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
@@ -49,7 +49,11 @@ func NewIEC(baseURL string, realm string, authTree string, handlers []Handler) *
 
 // Initialise the IEC
 func (c *IEC) Initialise() error {
-	_, err := c.Thing.Session()
+	err := c.Thing.Client.Initialise()
+	if err != nil {
+		return err
+	}
+	_, err = c.Thing.Session()
 	return err
 }
 

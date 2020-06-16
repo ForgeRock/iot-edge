@@ -31,6 +31,25 @@ import (
 	"time"
 )
 
+type iecThingBuilder struct {
+	initialiser
+}
+
+func (b *iecThingBuilder) AddHandler(h Handler) Builder {
+	b.handlers = append(b.handlers, h)
+	return b
+}
+
+func (b *iecThingBuilder) SetTimeout(d time.Duration) Builder {
+	b.client.(*IECClient).Timeout = d
+	return b
+}
+
+// IECThing returns a Builder that can setup and initialise a Thing that communicates with an IEC
+func IECThing(address string, key crypto.Signer) Builder {
+	return &iecThingBuilder{initialiser{client: &IECClient{Address: address, Key: key}}}
+}
+
 type errCoAPStatusCode struct {
 	code    codes.Code
 	payload []byte
@@ -51,14 +70,6 @@ type IECClient struct {
 	Key     crypto.Signer
 	client  *coap.Client
 	conn    *coap.ClientConn
-}
-
-// NewIECClient returns a new client for connecting to the IEC
-func NewIECClient(address string, key crypto.Signer) *IECClient {
-	return &IECClient{
-		Address: address,
-		Key:     key,
-	}
 }
 
 // dial returns an existing connection or creates a new one

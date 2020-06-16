@@ -68,14 +68,11 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 }
 
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	var server string
 	var iecAddress string
-	switch c := state.InitClients(jwtPopAuthTree).(type) {
-	case *things.AMClient:
-		server = "am"
-	case *things.IECClient:
-		server = "iec"
-		iecAddress = c.Address
+	switch f := state.(type) {
+	case *anvil.IECTestState:
+		iecAddress = f.IEC.Address()
+		f.SetIECAuthTree(jwtPopRegCertTree)
 	}
 
 	// encode the key to PEM
@@ -90,7 +87,7 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-realm", state.Realm(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
-		"-server", server,
+		"-server", state.ClientType(),
 		"-address", iecAddress,
 		"-key", key,
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
@@ -136,8 +133,7 @@ func (t *SimpleIECExample) Setup(state anvil.TestState) (data anvil.ThingData, o
 }
 
 func (t *SimpleIECExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	switch state.InitClients(jwtPopAuthTree).(type) {
-	case *things.IECClient:
+	if state.ClientType() == "iec" {
 		// as this example involves an IEC there is no benefit of running it again during the IEC test set
 		return true
 	}
@@ -212,14 +208,11 @@ func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.Thing
 }
 
 func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	var server string
 	var iecAddress string
-	switch c := state.InitClients(jwtPopRegCertTree).(type) {
-	case *things.AMClient:
-		server = "am"
-	case *things.IECClient:
-		server = "iec"
-		iecAddress = c.Address
+	switch f := state.(type) {
+	case *anvil.IECTestState:
+		iecAddress = f.IEC.Address()
+		f.SetIECAuthTree(jwtPopRegCertTree)
 	}
 
 	// encode the key to PEM
@@ -237,7 +230,7 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 		"-realm", state.Realm(),
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
-		"-server", server,
+		"-server", state.ClientType(),
 		"-address", iecAddress,
 		"-key", key,
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID,

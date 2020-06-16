@@ -71,7 +71,7 @@ var tests = []anvil.SDKTest{
 // run the full test set for a single client
 func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 	// put the debug for the client in its own subdirectory
-	subDir := filepath.Join(debugDir, anvil.TypeName(testCtx.InitClients("")))
+	subDir := filepath.Join(debugDir, fmt.Sprintf("%sClient", testCtx.ClientType()))
 
 	result = true
 	var logfile *os.File
@@ -97,7 +97,7 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Client Tests --\n\n")
-	result = runAllTestsForContext(anvil.AMClientTestState(realm))
+	result = runAllTestsForContext(&anvil.AMTestState{TestRealm: realm})
 
 	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
 
@@ -117,7 +117,8 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 	}
 	defer controller.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(anvil.IECClientTestState(realm, controller)) && result
+	result = runAllTestsForContext(&anvil.IECTestState{IEC: controller, TestRealm: realm}) && result
+
 	return result, nil
 }
 

@@ -44,7 +44,12 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 }
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := thingJWTAuth(state, data)
+	builder := thingJWTAuth(state, data)
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
 	response, err := thing.RequestAccessToken("publish", "subscribe")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -71,7 +76,12 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := thingJWTAuth(state, data)
+	builder := thingJWTAuth(state, data)
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
 	response, err := thing.RequestAccessToken("publish")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -98,8 +108,13 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := thingJWTAuth(state, data)
-	_, err := thing.RequestAccessToken("publish", "subscribe", "delete")
+	builder := thingJWTAuth(state, data)
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	_, err = thing.RequestAccessToken("publish", "subscribe", "delete")
 	if err != nil && strings.Contains(err.Error(), "Unknown/invalid scope(s)") {
 		return true
 	}
@@ -126,7 +141,12 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 }
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := thingJWTAuth(state, data)
+	builder := thingJWTAuth(state, data)
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
 	response, err := thing.RequestAccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -159,7 +179,12 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 }
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := thingJWTAuth(state, data)
+	builder := thingJWTAuth(state, data)
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
 	response, err := thing.RequestAccessToken("create", "modify", "delete")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
@@ -220,8 +245,13 @@ func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, 
 }
 
 func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) bool {
-	thing := thingJWTAuth(state, data)
-	_, err := thing.RequestAccessToken("publish", "subscribe")
+	builder := thingJWTAuth(state, data)
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	_, err = thing.RequestAccessToken("publish", "subscribe")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
