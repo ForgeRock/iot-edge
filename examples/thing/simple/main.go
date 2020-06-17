@@ -81,15 +81,15 @@ func simpleThing() error {
 	// * AMCLient communicates directly with AM
 	// * IECClient communicates with AM via the IEC. Run the example IEC by calling "./run.sh examples simple/iec"
 
-	var client things.Client
+	var builder things.Builder
 	if *server == "am" {
-		client = things.NewAMClient(*amURL, *amRealm, *authTree)
+		builder = things.AMThing(*amURL, *amRealm, *authTree)
 	} else if *server == "iec" {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return err
 		}
-		client = things.NewIECClient(*iecAddress, key)
+		builder = things.IECThing(*iecAddress, key)
 	} else {
 		log.Fatal("server not supported")
 	}
@@ -100,9 +100,11 @@ func simpleThing() error {
 	}
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
-	thing := things.NewThing(client, []things.Handler{
-		things.AuthenticateHandler{ThingID: *thingName, ConfirmationKeyID: *keyID, ConfirmationKey: key},
-	})
+	builder.AddHandler(things.AuthenticateHandler{ThingID: *thingName, ConfirmationKeyID: *keyID, ConfirmationKey: key})
+	thing, err := builder.Initialise()
+	if err != nil {
+		return err
+	}
 	fmt.Printf("Done\n")
 
 	fmt.Printf("Requesting access token... ")

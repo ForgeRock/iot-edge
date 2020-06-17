@@ -146,7 +146,10 @@ func TestIECClient_Initialise_Concurrent(t *testing.T) {
 	const num = 5
 	for i := 0; i < num; i++ {
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		client := NewIECClient(addr, key)
+		client := &IECClient{
+			Address: addr,
+			Key:     key,
+		}
 		errGroup.Go(func() error {
 			return client.Initialise()
 		})

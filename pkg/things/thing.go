@@ -25,6 +25,7 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
 	"log"
+	"time"
 )
 
 // All SDK debug information is written to this Logger. The logger is muted by default. To see the debug output assign
@@ -107,10 +108,6 @@ func (s *Session) IncrementNonce() {
 
 // authenticate the Thing
 func (t *Thing) authenticate() (session *Session, err error) {
-	err = t.Client.Initialise()
-	if err != nil {
-		return session, err
-	}
 	auth := AuthenticatePayload{}
 	metadata := AuthMetadata{}
 	for {
@@ -202,4 +199,35 @@ func (t *Thing) Realm() string {
 		DebugLogger.Println(err)
 	}
 	return info.Realm
+}
+
+// Builder interface provides methods to setup and initialise a Thing
+type Builder interface {
+	// AddHandler adds a callback handler
+	AddHandler(Handler) Builder
+	// SetTimeout sets the timeout on the communications between the Thing and AM\IEC
+	SetTimeout(time.Duration) Builder
+	// Initialise a Thing instance and authenticates\registers it with AM
+	Initialise() (*Thing, error)
+}
+
+type initialiser struct {
+	client   Client
+	handlers []Handler
+}
+
+func (b *initialiser) Initialise() (*Thing, error) {
+	err := b.client.Initialise()
+	if err != nil {
+		return nil, err
+	}
+	thing := &Thing{
+		Client:   b.client,
+		handlers: b.handlers,
+	}
+	_, err = thing.authenticate()
+	if err != nil {
+		return thing, err
+	}
+	return thing, err
 }

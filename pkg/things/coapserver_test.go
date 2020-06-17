@@ -96,7 +96,7 @@ func testCOAPServerAuthenticate(m *mockClient) (err error) {
 	defer iec.ShutdownCOAPServer()
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := NewIECClient(iec.Address(), clientKey)
+	client := &IECClient{Address: iec.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		panic(err)
@@ -138,7 +138,7 @@ func testCOAPServerAMInfo(m *mockClient) (info AMInfoSet, err error) {
 	defer iec.ShutdownCOAPServer()
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := NewIECClient(iec.Address(), clientKey)
+	client := &IECClient{Address: iec.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		panic(err)
@@ -184,7 +184,7 @@ func testCOAPServerSendCommand(m *mockClient, jws string) (reply []byte, err err
 	defer iec.ShutdownCOAPServer()
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := NewIECClient(iec.Address(), clientKey)
+	client := &IECClient{Address: iec.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		panic(err)
@@ -281,7 +281,7 @@ func TestIEC_StartCOAPServer(t *testing.T) {
 
 	// create client to ensure that the connection is up
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := NewIECClient(iec.Address(), clientKey)
+	client := &IECClient{Address: iec.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		t.Fatal(err)
@@ -321,11 +321,9 @@ func TestIEC_ShutdownCOAPServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	address := iec.Address()
-
 	// create client to ensure that the connection is up
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client1 := NewIECClient(address, clientKey)
+	client1 := &IECClient{Address: iec.Address(), Key: clientKey}
 	err = client1.Initialise()
 	// shutdown server
 	iec.ShutdownCOAPServer()
@@ -334,7 +332,7 @@ func TestIEC_ShutdownCOAPServer(t *testing.T) {
 	}
 	client1.conn.Close()
 
-	client2 := NewIECClient(address, clientKey)
+	client2 := &IECClient{Address: iec.Address(), Key: clientKey}
 	err = testTimeout(10*time.Millisecond, client2.Initialise)
 	if err == nil {
 		t.Error("Expected an error")
