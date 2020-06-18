@@ -1,3 +1,6 @@
+[![GoDoc](https://godoc.org/github.com/ForgeRock/iot-edge/pkg/things?status.svg)](https://godoc.org/github.com/ForgeRock/iot-edge/pkg/things)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ForgeRock/iot-edge/blob/main/LICENSE)
+
 # ForgeRock IoT Edge
 
 ForgeRock IoT Edge is an open source project containing the IoT edge tier components of the ForgeRock Identity Platform.
