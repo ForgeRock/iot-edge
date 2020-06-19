@@ -175,7 +175,7 @@ func TestCOAPServer_AMInfo(t *testing.T) {
 	}
 }
 
-func testCOAPServerSendCommand(m *mockClient, jws string) (reply []byte, err error) {
+func testCOAPServerAccessToken(m *mockClient, jws string) (reply []byte, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	iec := testIEC(m)
 	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
@@ -189,10 +189,10 @@ func testCOAPServerSendCommand(m *mockClient, jws string) (reply []byte, err err
 	if err != nil {
 		panic(err)
 	}
-	return client.SendCommand("", jws)
+	return client.AccessToken("", jws)
 }
 
-func TestCOAPServer_SendCommand(t *testing.T) {
+func TestCOAPServer_AccessToken(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
@@ -201,13 +201,13 @@ func TestCOAPServer_SendCommand(t *testing.T) {
 	}{
 		{name: "success", successful: true, client: &mockClient{}, jws: ".eyJjc3JmIjoiMTIzNDUifQ."},
 		{name: "not-a-valid-jwt", client: &mockClient{}, jws: "eyJjc3JmIjoiMTIzNDUifQ"},
-		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", client: &mockClient{sendCommandFunc: func(string, string) (bytes []byte, err error) {
-			return nil, errors.New("AM send command error")
+		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", client: &mockClient{accessTokenFunc: func(string, string) (bytes []byte, err error) {
+			return nil, errors.New("AM access token error")
 		}}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			_, err := testCOAPServerSendCommand(subtest.client, subtest.jws)
+			_, err := testCOAPServerAccessToken(subtest.client, subtest.jws)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}

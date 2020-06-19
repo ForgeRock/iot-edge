@@ -47,8 +47,8 @@ type Client interface {
 	// AMInfo returns the information required to construct valid signed JWTs
 	AMInfo() (info AMInfoSet, err error)
 
-	// SendCommand sends the signed JWT to the IoT Command Endpoint
-	SendCommand(tokenID string, jws string) (reply []byte, err error)
+	// AccessToken makes an access token request with the given session token and payload
+	AccessToken(tokenID string, jws string) (reply []byte, err error)
 }
 
 // ThingType describes the Thing type
@@ -157,7 +157,7 @@ func signedJWTBody(session *Session, url string, version string, body interface{
 	if err != nil {
 		return "", err
 	}
-	builder := jwt.Signed(sig).Claims(sendCommandClaims{CSRF: session.token})
+	builder := jwt.Signed(sig).Claims(signedRequestClaims{CSRF: session.token})
 	if body != nil {
 		builder = builder.Claims(body)
 	}
@@ -176,11 +176,11 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	if err != nil {
 		return
 	}
-	requestBody, err := signedJWTBody(session, info.IoTURL, info.IoTVersion, NewGetAccessTokenV1(scopes))
+	requestBody, err := signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, NewGetAccessToken(scopes))
 	if err != nil {
 		return
 	}
-	reply, err := t.Client.SendCommand(session.token, requestBody)
+	reply, err := t.Client.AccessToken(session.token, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}

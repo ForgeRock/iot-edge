@@ -25,9 +25,9 @@ import (
 
 // AMInfoSet contains the information required to construct valid signed JWTs
 type AMInfoSet struct {
-	Realm      string
-	IoTURL     string
-	IoTVersion string
+	Realm          string
+	AccessTokenURL string
+	ThingsVersion  string
 }
 
 // AuthenticatePayload represents the outbound and inbound data during an authentication request
@@ -44,27 +44,14 @@ func (p AuthenticatePayload) HasSessionToken() bool {
 	return p.TokenId != ""
 }
 
-// CommandRequestPayload represents the outbound data during a command request
-type CommandRequestPayload interface {
-	// CommandID returns the unique ID of the command in this command request
-	CommandID() string
+type getAccessTokenPayload struct {
+	Scope []string `json:"scope"`
 }
 
-type getAccessTokenV1Payload struct {
-	Command string   `json:"command"`
-	Scope   []string `json:"scope"`
-}
-
-// CommandID returns the ID for the access token V1 command
-func (p getAccessTokenV1Payload) CommandID() string {
-	return p.Command
-}
-
-// NewGetAccessTokenV1 constructs a CommandRequestPayload for an access token V1 request
-func NewGetAccessTokenV1(scope []string) CommandRequestPayload {
-	return getAccessTokenV1Payload{
-		Command: "GET_ACCESS_TOKEN_V1",
-		Scope:   scope,
+// NewGetAccessToken constructs an access token request
+func NewGetAccessToken(scope []string) interface{} {
+	return getAccessTokenPayload{
+		Scope: scope,
 	}
 }
 
@@ -72,7 +59,7 @@ func (p AuthenticatePayload) String() string {
 	return payloadToString(p)
 }
 
-func (p getAccessTokenV1Payload) String() string {
+func (p getAccessTokenPayload) String() string {
 	return payloadToString(p)
 }
 

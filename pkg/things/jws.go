@@ -24,8 +24,8 @@ import (
 	"strings"
 )
 
-// sendCommandClaims defines the claims expected in the signed JWT provided with a Send Command request
-type sendCommandClaims struct {
+// signedRequestClaims defines the claims expected in the signed JWT provided with a signed request
+type signedRequestClaims struct {
 	CSRF string `json:"csrf"`
 }
 
