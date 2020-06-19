@@ -27,10 +27,10 @@ import (
 )
 
 var (
-	testCookieName          = "iPlanetDirectoryPro"
-	testRealm               = "/testRealm"
-	testTree                = "testTree"
-	testHTTPCommandEndpoint = "/json/iot"
+	testCookieName              = "iPlanetDirectoryPro"
+	testRealm                   = "/testRealm"
+	testTree                    = "testTree"
+	testHTTPAccessTokenEndpoint = "/json/iot"
 )
 
 func testServerInfo() []byte {
@@ -203,17 +203,17 @@ func TestAMClient_AMInfo(t *testing.T) {
 	if info.Realm != testRealm {
 		t.Error("incorrect realm")
 	}
-	if info.IoTVersion != commandEndpointVersion {
-		t.Error("incorrect command endpoint version")
+	if info.ThingsVersion != thingsEndpointVersion {
+		t.Error("incorrect things endpoint version")
 	}
-	if info.IoTURL != client.iotURL() {
-		t.Error("incorrect command endpoint url")
+	if info.AccessTokenURL != client.accessTokenURL() {
+		t.Error("incorrect access token endpoint url")
 	}
 }
 
-func testSendCommandHTTPMux(code int, response []byte) (mux *http.ServeMux) {
+func testAccessTokenHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	mux = testServerInfoHTTPMux(http.StatusOK, testServerInfo())
-	mux.HandleFunc(testHTTPCommandEndpoint, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(testHTTPAccessTokenEndpoint, func(writer http.ResponseWriter, request *http.Request) {
 		if code != http.StatusOK {
 			http.Error(writer, string(response), code)
 			return
@@ -224,7 +224,7 @@ func testSendCommandHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 	return mux
 }
 
-func testAMClientSendCommand(mux *http.ServeMux) (err error) {
+func testAMClientAccessToken(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
@@ -240,22 +240,22 @@ func testAMClientSendCommand(mux *http.ServeMux) (err error) {
 		return err
 	}
 
-	_, err = c.SendCommand("aToken", "aSignedWT")
+	_, err = c.AccessToken("aToken", "aSignedWT")
 	return err
 }
 
-func TestAMClient_SendCommand(t *testing.T) {
+func TestAMClient_AccessToken(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
 		serverMux  *http.ServeMux
 	}{
-		{name: "success", successful: true, serverMux: testSendCommandHTTPMux(http.StatusOK, []byte("{}"))},
-		{name: "no-go", serverMux: testSendCommandHTTPMux(http.StatusUnauthorized, []byte("{}"))},
+		{name: "success", successful: true, serverMux: testAccessTokenHTTPMux(http.StatusOK, []byte("{}"))},
+		{name: "no-go", serverMux: testAccessTokenHTTPMux(http.StatusUnauthorized, []byte("{}"))},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := testAMClientSendCommand(subtest.serverMux)
+			err := testAMClientAccessToken(subtest.serverMux)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}

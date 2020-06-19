@@ -184,9 +184,9 @@ func (c *IECClient) AMInfo() (info AMInfoSet, err error) {
 	return info, nil
 }
 
-// SendCommand sends the signed JWT to the IoT Command Endpoint
+// AccessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by IEC
-func (c *IECClient) SendCommand(_ string, jws string) (reply []byte, err error) {
+func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func (c *IECClient) SendCommand(_ string, jws string) (reply []byte, err error) 
 	ctx, cancel := c.context()
 	defer cancel()
 
-	response, err := conn.PostWithContext(ctx, "/sendcommand", coap.AppJSON, strings.NewReader(jws))
+	response, err := conn.PostWithContext(ctx, "/accesstoken", coap.AppJSON, strings.NewReader(jws))
 	if err != nil {
 		return nil, err
 	}

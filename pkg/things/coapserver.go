@@ -69,9 +69,9 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler: success")
 }
 
-// iotEndpointInfoHandler handles IoT Endpoint Info requests
-func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("iotEndpointInfoHandler")
+// amInfoHandler handles AM Info requests
+func (c *IEC) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
+	DebugLogger.Println("amInfoHandler")
 	info, err := c.Thing.Client.AMInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
@@ -80,22 +80,22 @@ func (c *IEC) iotEndpointInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 	b, err := json.Marshal(info)
 	if err != nil {
-		DebugLogger.Printf("Error marshalling IoTEndpointInfo; %s", err)
+		DebugLogger.Printf("Error marshalling amInfo; %s", err)
 		w.SetCode(codes.BadGateway)
 		w.Write([]byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Content)
 	w.Write(b)
-	DebugLogger.Println("iotEndpointInfoHandler: success")
+	DebugLogger.Println("amInfoHandler: success")
 }
 
-// sendCommandHandler handles Send Command requests
-func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("sendCommandHandler")
+// accessTokenHandler handles access token requests
+func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
+	DebugLogger.Println("accessTokenHandler")
 	payload := string(r.Msg.Payload())
 	// get SSO token from the CSRF claim in the JWT
-	var claims sendCommandClaims
+	var claims signedRequestClaims
 	err := extractJWTPayload(payload, &claims)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
@@ -103,7 +103,7 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 		return
 	}
 
-	b, err := c.Thing.Client.SendCommand(claims.CSRF, payload)
+	b, err := c.Thing.Client.AccessToken(claims.CSRF, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))
@@ -111,7 +111,7 @@ func (c *IEC) sendCommandHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 	w.SetCode(codes.Changed)
 	w.Write(b)
-	DebugLogger.Println("sendCommandHandler: success")
+	DebugLogger.Println("accessTokenHandler: success")
 }
 
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
@@ -133,8 +133,8 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 	c.coapChan = make(chan error, 1)
 	mux := coap.NewServeMux()
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
-	mux.HandleFunc("/aminfo", c.iotEndpointInfoHandler)
-	mux.HandleFunc("/sendcommand", c.sendCommandHandler)
+	mux.HandleFunc("/aminfo", c.amInfoHandler)
+	mux.HandleFunc("/accesstoken", c.accessTokenHandler)
 
 	cert, err := publicKeyCertificate(key)
 	if err != nil {

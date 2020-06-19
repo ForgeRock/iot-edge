@@ -29,13 +29,13 @@ type mockClient struct {
 	AuthenticateFunc func(AuthenticatePayload) (AuthenticatePayload, error)
 	amInfoFunc       func() (AMInfoSet, error)
 	amInfo           AMInfoSet
-	sendCommandFunc  func(string, string) ([]byte, error)
+	accessTokenFunc  func(string, string) ([]byte, error)
 }
 
 func (m *mockClient) Initialise() error {
 	m.amInfo = AMInfoSet{
-		IoTURL:     "/info",
-		IoTVersion: "1",
+		AccessTokenURL: "/things",
+		ThingsVersion:  "1",
 	}
 	return nil
 }
@@ -55,9 +55,9 @@ func (m *mockClient) AMInfo() (info AMInfoSet, err error) {
 	return m.amInfo, nil
 }
 
-func (m *mockClient) SendCommand(tokenID string, jws string) (reply []byte, err error) {
-	if m.sendCommandFunc != nil {
-		return m.sendCommandFunc(tokenID, jws)
+func (m *mockClient) AccessToken(tokenID string, jws string) (reply []byte, err error) {
+	if m.accessTokenFunc != nil {
+		return m.accessTokenFunc(tokenID, jws)
 	}
 	return []byte("{}"), nil
 }

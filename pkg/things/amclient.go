@@ -31,7 +31,7 @@ const (
 	acceptAPIVersion          = "Accept-API-Version"
 	serverInfoEndpointVersion = "resource=1.1"
 	authNEndpointVersion      = "protocol=1.0,resource=2.1"
-	commandEndpointVersion    = "protocol=2.0,resource=1.0"
+	thingsEndpointVersion     = "protocol=2.0,resource=1.0"
 	contentType               = "Content-Type"
 	applicationJson           = "application/json"
 	applicationJose           = "application/jose"
@@ -188,27 +188,27 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
-func (c *AMClient) iotURL() string {
-	return c.BaseURL + "/json/iot?_action=command&realm=" + c.Realm
+func (c *AMClient) accessTokenURL() string {
+	return c.BaseURL + "/json/things/*?_action=get_access_token&realm=" + c.Realm
 }
 
 // AMInfo returns AM related information to the client
 func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
 	return AMInfoSet{
-		Realm:      c.Realm,
-		IoTURL:     c.iotURL(),
-		IoTVersion: commandEndpointVersion,
+		Realm:          c.Realm,
+		AccessTokenURL: c.accessTokenURL(),
+		ThingsVersion:  thingsEndpointVersion,
 	}, nil
 }
 
-// SendCommand sends the signed JWT to the IoT Command Endpoint
-func (c *AMClient) SendCommand(tokenID string, jws string) ([]byte, error) {
-	request, err := http.NewRequest(http.MethodPost, c.iotURL(), strings.NewReader(jws))
+// AccessToken makes an access token request with the given session token and payload
+func (c *AMClient) AccessToken(tokenID string, jws string) ([]byte, error) {
+	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(jws))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	request.Header.Set(acceptAPIVersion, commandEndpointVersion)
+	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
 	request.Header.Set(contentType, applicationJose)
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	response, err := c.Do(request)

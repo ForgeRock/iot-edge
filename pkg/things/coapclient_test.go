@@ -56,9 +56,9 @@ func testAMInfoCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	return mux
 }
 
-func testSendCommandCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
+func testAccessTokenCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
-	mux.HandleFunc("/sendcommand", func(w coap.ResponseWriter, r *coap.Request) {
+	mux.HandleFunc("/accesstoken", func(w coap.ResponseWriter, r *coap.Request) {
 		w.SetCode(code)
 		w.Write(response)
 		return
@@ -235,8 +235,8 @@ func testIECClientAMInfo(client *IECClient, server *testCOAPServer) (err error) 
 
 func TestIECClient_AMInfo(t *testing.T) {
 	info := AMInfoSet{
-		IoTURL:     "/iot",
-		IoTVersion: "1",
+		AccessTokenURL: "/things",
+		ThingsVersion:  "1",
 	}
 	b, err := json.Marshal(info)
 	if err != nil {
@@ -271,7 +271,7 @@ func TestIECClient_AMInfo(t *testing.T) {
 	}
 }
 
-func testIECClientSendCommand(client *IECClient, server *testCOAPServer) (err error) {
+func testIECClientAccessToken(client *IECClient, server *testCOAPServer) (err error) {
 	if server != nil {
 		var cancel func()
 		client.Address, cancel, err = server.Start()
@@ -285,11 +285,11 @@ func testIECClientSendCommand(client *IECClient, server *testCOAPServer) (err er
 	if err != nil {
 		return err
 	}
-	_, err = client.SendCommand("token", "signedWT")
+	_, err = client.AccessToken("token", "signedWT")
 	return err
 }
 
-func TestIECClient_SendCommand(t *testing.T) {
+func TestIECClient_AccessToken(t *testing.T) {
 	cert, _ := publicKeyCertificate(testGenerateSigner())
 
 	tests := []struct {
@@ -299,13 +299,13 @@ func TestIECClient_SendCommand(t *testing.T) {
 		server     *testCOAPServer
 	}{
 		{name: "success", successful: true, client: &IECClient{Key: testGenerateSigner()},
-			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testSendCommandCOAPMux(codes.Changed, []byte("{}"))}},
+			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAccessTokenCOAPMux(codes.Changed, []byte("{}"))}},
 		{name: "unexpected-code", client: &IECClient{Key: testGenerateSigner()},
-			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testSendCommandCOAPMux(codes.BadGateway, []byte("{}"))}},
+			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAccessTokenCOAPMux(codes.BadGateway, []byte("{}"))}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := testIECClientSendCommand(subtest.client, subtest.server)
+			err := testIECClientAccessToken(subtest.client, subtest.server)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}
