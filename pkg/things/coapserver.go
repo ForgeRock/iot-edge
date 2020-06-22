@@ -114,6 +114,32 @@ func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("accessTokenHandler: success")
 }
 
+// attributesHandler handles a thing attributes requests
+func (c *IEC) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
+	DebugLogger.Println("attributesHandler")
+	payload := string(r.Msg.Payload())
+	DebugLogger.Println("received payload: " + payload)
+	names := r.Msg.Query()
+	// get SSO token from the CSRF claim in the JWT
+	var claims signedRequestClaims
+	err := extractJWTPayload(payload, &claims)
+	if err != nil {
+		w.SetCode(codes.BadRequest)
+		w.Write([]byte("Can't parse signed JWT"))
+		return
+	}
+
+	b, err := c.Thing.Client.Attributes(claims.CSRF, payload, names)
+	if err != nil {
+		w.SetCode(codes.GatewayTimeout)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.SetCode(codes.Changed)
+	w.Write(b)
+	DebugLogger.Println("attributesHandler: success")
+}
+
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
 	return &dtls.Config{
 		Certificates:         cert,
@@ -135,6 +161,7 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
 	mux.HandleFunc("/aminfo", c.amInfoHandler)
 	mux.HandleFunc("/accesstoken", c.accessTokenHandler)
+	mux.HandleFunc("/attributes", c.attributesHandler)
 
 	cert, err := publicKeyCertificate(key)
 	if err != nil {

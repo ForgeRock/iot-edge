@@ -27,6 +27,7 @@ import (
 type AMInfoSet struct {
 	Realm          string
 	AccessTokenURL string
+	AttributesURL  string
 	ThingsVersion  string
 }
 
@@ -106,4 +107,39 @@ func (a AccessTokenResponse) GetString(key string) (string, error) {
 		return value, nil
 	}
 	return "", errors.New(fmt.Sprintf("failed to read `%s` from response", key))
+}
+
+// AttributesResponse contains the response received from AM after a successful request for attributes
+type AttributesResponse struct {
+	Content map[string]interface{}
+}
+
+// ID returns the thing's ID contained in an AttributesResponse
+func (a AttributesResponse) ID() (string, error) {
+	if value, ok := a.Content["_id"].(string); ok {
+		return value, nil
+	}
+	return "", errors.New("failed to read `_id` from response")
+}
+
+// GetFirst reads the first value for the specified attribute from the AttributesResponse
+func (a AttributesResponse) GetFirst(key string) (string, error) {
+	values, err := a.Get(key)
+	if err != nil || len(values) == 0 {
+		return "", err
+	}
+	return values[0], nil
+}
+
+// Get reads all the values for the specified attribute from the AttributesResponse
+func (a AttributesResponse) Get(key string) ([]string, error) {
+	values, ok := a.Content[key].([]interface{})
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("failed to read `%s` from response", key))
+	}
+	valuesAsStrings := make([]string, len(values))
+	for i, v := range values {
+		valuesAsStrings[i] = v.(string)
+	}
+	return valuesAsStrings, nil
 }

@@ -205,3 +205,29 @@ func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) 
 	}
 	return response.Payload(), nil
 }
+
+// Attributes makes a thing attributes request with the given payload
+// SSO token is extracted from signed JWT by IEC
+func (c *IECClient) Attributes(_ string, jws string, names []string) (reply []byte, err error) {
+	conn, err := c.dial()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := c.context()
+	defer cancel()
+
+	request, err := conn.NewPostRequest("/attributes", coap.AppJSON, strings.NewReader(jws))
+	if err != nil {
+		return nil, err
+	}
+	request.SetQuery(names)
+	response, err := conn.ExchangeWithContext(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.Code() != codes.Changed {
+		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
+	return response.Payload(), nil
+}

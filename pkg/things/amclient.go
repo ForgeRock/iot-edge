@@ -192,11 +192,23 @@ func (c *AMClient) accessTokenURL() string {
 	return c.BaseURL + "/json/things/*?_action=get_access_token&realm=" + c.Realm
 }
 
+func (c *AMClient) attributesURL() string {
+	return c.BaseURL + "/json/things/*?realm=" + c.Realm
+}
+
+func fieldsQuery(fields []string) string {
+	if len(fields) > 0 {
+		return "&_fields=" + strings.Join(fields, ",")
+	}
+	return ""
+}
+
 // AMInfo returns AM related information to the client
 func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
 	return AMInfoSet{
 		Realm:          c.Realm,
 		AccessTokenURL: c.accessTokenURL(),
+		AttributesURL:  c.attributesURL(),
 		ThingsVersion:  thingsEndpointVersion,
 	}, nil
 }
@@ -208,6 +220,20 @@ func (c *AMClient) AccessToken(tokenID string, jws string) ([]byte, error) {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
+	return c.makeSignedRequest(tokenID, request)
+}
+
+// Attributes makes a thing attributes request with the given session token and payload
+func (c *AMClient) Attributes(tokenID string, jws string, names []string) (reply []byte, err error) {
+	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), strings.NewReader(jws))
+	if err != nil {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return nil, err
+	}
+	return c.makeSignedRequest(tokenID, request)
+}
+
+func (c *AMClient) makeSignedRequest(tokenID string, request *http.Request) (reply []byte, err error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
 	request.Header.Set(contentType, applicationJose)
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
