@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -214,28 +215,35 @@ func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
 }
 
 // AccessToken makes an access token request with the given session token and payload
-func (c *AMClient) AccessToken(tokenID string, jws string) ([]byte, error) {
-	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(jws))
+func (c *AMClient) AccessToken(tokenID string, format commandFormat, payload io.Reader) ([]byte, error) {
+	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), payload)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeSignedRequest(tokenID, request)
+	return c.makeCommandRequest(tokenID, format, request)
 }
 
 // Attributes makes a thing attributes request with the given session token and payload
-func (c *AMClient) Attributes(tokenID string, jws string, names []string) (reply []byte, err error) {
-	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), strings.NewReader(jws))
+func (c *AMClient) Attributes(tokenID string, format commandFormat, payload io.Reader, names []string) (reply []byte, err error) {
+	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), payload)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeSignedRequest(tokenID, request)
+	return c.makeCommandRequest(tokenID, format, request)
 }
 
-func (c *AMClient) makeSignedRequest(tokenID string, request *http.Request) (reply []byte, err error) {
+func (c *AMClient) makeCommandRequest(tokenID string, format commandFormat, request *http.Request) (reply []byte, err error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
-	request.Header.Set(contentType, applicationJose)
+
+	switch format {
+	case commandFormatJOSE:
+		request.Header.Set(contentType, applicationJose)
+	case commandFormatJSON:
+		request.Header.Set(contentType, applicationJson)
+	}
+
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	response, err := c.Do(request)
 	if err != nil {

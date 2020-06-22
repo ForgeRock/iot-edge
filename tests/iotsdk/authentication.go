@@ -172,3 +172,42 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 	}
 	return true
 }
+
+type AuthenticateWithUserPwd struct {
+	anvil.NopSetupCleanup
+}
+
+func (a AuthenticateWithUserPwd) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
+	builder := state.Builder(userPwdAuthTree)
+	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
+	_, err := builder.Initialise()
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+type AuthenticateWithIncorrectPwd struct {
+	anvil.NopSetupCleanup
+}
+
+func (a AuthenticateWithIncorrectPwd) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
+	builder := state.Builder(userPwdAuthTree)
+	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: "wrong"})
+	_, err := builder.Initialise()
+	if err != things.ErrUnauthorised {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	return true
+}

@@ -26,8 +26,8 @@ import (
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/pion/dtls/v2"
+	"io"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -186,7 +186,7 @@ func (c *IECClient) AMInfo() (info AMInfoSet, err error) {
 
 // AccessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by IEC
-func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) {
+func (c *IECClient) AccessToken(tokenID string, format commandFormat, payload io.Reader) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -195,7 +195,15 @@ func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) 
 	ctx, cancel := c.context()
 	defer cancel()
 
-	response, err := conn.PostWithContext(ctx, "/accesstoken", coap.AppJSON, strings.NewReader(jws))
+	var coapFormat coap.MediaType
+	switch format {
+	case commandFormatJOSE:
+		coapFormat = coap.AppCoseSign
+	case commandFormatJSON:
+		coapFormat = coap.AppJSON
+	}
+
+	response, err := conn.PostWithContext(ctx, "/accesstoken", coapFormat, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +216,7 @@ func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) 
 
 // Attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by IEC
-func (c *IECClient) Attributes(_ string, jws string, names []string) (reply []byte, err error) {
+func (c *IECClient) Attributes(tokenID string, format commandFormat, payload io.Reader, names []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -216,7 +224,15 @@ func (c *IECClient) Attributes(_ string, jws string, names []string) (reply []by
 	ctx, cancel := c.context()
 	defer cancel()
 
-	request, err := conn.NewPostRequest("/attributes", coap.AppJSON, strings.NewReader(jws))
+	var coapFormat coap.MediaType
+	switch format {
+	case commandFormatJOSE:
+		coapFormat = coap.AppCoseSign
+	case commandFormatJSON:
+		coapFormat = coap.AppJSON
+	}
+
+	request, err := conn.NewPostRequest("/attributes", coapFormat, payload)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,49 @@
+{
+  "_id": "Anvil-User-Pwd",
+  "uiConfig": {},
+  "staticNodes": {
+    "startNode": {
+      "x": 50,
+      "y": 58.5
+    },
+    "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+      "x": 739.609375,
+      "y": 92
+    },
+    "e301438c-0bd0-429c-ab0c-66126501069a": {
+      "x": 739.609375,
+      "y": 25
+    }
+  },
+  "entryNodeId": "488f4234-281c-48d7-b331-db28ffa1f63c",
+  "nodes": {
+    "488f4234-281c-48d7-b331-db28ffa1f63c": {
+      "displayName": "Username Collector",
+      "nodeType": "UsernameCollectorNode",
+      "x": 152.078125,
+      "y": 58.5,
+      "connections": {
+        "outcome": "2c40cc59-bdf1-413e-912e-b0200e641e23"
+      }
+    },
+    "2c40cc59-bdf1-413e-912e-b0200e641e23": {
+      "displayName": "Password Collector",
+      "nodeType": "PasswordCollectorNode",
+      "x": 348.78125,
+      "y": 58.5,
+      "connections": {
+        "outcome": "31f73095-fd64-4117-9948-f7f4b1c4b590"
+      }
+    },
+    "31f73095-fd64-4117-9948-f7f4b1c4b590": {
+      "displayName": "Data Store Decision",
+      "nodeType": "DataStoreDecisionNode",
+      "x": 543.140625,
+      "y": 36,
+      "connections": {
+        "true": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+        "false": "e301438c-0bd0-429c-ab0c-66126501069a"
+      }
+    }
+  }
+}

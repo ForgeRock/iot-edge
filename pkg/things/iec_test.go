@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/dchest/uniuri"
+	"io"
 	"testing"
 	"time"
 )
@@ -56,16 +57,16 @@ func (m *mockClient) AMInfo() (info AMInfoSet, err error) {
 	return m.amInfo, nil
 }
 
-func (m *mockClient) AccessToken(tokenID string, jws string) (reply []byte, err error) {
+func (m *mockClient) AccessToken(tokenID string, format commandFormat, payload io.Reader) (reply []byte, err error) {
 	if m.accessTokenFunc != nil {
-		return m.accessTokenFunc(tokenID, jws)
+		return m.accessTokenFunc(tokenID, payload)
 	}
 	return []byte("{}"), nil
 }
 
-func (m *mockClient) Attributes(tokenID string, jws string, names []string) (reply []byte, err error) {
+func (m *mockClient) Attributes(tokenID string, format commandFormat, payload io.Reader, names []string) (reply []byte, err error) {
 	if m.attributesFunc != nil {
-		return m.attributesFunc(tokenID, jws, names)
+		return m.attributesFunc(tokenID, payload, names)
 	}
 	return []byte("{}"), nil
 }
