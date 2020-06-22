@@ -1,0 +1,32 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+actor "Manufacturer" as man
+actor "Thing" as thing
+participant "Access Management" as am
+participant "Directory Services" as ds
+
+thing -> thing : generate key pair
+man -> thing : retrieve thing public key
+man -> ds : create thing identity with public key
+
+thing -> thing : activate
+thing -> am : authenticate\nwith signed JWT
+am -> ds : get public key
+am -> am : verify JWT
+am --> thing : return session token
+
+@enduml

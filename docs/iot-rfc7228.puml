@@ -1,30 +1,42 @@
 @startuml
-title ForgeRock IoT in accordance with RFC 7228
 
+skinparam component {
+  FontColor #062b8c
+  BackgroundColor #fc6700
+  BorderColor #062b8c
+  BackgroundColor<<third party>> azure
+  ArrowColor #062b8c
+  ArrowFontColor #062b8c
+}
+skinparam node {
+  BorderColor #062b8c
+  FontColor #062b8c
+}
+skinparam frame {
+  BorderColor Grey
+  FontColor Grey
+}
+
+frame "Platform Tier" {
+    [ForgeRock Identity Platform] as fr
+}
 frame "Edge Tier" {
-    frame "Class 2 Device" {
-        [Things SDK] as amclient1
-    }
     frame "Class 1 Device" {
-        [Things SDK] as iecclient1
+        [Thing SDK] as gc
+    }
+    frame "Class 2 Device" {
+        [Thing SDK] as ac
     }
     frame "Class 0 Device" {
-        [Bespoke Software] as customclient1
+        [Bespoke Software] as cc <<third party>>
     }
-
-    frame "IoT Gateway" {
-        [Identity Edge Controller] as iec
-        [Things SDK] as iecclient2
+    frame "Gateway Device" {
+        [Thing Gateway] as gt
     }
 }
-frame "Platform Tier" {
-    node "ForgeRock Platform" {
-        [Access Management] as am
-    }
-}
-iec -right-> am : HTTP/TLS
-amclient1 --> am : HTTP/TLS
-iecclient1 --> iec : COAP/DTLS
-iecclient2 -right-> iec : COAP/DTLS
-customclient1 --> iecclient2 : Bespoke\nProtocol
+gt -up-> fr : HTTP/TLS
+ac -up-> fr : HTTP/TLS
+gc -up-> gt : COAP/DTLS
+cc -right-> ac : Bespoke\nProtocol
+cc -left-> gc : Bespoke\nProtocol
 @enduml

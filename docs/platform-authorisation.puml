@@ -4,6 +4,7 @@ skinparam component {
   FontColor #062b8c
   BackgroundColor #fc6700
   BorderColor #062b8c
+  BackgroundColor<<third party>> azure
   ArrowColor #062b8c
   ArrowFontColor #062b8c
 }
@@ -17,24 +18,21 @@ skinparam frame {
 }
 
 frame "Edge Tier" {
-    frame "Device A" {
+    frame "Device" {
         [Thing SDK] as ac
-    }
-    frame "Gateway Device" {
-        [Thing Gateway] as gt
-    }
-    frame "Device B" {
-        [Thing SDK] as gc
+        [MQTT Client] as mc <<third party>>
     }
 }
 frame "Platform Tier" {
     node "ForgeRock Identity Platform" {
         [Access Management] as am
-        [Directory Services] as ds
+    }
+    node "IoT Service" {
+        [MQTT Broker] as mb <<third party>>
     }
 }
-ac -up-> am : HTTP/TLS
-gt -up-> am : HTTP/TLS
-gc -up-> gt : COAP/DTLS
-am -right-> ds
+ac -up-> am : Onboard &\nAuthorise
+ac <-left-> mc
+mc -up-> mb : Publish\n(OAuth 2.0 Token)
+mb -left-> am : Verify Token
 @enduml
