@@ -173,6 +173,7 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 	return true
 }
 
+// AuthenticateWithUserPwd authenticates a thing using a username and password
 type AuthenticateWithUserPwd struct {
 	anvil.NopSetupCleanup
 }
@@ -192,6 +193,7 @@ func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData
 	return true
 }
 
+// AuthenticateWithIncorrectPwd checks that authentication fails when the thing provides the wrong password
 type AuthenticateWithIncorrectPwd struct {
 	anvil.NopSetupCleanup
 }

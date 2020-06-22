@@ -264,16 +264,17 @@ func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) boo
 	return true
 }
 
-type NonRestrictedAccessToken struct {
+// AccessTokenWithNonRestrictedToken requests an access token with a non-restricted session token
+type AccessTokenWithNonRestrictedToken struct {
 	anvil.NopSetupCleanup
 }
 
-func (a NonRestrictedAccessToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func (a AccessTokenWithNonRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = things.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (a NonRestrictedAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := state.Builder(userPwdAuthTree)
 	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
 	thing, err := builder.Initialise()
