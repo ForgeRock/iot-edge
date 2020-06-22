@@ -30,6 +30,7 @@ type mockClient struct {
 	amInfoFunc       func() (AMInfoSet, error)
 	amInfo           AMInfoSet
 	accessTokenFunc  func(string, string) ([]byte, error)
+	attributesFunc   func(string, string, []string) ([]byte, error)
 }
 
 func (m *mockClient) Initialise() error {
@@ -58,6 +59,13 @@ func (m *mockClient) AMInfo() (info AMInfoSet, err error) {
 func (m *mockClient) AccessToken(tokenID string, jws string) (reply []byte, err error) {
 	if m.accessTokenFunc != nil {
 		return m.accessTokenFunc(tokenID, jws)
+	}
+	return []byte("{}"), nil
+}
+
+func (m *mockClient) Attributes(tokenID string, jws string, names []string) (reply []byte, err error) {
+	if m.attributesFunc != nil {
+		return m.attributesFunc(tokenID, jws, names)
 	}
 	return []byte("{}"), nil
 }

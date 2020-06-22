@@ -49,6 +49,9 @@ type Client interface {
 
 	// AccessToken makes an access token request with the given session token and payload
 	AccessToken(tokenID string, jws string) (reply []byte, err error)
+
+	// Attributes makes a thing attributes request with the given session token and payload
+	Attributes(tokenID string, jws string, names []string) (reply []byte, err error)
 }
 
 // ThingType describes the Thing type
@@ -189,6 +192,33 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	}
 	err = json.Unmarshal(reply, &response.Content)
 	DebugLogger.Println("RequestAccessToken request completed successfully")
+	return
+}
+
+// RequestAttributes requests the attributes with the specified names associated with the thing's identity.
+// If no names are specified then all the allowed attributes will be returned.
+func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse, err error) {
+	session, err := t.Session()
+	if err != nil {
+		return
+	}
+	info, err := t.Client.AMInfo()
+	if err != nil {
+		return
+	}
+	requestBody, err := signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
+	if err != nil {
+		return
+	}
+	reply, err := t.Client.Attributes(session.token, requestBody, names)
+	if reply != nil {
+		DebugLogger.Println("RequestAttributes response: ", string(reply))
+	}
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(reply, &response.Content)
+	DebugLogger.Println("RequestAttributes request completed successfully")
 	return
 }
 

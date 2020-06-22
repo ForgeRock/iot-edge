@@ -30,7 +30,8 @@ var (
 	testCookieName              = "iPlanetDirectoryPro"
 	testRealm                   = "/testRealm"
 	testTree                    = "testTree"
-	testHTTPAccessTokenEndpoint = "/json/iot"
+	testHTTPAccessTokenEndpoint = "/json/things/*"
+	testHTTPAttributesEndpoint  = "/json/things/*"
 )
 
 func testServerInfo() []byte {
@@ -209,6 +210,9 @@ func TestAMClient_AMInfo(t *testing.T) {
 	if info.AccessTokenURL != client.accessTokenURL() {
 		t.Error("incorrect access token endpoint url")
 	}
+	if info.AttributesURL != client.attributesURL() {
+		t.Error("incorrect attributes endpoint url")
+	}
 }
 
 func testAccessTokenHTTPMux(code int, response []byte) (mux *http.ServeMux) {
@@ -256,6 +260,61 @@ func TestAMClient_AccessToken(t *testing.T) {
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
 			err := testAMClientAccessToken(subtest.serverMux)
+			if subtest.successful && err != nil {
+				t.Error(err)
+			}
+			if !subtest.successful && err == nil {
+				t.Error("Expected an error")
+			}
+		})
+	}
+}
+
+func testAttributesHTTPMux(code int, response []byte) (mux *http.ServeMux) {
+	mux = testServerInfoHTTPMux(http.StatusOK, testServerInfo())
+	mux.HandleFunc(testHTTPAttributesEndpoint, func(writer http.ResponseWriter, request *http.Request) {
+		if code != http.StatusOK {
+			http.Error(writer, string(response), code)
+			return
+		}
+		writer.Write(response)
+		return
+	})
+	return mux
+}
+
+func testAMClientAttributes(mux *http.ServeMux) (err error) {
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	c := &AMClient{
+		BaseURL:  server.URL,
+		Realm:    testRealm,
+		AuthTree: testTree,
+	}
+	testSetRootCAs(c, server)
+
+	err = c.Initialise()
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Attributes("aToken", "aSignedWT", []string{})
+	return err
+}
+
+func TestAMClient_Attributes(t *testing.T) {
+	tests := []struct {
+		name       string
+		successful bool
+		serverMux  *http.ServeMux
+	}{
+		{name: "success", successful: true, serverMux: testAttributesHTTPMux(http.StatusOK, []byte("{}"))},
+		{name: "no-go", serverMux: testAttributesHTTPMux(http.StatusUnauthorized, []byte("{}"))},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			err := testAMClientAttributes(subtest.serverMux)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}

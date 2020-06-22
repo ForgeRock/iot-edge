@@ -290,6 +290,7 @@ type IdAttributes struct {
 	ThingType             things.ThingType   `json:"thingType,omitempty"`
 	ThingKeys             jose.JSONWebKeySet `json:"thingKeys,omitempty"`
 	ThingOAuth2ClientName string             `json:"thingOAuth2ClientName,omitempty"`
+	ThingConfig           string             `json:"thingConfig,omitempty"`
 }
 
 func (id IdAttributes) String() string {

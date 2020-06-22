@@ -66,6 +66,8 @@ var tests = []anvil.SDKTest{
 	&SimpleThingExample{},
 	&SimpleIECExample{},
 	&CertRegistrationExample{},
+	&AttributesWithNoFilter{},
+	&AttributesWithFilter{},
 }
 
 // run the full test set for a single client
