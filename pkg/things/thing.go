@@ -65,8 +65,9 @@ type Client interface {
 type ThingType string
 
 const (
-	TypeDevice ThingType = "device"
-	TypeIEC    ThingType = "iec"
+	TypeDevice  ThingType = "device"
+	TypeService ThingType = "service"
+	TypeIEC     ThingType = "iec"
 )
 
 // Thing represents an AM Thing identity
