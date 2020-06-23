@@ -17,7 +17,6 @@
 package things
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/tls"
 	"encoding/json"
@@ -92,44 +91,46 @@ func (c *IEC) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("amInfoHandler: success")
 }
 
-func decodeCommandRequest(msg coap.Message) (token string, format commandFormat, err error) {
+func decodeThingEndpointRequest(msg coap.Message) (token string, content contentType, payload string, err error) {
 	coapFormat, ok := msg.Option(coap.ContentFormat).(coap.MediaType)
 	if !ok {
-		return token, format, fmt.Errorf("Missing content format")
+		return token, content, payload, fmt.Errorf("missing content format")
 	}
 
 	switch coapFormat {
 	case coap.AppJSON:
-		var request commandRequest
+		var request thingEndpointPayload
 		if err := json.Unmarshal(msg.Payload(), &request); err != nil {
-			return token, format, err
+			return token, content, payload, err
 		}
 		token = request.Token
-		format = commandFormatJSON
-	case coap.AppCoseSign:
+		content = applicationJSON
+		payload = request.Payload
+	case appJOSE:
+		payload = string(msg.Payload())
 		// get SSO token from the CSRF claim in the JWT
 		var claims signedRequestClaims
-		if err := extractJWTPayload(string(msg.Payload()), &claims); err != nil {
-			return token, format, err
+		if err := extractJWTPayload(payload, &claims); err != nil {
+			return token, content, payload, err
 		}
 		token = claims.CSRF
-		format = commandFormatJOSE
+		content = applicationJOSE
 	}
-	return token, format, nil
+	return token, content, payload, nil
 }
 
 // accessTokenHandler handles access token requests
 func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("accessTokenHandler")
 
-	token, format, err := decodeCommandRequest(r.Msg)
+	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	b, err := c.Thing.Client.AccessToken(token, format, bytes.NewReader(r.Msg.Payload()))
+	b, err := c.Thing.Client.AccessToken(token, content, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))
@@ -145,13 +146,13 @@ func (c *IEC) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("attributesHandler")
 	names := r.Msg.Query()
 
-	token, format, err := decodeCommandRequest(r.Msg)
+	token, format, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	b, err := c.Thing.Client.Attributes(token, format, bytes.NewReader(r.Msg.Payload()), names)
+	b, err := c.Thing.Client.Attributes(token, format, payload, names)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))

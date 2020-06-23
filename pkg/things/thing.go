@@ -17,17 +17,14 @@
 package things
 
 import (
-	"bytes"
 	"crypto"
 	"encoding/json"
 	"errors"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
-	"io"
 	"io/ioutil"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -39,16 +36,12 @@ var (
 	ErrUnauthorised = errors.New("unauthorised")
 )
 
-type commandFormat uint8
+type contentType string
 
 const (
-	commandFormatJOSE commandFormat = iota
-	commandFormatJSON
+	applicationJSON contentType = "application/json"
+	applicationJOSE contentType = "application/jose"
 )
-
-type commandRequest struct {
-	Token string `json:"token,omitempty"`
-}
 
 // Client is an interface that describes the connection to the ForgeRock platform
 type Client interface {
@@ -62,10 +55,10 @@ type Client interface {
 	AMInfo() (info AMInfoSet, err error)
 
 	// AccessToken makes an access token request with the given session token and payload
-	AccessToken(tokenID string, format commandFormat, payload io.Reader) (reply []byte, err error)
+	AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error)
 
 	// Attributes makes a thing attributes request with the given session token and payload
-	Attributes(tokenID string, format commandFormat, payload io.Reader, names []string) (reply []byte, err error)
+	Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error)
 }
 
 // ThingType describes the Thing type
@@ -190,33 +183,27 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 		return
 	}
 
-	var requestBody io.Reader
-	var format commandFormat
+	var requestBody string
+	var content contentType
 	if session.HasRestrictedToken() {
 		info, err := t.Client.AMInfo()
 		if err != nil {
 			return response, err
 		}
-		jws, err := signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, NewGetAccessToken(scopes))
+		requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, NewGetAccessToken(scopes))
 		if err != nil {
 			return response, err
 		}
-		requestBody = strings.NewReader(jws)
-		format = commandFormatJOSE
+		content = applicationJOSE
 	} else {
-		b, err := json.Marshal(
-			struct {
-				getAccessTokenPayload
-				commandRequest
-			}{getAccessTokenPayload{Scope: scopes},
-				commandRequest{Token: session.token}})
+		b, err := json.Marshal(NewGetAccessToken(scopes))
 		if err != nil {
 			return response, err
 		}
-		requestBody = bytes.NewReader(b)
-		format = commandFormatJSON
+		requestBody = string(b)
+		content = applicationJSON
 	}
-	reply, err := t.Client.AccessToken(session.token, format, requestBody)
+	reply, err := t.Client.AccessToken(session.token, content, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}
@@ -236,28 +223,22 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 		return
 	}
 
-	var requestBody io.Reader
-	var format commandFormat
+	var requestBody string
+	var content contentType
 	if session.HasRestrictedToken() {
 		info, err := t.Client.AMInfo()
 		if err != nil {
 			return response, err
 		}
-		jws, err := signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
+		requestBody, err = signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
 		if err != nil {
 			return response, err
 		}
-		requestBody = strings.NewReader(jws)
-		format = commandFormatJOSE
+		content = applicationJOSE
 	} else {
-		b, err := json.Marshal(commandRequest{Token: session.token})
-		if err != nil {
-			return response, err
-		}
-		requestBody = bytes.NewReader(b)
-		format = commandFormatJSON
+		content = applicationJSON
 	}
-	reply, err := t.Client.Attributes(session.token, format, requestBody, names)
+	reply, err := t.Client.Attributes(session.token, content, requestBody, names)
 	if reply != nil {
 		DebugLogger.Println("RequestAttributes response: ", string(reply))
 	}

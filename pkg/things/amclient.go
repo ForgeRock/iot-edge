@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -33,9 +32,7 @@ const (
 	serverInfoEndpointVersion = "resource=1.1"
 	authNEndpointVersion      = "protocol=1.0,resource=2.1"
 	thingsEndpointVersion     = "protocol=2.0,resource=1.0"
-	contentType               = "Content-Type"
-	applicationJson           = "application/json"
-	applicationJose           = "application/jose"
+	httpContentType           = "Content-Type"
 	// Query keys
 	fieldQueryKey         = "_fields"
 	realmQueryKey         = "realm"
@@ -125,7 +122,7 @@ func (c *AMClient) Authenticate(payload AuthenticatePayload) (reply Authenticate
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
-	request.Header.Add(contentType, applicationJson)
+	request.Header.Add(httpContentType, string(applicationJSON))
 	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
@@ -166,7 +163,7 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add(acceptAPIVersion, serverInfoEndpointVersion)
-	request.Header.Add(contentType, applicationJson)
+	request.Header.Add(httpContentType, string(applicationJSON))
 	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
@@ -215,35 +212,28 @@ func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
 }
 
 // AccessToken makes an access token request with the given session token and payload
-func (c *AMClient) AccessToken(tokenID string, format commandFormat, payload io.Reader) ([]byte, error) {
-	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), payload)
+func (c *AMClient) AccessToken(tokenID string, content contentType, payload string) ([]byte, error) {
+	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(payload))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeCommandRequest(tokenID, format, request)
+	return c.makeCommandRequest(tokenID, content, request)
 }
 
 // Attributes makes a thing attributes request with the given session token and payload
-func (c *AMClient) Attributes(tokenID string, format commandFormat, payload io.Reader, names []string) (reply []byte, err error) {
-	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), payload)
+func (c *AMClient) Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), strings.NewReader(payload))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeCommandRequest(tokenID, format, request)
+	return c.makeCommandRequest(tokenID, content, request)
 }
 
-func (c *AMClient) makeCommandRequest(tokenID string, format commandFormat, request *http.Request) (reply []byte, err error) {
+func (c *AMClient) makeCommandRequest(tokenID string, content contentType, request *http.Request) (reply []byte, err error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
-
-	switch format {
-	case commandFormatJOSE:
-		request.Header.Set(contentType, applicationJose)
-	case commandFormatJSON:
-		request.Header.Set(contentType, applicationJson)
-	}
-
+	request.Header.Set(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	response, err := c.Do(request)
 	if err != nil {
