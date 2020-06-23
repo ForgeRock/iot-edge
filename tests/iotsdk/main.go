@@ -56,8 +56,8 @@ var tests = []anvil.SDKTest{
 	&AccessTokenWithNoScopes{alg: jose.ES256},
 	&AccessTokenWithNoScopes{alg: jose.ES384},
 	&AccessTokenWithNoScopes{alg: jose.ES512},
+	&AccessTokenWithNoScopes{alg: jose.EdDSA},
 	// ToDo: add support for the following algorithms
-	//&AccessTokenWithNoScopes{alg: jose.EdDSA},
 	//&AccessTokenWithNoScopes{alg: jose.PS256},
 	//&AccessTokenWithNoScopes{alg: jose.PS384},
 	//&AccessTokenWithNoScopes{alg: jose.PS512},
