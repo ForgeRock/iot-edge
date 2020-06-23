@@ -189,7 +189,7 @@ func testCOAPServerAccessToken(m *mockClient, jws string) (reply []byte, err err
 	if err != nil {
 		panic(err)
 	}
-	return client.AccessToken("", jws)
+	return client.AccessToken("", applicationJOSE, jws)
 }
 
 func TestCOAPServer_AccessToken(t *testing.T) {

@@ -113,3 +113,43 @@ func doSetup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingConfig = "host=localhost;port=80"
 	return anvil.CreateIdentity(state.Realm(), data)
 }
+
+// AttributesWithNonRestrictedToken requests all the thing's allowed attributes with a non-restricted token
+type AttributesWithNonRestrictedToken struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AttributesWithNonRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	return doSetup(state)
+}
+
+func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	builder := state.Builder(userPwdAuthTree)
+	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
+	thing, err := builder.Initialise()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	response, err := thing.RequestAttributes()
+	if err != nil {
+		anvil.DebugLogger.Println("attributes request failed: ", err)
+		return false
+	}
+	id, err := response.ID()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	thingConfig, err := response.GetFirst("thingConfig")
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	thingType, err := response.GetFirst("thingType")
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	return id == data.Id.Name && thingConfig == data.Id.ThingConfig && thingType == string(data.Id.ThingType)
+}

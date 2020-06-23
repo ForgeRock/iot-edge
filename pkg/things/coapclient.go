@@ -31,6 +31,9 @@ import (
 	"time"
 )
 
+// CoAP Content-Formats registry does not contain a JOSE value, using an unassigned value
+const appJOSE coap.MediaType = 11650
+
 type iecThingBuilder struct {
 	initialiser
 }
@@ -184,9 +187,15 @@ func (c *IECClient) AMInfo() (info AMInfoSet, err error) {
 	return info, nil
 }
 
+// thingEndpointPayload wraps the payload destined for the Thing endpoint with the session token
+type thingEndpointPayload struct {
+	Token   string `json:"token"`
+	Payload string `json:"payload,omitempty"`
+}
+
 // AccessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by IEC
-func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) {
+func (c *IECClient) AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -195,7 +204,24 @@ func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) 
 	ctx, cancel := c.context()
 	defer cancel()
 
-	response, err := conn.PostWithContext(ctx, "/accesstoken", coap.AppJSON, strings.NewReader(jws))
+	var coapFormat coap.MediaType
+	switch content {
+	case applicationJOSE:
+		coapFormat = appJOSE
+	case applicationJSON:
+		wrappedPayload := thingEndpointPayload{
+			Token:   tokenID,
+			Payload: payload,
+		}
+		b, err := json.Marshal(wrappedPayload)
+		if err != nil {
+			return nil, err
+		}
+		payload = string(b)
+		coapFormat = coap.AppJSON
+	}
+
+	response, err := conn.PostWithContext(ctx, "/accesstoken", coapFormat, strings.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +234,7 @@ func (c *IECClient) AccessToken(_ string, jws string) (reply []byte, err error) 
 
 // Attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by IEC
-func (c *IECClient) Attributes(_ string, jws string, names []string) (reply []byte, err error) {
+func (c *IECClient) Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -216,7 +242,24 @@ func (c *IECClient) Attributes(_ string, jws string, names []string) (reply []by
 	ctx, cancel := c.context()
 	defer cancel()
 
-	request, err := conn.NewPostRequest("/attributes", coap.AppJSON, strings.NewReader(jws))
+	var coapFormat coap.MediaType
+	switch content {
+	case applicationJOSE:
+		coapFormat = appJOSE
+	case applicationJSON:
+		coapFormat = coap.AppJSON
+		wrappedPayload := thingEndpointPayload{
+			Token:   tokenID,
+			Payload: payload,
+		}
+		b, err := json.Marshal(wrappedPayload)
+		if err != nil {
+			return nil, err
+		}
+		payload = string(b)
+	}
+
+	request, err := conn.NewPostRequest("/attributes", coapFormat, strings.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}

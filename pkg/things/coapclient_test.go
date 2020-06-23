@@ -285,7 +285,7 @@ func testIECClientAccessToken(client *IECClient, server *testCOAPServer) (err er
 	if err != nil {
 		return err
 	}
-	_, err = client.AccessToken("token", "signedWT")
+	_, err = client.AccessToken("token", applicationJOSE, "signedWT")
 	return err
 }
 

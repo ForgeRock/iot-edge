@@ -244,7 +244,7 @@ func testAMClientAccessToken(mux *http.ServeMux) (err error) {
 		return err
 	}
 
-	_, err = c.AccessToken("aToken", "aSignedWT")
+	_, err = c.AccessToken("aToken", applicationJOSE, "aSignedWT")
 	return err
 }
 
@@ -299,7 +299,7 @@ func testAMClientAttributes(mux *http.ServeMux) (err error) {
 		return err
 	}
 
-	_, err = c.Attributes("aToken", "aSignedWT", []string{})
+	_, err = c.Attributes("aToken", applicationJOSE, "aSignedWT", []string{})
 	return err
 }
 

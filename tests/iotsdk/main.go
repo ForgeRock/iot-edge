@@ -38,6 +38,7 @@ const (
 	jwtPopAuthTree             = "Anvil-JWT-Auth"
 	jwtPopAuthTreeCustomClaims = "Anvil-JWT-Auth-Custom-Claims"
 	jwtPopRegCertTree          = "Anvil-JWT-Reg-Cert"
+	userPwdAuthTree            = "Anvil-User-Pwd"
 )
 
 // define the full test set
@@ -47,6 +48,8 @@ var tests = []anvil.SDKTest{
 	&AuthenticateWithoutConfirmationKey{},
 	&AuthenticateWithCustomClaims{},
 	&AuthenticateWithIncorrectCustomClaim{},
+	&AuthenticateWithUserPwd{},
+	&AuthenticateWithIncorrectPwd{},
 	&RegisterThingCert{},
 	&RegisterThingWithAttributes{},
 	&RegisterThingWithoutCert{},
@@ -63,11 +66,13 @@ var tests = []anvil.SDKTest{
 	//&AccessTokenWithNoScopes{alg: jose.PS512},
 	&AccessTokenFromCustomClient{},
 	&AccessTokenRepeat{},
+	&AccessTokenWithNonRestrictedToken{},
 	&SimpleThingExample{},
 	&SimpleIECExample{},
 	&CertRegistrationExample{},
 	&AttributesWithNoFilter{},
 	&AttributesWithFilter{},
+	&AttributesWithNonRestrictedToken{},
 }
 
 // run the full test set for a single client

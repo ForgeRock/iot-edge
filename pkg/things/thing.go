@@ -36,6 +36,13 @@ var (
 	ErrUnauthorised = errors.New("unauthorised")
 )
 
+type contentType string
+
+const (
+	applicationJSON contentType = "application/json"
+	applicationJOSE contentType = "application/jose"
+)
+
 // Client is an interface that describes the connection to the ForgeRock platform
 type Client interface {
 	// Initialise the client. Must be called before the Client is used by a Thing
@@ -48,10 +55,10 @@ type Client interface {
 	AMInfo() (info AMInfoSet, err error)
 
 	// AccessToken makes an access token request with the given session token and payload
-	AccessToken(tokenID string, jws string) (reply []byte, err error)
+	AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error)
 
 	// Attributes makes a thing attributes request with the given session token and payload
-	Attributes(tokenID string, jws string, names []string) (reply []byte, err error)
+	Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error)
 }
 
 // ThingType describes the Thing type
@@ -175,15 +182,28 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	if err != nil {
 		return
 	}
-	info, err := t.Client.AMInfo()
-	if err != nil {
-		return
+
+	var requestBody string
+	var content contentType
+	if session.HasRestrictedToken() {
+		info, err := t.Client.AMInfo()
+		if err != nil {
+			return response, err
+		}
+		requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, NewGetAccessToken(scopes))
+		if err != nil {
+			return response, err
+		}
+		content = applicationJOSE
+	} else {
+		b, err := json.Marshal(NewGetAccessToken(scopes))
+		if err != nil {
+			return response, err
+		}
+		requestBody = string(b)
+		content = applicationJSON
 	}
-	requestBody, err := signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, NewGetAccessToken(scopes))
-	if err != nil {
-		return
-	}
-	reply, err := t.Client.AccessToken(session.token, requestBody)
+	reply, err := t.Client.AccessToken(session.token, content, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}
@@ -202,15 +222,23 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 	if err != nil {
 		return
 	}
-	info, err := t.Client.AMInfo()
-	if err != nil {
-		return
+
+	var requestBody string
+	var content contentType
+	if session.HasRestrictedToken() {
+		info, err := t.Client.AMInfo()
+		if err != nil {
+			return response, err
+		}
+		requestBody, err = signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
+		if err != nil {
+			return response, err
+		}
+		content = applicationJOSE
+	} else {
+		content = applicationJSON
 	}
-	requestBody, err := signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
-	if err != nil {
-		return
-	}
-	reply, err := t.Client.Attributes(session.token, requestBody, names)
+	reply, err := t.Client.Attributes(session.token, content, requestBody, names)
 	if reply != nil {
 		DebugLogger.Println("RequestAttributes response: ", string(reply))
 	}

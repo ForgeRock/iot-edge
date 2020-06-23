@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/go-ocf/go-coap/net"
@@ -90,20 +91,46 @@ func (c *IEC) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("amInfoHandler: success")
 }
 
+func decodeThingEndpointRequest(msg coap.Message) (token string, content contentType, payload string, err error) {
+	coapFormat, ok := msg.Option(coap.ContentFormat).(coap.MediaType)
+	if !ok {
+		return token, content, payload, fmt.Errorf("missing content format")
+	}
+
+	switch coapFormat {
+	case coap.AppJSON:
+		var request thingEndpointPayload
+		if err := json.Unmarshal(msg.Payload(), &request); err != nil {
+			return token, content, payload, err
+		}
+		token = request.Token
+		content = applicationJSON
+		payload = request.Payload
+	case appJOSE:
+		payload = string(msg.Payload())
+		// get SSO token from the CSRF claim in the JWT
+		var claims signedRequestClaims
+		if err := extractJWTPayload(payload, &claims); err != nil {
+			return token, content, payload, err
+		}
+		token = claims.CSRF
+		content = applicationJOSE
+	}
+	return token, content, payload, nil
+}
+
 // accessTokenHandler handles access token requests
 func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("accessTokenHandler")
-	payload := string(r.Msg.Payload())
-	// get SSO token from the CSRF claim in the JWT
-	var claims signedRequestClaims
-	err := extractJWTPayload(payload, &claims)
+
+	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte("Can't parse signed JWT"))
+		w.Write([]byte(err.Error()))
 		return
 	}
 
-	b, err := c.Thing.Client.AccessToken(claims.CSRF, payload)
+	b, err := c.Thing.Client.AccessToken(token, content, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))
@@ -117,19 +144,15 @@ func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 // attributesHandler handles a thing attributes requests
 func (c *IEC) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("attributesHandler")
-	payload := string(r.Msg.Payload())
-	DebugLogger.Println("received payload: " + payload)
 	names := r.Msg.Query()
-	// get SSO token from the CSRF claim in the JWT
-	var claims signedRequestClaims
-	err := extractJWTPayload(payload, &claims)
+
+	token, format, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte("Can't parse signed JWT"))
+		w.Write([]byte(err.Error()))
 		return
 	}
-
-	b, err := c.Thing.Client.Attributes(claims.CSRF, payload, names)
+	b, err := c.Thing.Client.Attributes(token, format, payload, names)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))

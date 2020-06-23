@@ -263,3 +263,28 @@ func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) boo
 	}
 	return true
 }
+
+// AccessTokenWithNonRestrictedToken requests an access token with a non-restricted session token
+type AccessTokenWithNonRestrictedToken struct {
+	anvil.NopSetupCleanup
+}
+
+func (a AccessTokenWithNonRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = things.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	builder := state.Builder(userPwdAuthTree)
+	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
+	thing, err := builder.Initialise()
+	if err != nil {
+		return false
+	}
+	_, err = thing.RequestAccessToken("publish", "subscribe")
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	return true
+}
