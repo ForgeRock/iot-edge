@@ -17,7 +17,7 @@ docker run --name am --rm -ti \
     -e AM_ADMIN_PWD=password \
     -e TOMCAT_INSECURE=ENABLED \
     -p 8080:8080 \
-    gcr.io/forgerock-io/am/docker-build:7.0.0-6300bae0d9206230c59bef5901fc7f046227c36c
+    gcr.io/forgerock-io/am/docker-build:7.0.0-a55bd9d2f43a5ea1ddeaf6b3de5a72036459f2cd
 ```
 
 Once the AM installation has completed, log in to http://am.localtest.me:8080/am with `amadmin`:`password`.
