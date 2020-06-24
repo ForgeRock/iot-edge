@@ -26,8 +26,8 @@ export GO111MODULE=on
 
 case "$1" in
 anvil)
-  # Run the IoT SDK tests
-  go run github.com/ForgeRock/iot-edge/tests/iotsdk
+  # Run the Thing SDK tests
+  go run github.com/ForgeRock/iot-edge/tests/thingsdk
 	;;
 test)
   # Run the IoT unit tests
