@@ -34,23 +34,23 @@ import (
 // CoAP Content-Formats registry does not contain a JOSE value, using an unassigned value
 const appJOSE coap.MediaType = 11650
 
-type iecThingBuilder struct {
+type gatewayThingBuilder struct {
 	initialiser
 }
 
-func (b *iecThingBuilder) AddHandler(h Handler) Builder {
+func (b *gatewayThingBuilder) AddHandler(h Handler) Builder {
 	b.handlers = append(b.handlers, h)
 	return b
 }
 
-func (b *iecThingBuilder) SetTimeout(d time.Duration) Builder {
-	b.client.(*IECClient).Timeout = d
+func (b *gatewayThingBuilder) SetTimeout(d time.Duration) Builder {
+	b.client.(*GatewayClient).Timeout = d
 	return b
 }
 
-// IECThing returns a Builder that can setup and initialise a Thing that communicates with an IEC
-func IECThing(address string, key crypto.Signer) Builder {
-	return &iecThingBuilder{initialiser{client: &IECClient{Address: address, Key: key}}}
+// GatewayThing returns a Builder that can setup and initialise a Thing that communicates with an ThingGateway
+func GatewayThing(address string, key crypto.Signer) Builder {
+	return &gatewayThingBuilder{initialiser{client: &GatewayClient{Address: address, Key: key}}}
 }
 
 type errCoAPStatusCode struct {
@@ -66,8 +66,8 @@ func (e errCoAPStatusCode) Error() string {
 	return msg
 }
 
-// IECClient contains information for connecting to the IEC via COAP
-type IECClient struct {
+// GatewayClient contains information for connecting to the Thing Gateway via COAP
+type GatewayClient struct {
 	Address string
 	Timeout time.Duration
 	Key     crypto.Signer
@@ -76,7 +76,7 @@ type IECClient struct {
 }
 
 // dial returns an existing connection or creates a new one
-func (c *IECClient) dial() (*coap.ClientConn, error) {
+func (c *GatewayClient) dial() (*coap.ClientConn, error) {
 	if c.conn != nil {
 		return c.conn, nil
 	}
@@ -87,7 +87,7 @@ func (c *IECClient) dial() (*coap.ClientConn, error) {
 }
 
 // context returns a context to be used with CoAP requests
-func (c *IECClient) context() (context.Context, context.CancelFunc) {
+func (c *GatewayClient) context() (context.Context, context.CancelFunc) {
 	if c.Timeout > 0 {
 		return context.WithTimeout(context.Background(), c.Timeout)
 	}
@@ -103,7 +103,7 @@ func dtlsClientConfig(cert ...tls.Certificate) *dtls.Config {
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c *IECClient) Initialise() (err error) {
+func (c *GatewayClient) Initialise() (err error) {
 	// create certificate
 	cert, err := publicKeyCertificate(c.Key)
 	if err != nil {
@@ -118,7 +118,7 @@ func (c *IECClient) Initialise() (err error) {
 	if err != nil {
 		return err
 	}
-	runtime.SetFinalizer(c, func(c *IECClient) {
+	runtime.SetFinalizer(c, func(c *GatewayClient) {
 		c.conn.Close()
 	})
 
@@ -132,7 +132,7 @@ func (c *IECClient) Initialise() (err error) {
 }
 
 // Authenticate with the AM authTree using the given payload
-func (c *IECClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+func (c *GatewayClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return reply, err
@@ -164,8 +164,8 @@ func (c *IECClient) Authenticate(payload AuthenticatePayload) (reply Authenticat
 	return reply, nil
 }
 
-// AMInfo makes a request to the IEC for AM related information
-func (c *IECClient) AMInfo() (info AMInfoSet, err error) {
+// AMInfo makes a request to the Thing Gateway for AM related information
+func (c *GatewayClient) AMInfo() (info AMInfoSet, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return info, err
@@ -194,8 +194,8 @@ type thingEndpointPayload struct {
 }
 
 // AccessToken makes an access token request with the given session token and payload
-// SSO token is extracted from signed JWT by IEC
-func (c *IECClient) AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
+// SSO token is extracted from signed JWT by Thing Gateway
+func (c *GatewayClient) AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -233,8 +233,8 @@ func (c *IECClient) AccessToken(tokenID string, content contentType, payload str
 }
 
 // Attributes makes a thing attributes request with the given payload
-// SSO token is extracted from signed JWT by IEC
-func (c *IECClient) Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+// SSO token is extracted from signed JWT by Thing Gateway
+func (c *GatewayClient) Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err

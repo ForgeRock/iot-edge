@@ -70,8 +70,8 @@ func (m *mockClient) Attributes(tokenID string, _ contentType, payload string, n
 	return []byte("{}"), nil
 }
 
-func testIEC(client *mockClient) *IEC {
-	return &IEC{
+func testGateway(client *mockClient) *ThingGateway {
+	return &ThingGateway{
 		Thing:     Thing{Client: client},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
@@ -79,7 +79,7 @@ func testIEC(client *mockClient) *IEC {
 }
 
 // check that the Auth Id Key is not sent to AM
-func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
+func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
 		AuthenticateFunc: func(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
@@ -90,19 +90,19 @@ func TestIEC_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 			return reply, nil
 
 		}}
-	controller := testIEC(mockClient)
-	reply, err := controller.Authenticate(AuthenticatePayload{})
+	gateway := testGateway(mockClient)
+	reply, err := gateway.Authenticate(AuthenticatePayload{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = controller.Authenticate(reply)
+	_, err = gateway.Authenticate(reply)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-// check that the Auth Id is not returned by the IEC to the Thing
-func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
+// check that the Auth Id is not returned by the Thing Gateway to the Thing
+func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
 		AuthenticateFunc: func(_ AuthenticatePayload) (reply AuthenticatePayload, _ error) {
@@ -110,15 +110,15 @@ func TestIEC_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 			return reply, nil
 
 		}}
-	controller := testIEC(mockClient)
-	reply, _ := controller.Authenticate(AuthenticatePayload{})
+	gateway := testGateway(mockClient)
+	reply, _ := gateway.Authenticate(AuthenticatePayload{})
 	if reply.AuthId != "" {
 		t.Fatal("AuthId has been returned")
 	}
 }
 
-// check that the Auth Id is cached by the IEC
-func TestIEC_Authenticate_AuthId_Is_Cached(t *testing.T) {
+// check that the Auth Id is cached by the Thing Gateway
+func TestGateway_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
 		AuthenticateFunc: func(_ AuthenticatePayload) (reply AuthenticatePayload, _ error) {
@@ -126,9 +126,9 @@ func TestIEC_Authenticate_AuthId_Is_Cached(t *testing.T) {
 			return reply, nil
 
 		}}
-	controller := testIEC(mockClient)
-	reply, _ := controller.Authenticate(AuthenticatePayload{})
-	id, ok := controller.authCache.Get(reply.AuthIDKey)
+	gateway := testGateway(mockClient)
+	reply, _ := gateway.Authenticate(AuthenticatePayload{})
+	id, ok := gateway.authCache.Get(reply.AuthIDKey)
 	if !ok {
 		t.Fatal("The authId has not been stored")
 	}

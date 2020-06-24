@@ -32,17 +32,18 @@ import (
 )
 
 var (
-	amURL      = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
-	amRealm    = flag.String("realm", "example", "AM Realm")
-	authTree   = flag.String("tree", "iot-tree", "Authentication tree")
-	thingName  = flag.String("name", "dynamic-thing", "Thing name")
-	server     = flag.String("server", "am", "Server to connect to, am or iec")
-	iecAddress = flag.String("address", "127.0.0.1:5688", "Address of IEC")
-	key        = flag.String("key", "", "The Thing's key in PEM format")
-	keyID      = flag.String("keyid", "pop.cnf", "The Thing's key ID")
-	keyFile    = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
-	cert       = flag.String("cert", "", "The Thing's certificate in PEM format")
-	certFile   = flag.String("certfile", "./examples/resources/dynamic-thing.cert.pem", "The file containing the Thing's certificate if it hasn't been handed directly to the function")
+	amURL          = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
+	amRealm        = flag.String("realm", "example", "AM Realm")
+	authTree       = flag.String("tree", "iot-tree", "Authentication tree")
+	thingName      = flag.String("name", "dynamic-thing", "Thing name")
+	server         = flag.String("server", "am", "Server to connect to, am or gateway")
+	gatewayAddress = flag.String("address", "127.0.0.1:5688", "Address of Thing Gateway")
+	key            = flag.String("key", "", "The Thing's key in PEM format")
+	keyID          = flag.String("keyid", "pop.cnf", "The Thing's key ID")
+	keyFile        = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
+	cert           = flag.String("cert", "", "The Thing's certificate in PEM format")
+	certFile       = flag.String("certfile", "./examples/resources/dynamic-thing.cert.pem",
+		"The file containing the Thing's certificate if it hasn't been handed directly to the function")
 )
 
 func loadKey() (crypto.Signer, error) {
@@ -97,18 +98,19 @@ func loadCertificates() ([]*x509.Certificate, error) {
 func certRegThing() (err error) {
 
 	// choose which client to use:
-	// * AMClient communicates directly with AM
-	// * IECClient communicates with AM via the IEC. Run the example IEC by calling "./run.sh examples simple/iec"
+	// * AMThing communicates directly with AM
+	// * GatewayThing communicates with AM via the Thing Gateway. Run the example Thing Gateway by calling:
+	//   "./run.sh examples simple/gateway"
 
 	var builder things.Builder
 	if *server == "am" {
 		builder = things.AMThing(*amURL, *amRealm, *authTree)
-	} else if *server == "iec" {
+	} else if *server == "gateway" {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return err
 		}
-		builder = things.IECThing(*iecAddress, key)
+		builder = things.GatewayThing(*gatewayAddress, key)
 	} else {
 		log.Fatal("server not supported")
 	}

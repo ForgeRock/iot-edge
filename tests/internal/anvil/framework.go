@@ -300,23 +300,23 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 	return x509.ParseCertificate(cert)
 }
 
-// TestIEC creates a test IEC
-func TestIEC(realm string, authTree string) (*things.IEC, error) {
+// TestThingGateway creates a test Thing Gateway
+func TestThingGateway(realm string, authTree string) (*things.ThingGateway, error) {
 	jwk, signer, err := ConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
 	}
 	attributes := am.IdAttributes{
-		Name:      "iec-" + RandomName(),
+		Name:      "gateway-" + RandomName(),
 		Password:  RandomName(),
-		ThingType: "iec",
+		ThingType: "gateway",
 		ThingKeys: jwk,
 	}
 	err = am.CreateIdentity(realm, attributes)
 	if err != nil {
 		return nil, err
 	}
-	return things.NewIEC(am.AMURL, realm, authTree, []things.Handler{
+	return things.NewThingGateway(am.AMURL, realm, authTree, []things.Handler{
 		things.AuthenticateHandler{ThingID: attributes.Name, ConfirmationKeyID: signer.KID, ConfirmationKey: signer.Signer},
 	}), nil
 }
@@ -332,7 +332,7 @@ type ThingData struct {
 type TestState interface {
 	// Realm returns the current test realm
 	Realm() string
-	// ClientType returns 'am' or 'iec' depending on the type of client
+	// ClientType returns 'am' or 'gateway' depending on the type of client
 	ClientType() string
 	// Builder returns a thing builder, which builder is returned is dependant on the client used for the test
 	Builder(thingAuthTree string) things.Builder
@@ -355,31 +355,31 @@ func (a *AMTestState) Realm() string {
 	return a.TestRealm
 }
 
-// IECTestState contains data and methods for testing the IEC client
-type IECTestState struct {
-	IEC       *things.IEC
-	TestRealm string
+// ThingGatewayTestState contains data and methods for testing the Thing Gateway client
+type ThingGatewayTestState struct {
+	ThingGateway *things.ThingGateway
+	TestRealm    string
 }
 
-func (i *IECTestState) ClientType() string {
-	return "iec"
+func (i *ThingGatewayTestState) ClientType() string {
+	return "gateway"
 }
 
-// SetIECAuthTree sets the auth tree used by the test IEC
-func (i *IECTestState) SetIECAuthTree(thingAuthTree string) {
-	i.IEC.Thing.Client.(*things.AMClient).AuthTree = thingAuthTree
+// SetThingGatewayAuthTree sets the auth tree used by the test Thing Gateway
+func (i *ThingGatewayTestState) SetThingGatewayAuthTree(thingAuthTree string) {
+	i.ThingGateway.Thing.Client.(*things.AMClient).AuthTree = thingAuthTree
 }
 
-func (i *IECTestState) Builder(thingAuthTree string) things.Builder {
-	// set thing auth tree on the test IEC
-	i.SetIECAuthTree(thingAuthTree)
+func (i *ThingGatewayTestState) Builder(thingAuthTree string) things.Builder {
+	// set thing auth tree on the test Thing Gateway
+	i.SetThingGatewayAuthTree(thingAuthTree)
 
-	// create a new IEC client
+	// create a new Thing Gateway client
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	return things.IECThing(i.IEC.Address(), key).SetTimeout(StdTimeOut)
+	return things.GatewayThing(i.ThingGateway.Address(), key).SetTimeout(StdTimeOut)
 }
 
-func (i *IECTestState) Realm() string {
+func (i *ThingGatewayTestState) Realm() string {
 	return i.TestRealm
 }
 
