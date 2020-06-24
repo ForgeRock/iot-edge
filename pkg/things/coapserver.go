@@ -34,13 +34,13 @@ import (
 // The CoAP response status codes follow the CoAP-HTTP proxy guidance in the CoAP specification
 // https://tools.ietf.org/html/rfc7252#section-10.1
 
-// ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the IEC
+// ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the Thing Gateway
 var ErrCOAPServerAlreadyStarted = errors.New("COAP server has already been started")
 
 var HeartBeat time.Duration = time.Millisecond * 100
 
 // authenticateHandler handles authentication requests
-func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler")
 	var auth AuthenticatePayload
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
@@ -71,7 +71,7 @@ func (c *IEC) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 }
 
 // amInfoHandler handles AM Info requests
-func (c *IEC) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *ThingGateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("amInfoHandler")
 	info, err := c.Thing.Client.AMInfo()
 	if err != nil {
@@ -120,7 +120,7 @@ func decodeThingEndpointRequest(msg coap.Message) (token string, content content
 }
 
 // accessTokenHandler handles access token requests
-func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("accessTokenHandler")
 
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
@@ -142,7 +142,7 @@ func (c *IEC) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 }
 
 // attributesHandler handles a thing attributes requests
-func (c *IEC) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("attributesHandler")
 	names := r.Msg.Query()
 
@@ -171,8 +171,8 @@ func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
 	}
 }
 
-// StartCOAPServer starts a COAP server within the IEC
-func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
+// StartCOAPServer starts a COAP server within the Thing Gateway
+func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error {
 	if c.coapServer != nil {
 		return ErrCOAPServerAlreadyStarted
 	}
@@ -217,7 +217,7 @@ func (c *IEC) StartCOAPServer(address string, key crypto.Signer) error {
 }
 
 // ShutdownCOAPServer gracefully shuts the COAP server down
-func (c *IEC) ShutdownCOAPServer() {
+func (c *ThingGateway) ShutdownCOAPServer() {
 	if c.coapServer == nil {
 		return
 	}
@@ -228,7 +228,7 @@ func (c *IEC) ShutdownCOAPServer() {
 }
 
 // Address returns in string form the address that it is listening on.
-func (c *IEC) Address() string {
+func (c *ThingGateway) Address() string {
 	if c.address == nil {
 		return ""
 	}

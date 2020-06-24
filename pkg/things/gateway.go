@@ -26,8 +26,8 @@ import (
 	"time"
 )
 
-// IEC represents an Identity Edge Controller
-type IEC struct {
+// ThingGateway represents the Thing Gateway
+type ThingGateway struct {
 	Thing     Thing
 	authCache *tokencache.Cache
 	// coap server
@@ -36,9 +36,9 @@ type IEC struct {
 	address    net.Addr
 }
 
-// NewIEC creates a new IEC
-func NewIEC(baseURL string, realm string, authTree string, handlers []Handler) *IEC {
-	return &IEC{
+// NewThingGateway creates a new Thing Gateway
+func NewThingGateway(baseURL string, realm string, authTree string, handlers []Handler) *ThingGateway {
+	return &ThingGateway{
 		Thing: Thing{
 			Client:   &AMClient{BaseURL: baseURL, Realm: realm, AuthTree: authTree},
 			handlers: handlers,
@@ -47,8 +47,8 @@ func NewIEC(baseURL string, realm string, authTree string, handlers []Handler) *
 	}
 }
 
-// Initialise the IEC
-func (c *IEC) Initialise() error {
+// Initialise the Thing Gateway
+func (c *ThingGateway) Initialise() error {
 	err := c.Thing.Client.Initialise()
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func (c *IEC) Initialise() error {
 }
 
 // Authenticate a Thing with AM using the given payload
-func (c *IEC) Authenticate(auth AuthenticatePayload) (reply AuthenticatePayload, err error) {
+func (c *ThingGateway) Authenticate(auth AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}

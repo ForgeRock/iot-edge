@@ -68,11 +68,11 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 }
 
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	var iecAddress string
+	var gatewayAddress string
 	switch f := state.(type) {
-	case *anvil.IECTestState:
-		iecAddress = f.IEC.Address()
-		f.SetIECAuthTree(jwtPopRegCertTree)
+	case *anvil.ThingGatewayTestState:
+		gatewayAddress = f.ThingGateway.Address()
+		f.SetThingGatewayAuthTree(jwtPopRegCertTree)
 	}
 
 	// encode the key to PEM
@@ -88,7 +88,7 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
 		"-server", state.ClientType(),
-		"-address", iecAddress,
+		"-address", gatewayAddress,
 		"-key", key,
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
 
@@ -116,25 +116,25 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	return true
 }
 
-// SimpleIECExample tests the simple IEC example
-type SimpleIECExample struct {
+// SimpleThingGatewayExample tests the simple Thing Gateway example
+type SimpleThingGatewayExample struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *SimpleIECExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func (t *SimpleThingGatewayExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeIEC
+	data.Id.ThingType = things.TypeGateway
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *SimpleIECExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == "iec" {
-		// as this example involves an IEC there is no benefit of running it again during the IEC test set
+func (t *SimpleThingGatewayExample) Run(state anvil.TestState, data anvil.ThingData) bool {
+	if state.ClientType() == "gateway" {
+		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}
 
@@ -145,7 +145,7 @@ func (t *SimpleIECExample) Run(state anvil.TestState, data anvil.ThingData) bool
 		return false
 	}
 
-	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/iec/simple",
+	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/gateway/simple",
 		"-url", am.AMURL,
 		"-realm", state.Realm(),
 		"-tree", jwtPopAuthTree,
@@ -208,11 +208,11 @@ func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.Thing
 }
 
 func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	var iecAddress string
+	var gatewayAddress string
 	switch f := state.(type) {
-	case *anvil.IECTestState:
-		iecAddress = f.IEC.Address()
-		f.SetIECAuthTree(jwtPopRegCertTree)
+	case *anvil.ThingGatewayTestState:
+		gatewayAddress = f.ThingGateway.Address()
+		f.SetThingGatewayAuthTree(jwtPopRegCertTree)
 	}
 
 	// encode the key to PEM
@@ -231,7 +231,7 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
 		"-server", state.ClientType(),
-		"-address", iecAddress,
+		"-address", gatewayAddress,
 		"-key", key,
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID,
 		"-cert", string(cert))

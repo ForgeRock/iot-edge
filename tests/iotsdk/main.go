@@ -68,7 +68,7 @@ var tests = []anvil.SDKTest{
 	&AccessTokenRepeat{},
 	&AccessTokenWithNonRestrictedToken{},
 	&SimpleThingExample{},
-	&SimpleIECExample{},
+	&SimpleThingGatewayExample{},
 	&CertRegistrationExample{},
 	&AttributesWithNoFilter{},
 	&AttributesWithFilter{},
@@ -106,25 +106,25 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 	fmt.Printf("-- Running AM Client Tests --\n\n")
 	result = runAllTestsForContext(&anvil.AMTestState{TestRealm: realm})
 
-	fmt.Printf("\n-- Running IEC COAP Client Tests --\n\n")
+	fmt.Printf("\n-- Running Thing Gateway COAP Client Tests --\n\n")
 
-	// run the IEC
-	controller, err := anvil.TestIEC(realm, jwtPopAuthTree)
+	// run the Thing Gateway
+	gateway, err := anvil.TestThingGateway(realm, jwtPopAuthTree)
 	if err != nil {
 		return false, err
 	}
-	err = controller.Initialise()
+	err = gateway.Initialise()
 	if err != nil {
 		return false, err
 	}
-	controllerKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	err = controller.StartCOAPServer(":0", controllerKey)
+	gatewayKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	err = gateway.StartCOAPServer(":0", gatewayKey)
 	if err != nil {
 		return false, err
 	}
-	defer controller.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(&anvil.IECTestState{IEC: controller, TestRealm: realm}) && result
+	result = runAllTestsForContext(&anvil.ThingGatewayTestState{ThingGateway: gateway, TestRealm: realm}) && result
 
 	return result, nil
 }

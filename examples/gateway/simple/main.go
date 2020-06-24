@@ -33,14 +33,15 @@ import (
 )
 
 var (
-	amURL    = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
-	amRealm  = flag.String("realm", "example", "AM Realm")
-	authTree = flag.String("tree", "iot-tree", "Authentication tree")
-	iecName  = flag.String("name", "simple-iec", "IEC name")
-	address  = flag.String("address", "127.0.0.1:5688", "CoAP Address of IEC")
-	key      = flag.String("key", "", "The IEC's key in PEM format")
-	keyID    = flag.String("keyid", "pop.cnf", "The IEC's key ID")
-	keyFile  = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the IEC's key")
+	amURL       = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
+	amRealm     = flag.String("realm", "example", "AM Realm")
+	authTree    = flag.String("tree", "iot-tree", "Authentication tree")
+	gatewayName = flag.String("name", "simple-gateway", "Thing Gateway name")
+	address     = flag.String("address", "127.0.0.1:5688", "CoAP Address of Thing Gateway")
+	key         = flag.String("key", "", "The Thing Gateway's key in PEM format")
+	keyID       = flag.String("keyid", "pop.cnf", "The Thing Gateway's key ID")
+	keyFile     = flag.String("keyfile", "./examples/resources/eckey1.key.pem",
+		"The file containing the Thing Gateway's key")
 )
 
 func loadKey() (crypto.Signer, error) {
@@ -66,24 +67,24 @@ func loadKey() (crypto.Signer, error) {
 	return privateKey.(crypto.Signer), nil
 }
 
-// simpleIEC initialises an IEC with AM.
+// simpleThingGateway initialises a Thing Gateway with AM.
 //
 // To pre-provision an identity in AM, create an identity with
-//	name: simple-iec
+//	name: simple-gateway
 //	password: password
-// Modify the "simple-iec" entry in DS
-//	thingType: IEC
+// Modify the "simple-gateway" entry in DS
+//	thingType: gateway
 //	thingKeys: <see examples/resources/eckey1.jwks>
-func simpleIEC() error {
+func simpleThingGateway() error {
 	amKey, err := loadKey()
 	if err != nil {
 		return err
 	}
-	controller := things.NewIEC(*amURL, *amRealm, *authTree, []things.Handler{
-		things.AuthenticateHandler{ThingID: *iecName, ConfirmationKeyID: *keyID, ConfirmationKey: amKey},
+	gateway := things.NewThingGateway(*amURL, *amRealm, *authTree, []things.Handler{
+		things.AuthenticateHandler{ThingID: *gatewayName, ConfirmationKeyID: *keyID, ConfirmationKey: amKey},
 	})
 
-	err = controller.Initialise()
+	err = gateway.Initialise()
 	if err != nil {
 		return err
 	}
@@ -92,13 +93,13 @@ func simpleIEC() error {
 	if err != nil {
 		return err
 	}
-	err = controller.StartCOAPServer(*address, serverKey)
+	err = gateway.StartCOAPServer(*address, serverKey)
 	if err != nil {
 		return err
 	}
-	defer controller.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
-	fmt.Println("IEC server started. Press a key to exit.")
+	fmt.Println("Thing Gateway server started. Press a key to exit.")
 	bufio.NewScanner(os.Stdin).Scan()
 	return nil
 }
@@ -109,7 +110,7 @@ func main() {
 	// pipe debug to standard out
 	things.DebugLogger.SetOutput(os.Stdout)
 
-	if err := simpleIEC(); err != nil {
+	if err := simpleThingGateway(); err != nil {
 		log.Fatal(err)
 	}
 }

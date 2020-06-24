@@ -66,7 +66,7 @@ type ThingType string
 const (
 	TypeDevice  ThingType = "device"
 	TypeService ThingType = "service"
-	TypeIEC     ThingType = "iec"
+	TypeGateway ThingType = "gateway"
 )
 
 // Thing represents an AM Thing identity
@@ -254,7 +254,7 @@ func (t *Thing) Realm() string {
 type Builder interface {
 	// AddHandler adds a callback handler
 	AddHandler(Handler) Builder
-	// SetTimeout sets the timeout on the communications between the Thing and AM\IEC
+	// SetTimeout sets the timeout on the communications between the Thing and AM\Thing Gateway
 	SetTimeout(time.Duration) Builder
 	// Initialise a Thing instance and authenticates\registers it with AM
 	Initialise() (*Thing, error)

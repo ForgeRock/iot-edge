@@ -32,14 +32,14 @@ import (
 )
 
 func testDial(client *coap.Client) error {
-	iec := testIEC(&mockClient{})
+	gateway := testGateway(&mockClient{})
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
 		panic(err)
 	}
-	defer iec.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
-	conn, err := client.Dial(iec.Address())
+	conn, err := client.Dial(gateway.Address())
 	if err != nil {
 		return err
 	}
@@ -89,14 +89,14 @@ func TestCOAPServer_Dial_BadClientAuth(t *testing.T) {
 
 func testCOAPServerAuthenticate(m *mockClient) (err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	iec := testIEC(m)
-	if err = iec.StartCOAPServer(":0", serverKey); err != nil {
+	gateway := testGateway(m)
+	if err = gateway.StartCOAPServer(":0", serverKey); err != nil {
 		panic(err)
 	}
-	defer iec.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &IECClient{Address: iec.Address(), Key: clientKey}
+	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		panic(err)
@@ -131,14 +131,14 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 
 func testCOAPServerAMInfo(m *mockClient) (info AMInfoSet, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	iec := testIEC(m)
-	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
+	gateway := testGateway(m)
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
 		panic(err)
 	}
-	defer iec.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &IECClient{Address: iec.Address(), Key: clientKey}
+	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		panic(err)
@@ -177,14 +177,14 @@ func TestCOAPServer_AMInfo(t *testing.T) {
 
 func testCOAPServerAccessToken(m *mockClient, jws string) (reply []byte, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	iec := testIEC(m)
-	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
+	gateway := testGateway(m)
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
 		panic(err)
 	}
-	defer iec.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &IECClient{Address: iec.Address(), Key: clientKey}
+	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		panic(err)
@@ -218,30 +218,30 @@ func TestCOAPServer_AccessToken(t *testing.T) {
 	}
 }
 
-func TestIEC_Address(t *testing.T) {
-	iec := testIEC(&mockClient{})
+func TestGateway_Address(t *testing.T) {
+	gateway := testGateway(&mockClient{})
 	// before the server has started, the address is the empty string
-	if iec.Address() != "" {
-		t.Errorf("IEC has CoAP address %s before it is started", iec.Address())
+	if gateway.Address() != "" {
+		t.Errorf("Thing Gateway has CoAP address %s before it is started", gateway.Address())
 	}
 
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err := iec.StartCOAPServer(":0", serverKey); err != nil {
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
 		t.Fatal(err)
 	}
-	l, ok := iec.coapServer.Listener.(*net.DTLSListener)
+	l, ok := gateway.coapServer.Listener.(*net.DTLSListener)
 	if !ok {
-		t.Errorf("expected type *net.DTLSListener but got %T", iec.coapServer.Listener)
+		t.Errorf("expected type *net.DTLSListener but got %T", gateway.coapServer.Listener)
 	}
-	if iec.Address() != l.Addr().String() {
-		t.Errorf("Expected CoAP address %s, got %s", l.Addr().String(), iec.Address())
+	if gateway.Address() != l.Addr().String() {
+		t.Errorf("Expected CoAP address %s, got %s", l.Addr().String(), gateway.Address())
 
 	}
 
-	iec.ShutdownCOAPServer()
+	gateway.ShutdownCOAPServer()
 	// after the server has started, the address is the empty string
-	if iec.Address() != "" {
-		t.Errorf("IEC has CoAP address %s after it was stopped", iec.Address())
+	if gateway.Address() != "" {
+		t.Errorf("Thing Gateway has CoAP address %s after it was stopped", gateway.Address())
 	}
 }
 
@@ -256,39 +256,39 @@ func (_ testBadSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpt
 	return nil, errors.New("i haven't a pen")
 }
 
-func TestIEC_StartCOAPServer(t *testing.T) {
-	iec := testIEC(&mockClient{})
+func TestGateway_StartCOAPServer(t *testing.T) {
+	gateway := testGateway(&mockClient{})
 
 	// try to start the server without a key
-	err := iec.StartCOAPServer(":0", nil)
+	err := gateway.StartCOAPServer(":0", nil)
 	if err == nil {
 		t.Error("Expected an error")
 	}
 
 	// use a bad signer
-	err = iec.StartCOAPServer(":0", testBadSigner{})
+	err = gateway.StartCOAPServer(":0", testBadSigner{})
 	if err == nil {
 		t.Error("Expected an error")
 	}
 
 	// start server properly
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	err = iec.StartCOAPServer(":0", serverKey)
+	err = gateway.StartCOAPServer(":0", serverKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer iec.ShutdownCOAPServer()
+	defer gateway.ShutdownCOAPServer()
 
 	// create client to ensure that the connection is up
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &IECClient{Address: iec.Address(), Key: clientKey}
+	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
 	err = client.Initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// try to start the server again
-	err = iec.StartCOAPServer(iec.Address(), serverKey)
+	err = gateway.StartCOAPServer(gateway.Address(), serverKey)
 	if err == nil {
 		t.Error("Expected an error")
 	}
@@ -309,30 +309,30 @@ func testTimeout(timeout time.Duration, f func() error) error {
 	}
 }
 
-func TestIEC_ShutdownCOAPServer(t *testing.T) {
+func TestGateway_ShutdownCOAPServer(t *testing.T) {
 	t.Skip("Finaliser issue")
-	iec := testIEC(&mockClient{})
+	gateway := testGateway(&mockClient{})
 	// try to stop the server before it is started, it should fail silently
-	iec.ShutdownCOAPServer()
+	gateway.ShutdownCOAPServer()
 
 	// start server
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	err := iec.StartCOAPServer(":0", serverKey)
+	err := gateway.StartCOAPServer(":0", serverKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// create client to ensure that the connection is up
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client1 := &IECClient{Address: iec.Address(), Key: clientKey}
+	client1 := &GatewayClient{Address: gateway.Address(), Key: clientKey}
 	err = client1.Initialise()
 	// shutdown server
-	iec.ShutdownCOAPServer()
+	gateway.ShutdownCOAPServer()
 	if err != nil {
 		t.Fatal(err)
 	}
 	client1.conn.Close()
 
-	client2 := &IECClient{Address: iec.Address(), Key: clientKey}
+	client2 := &GatewayClient{Address: gateway.Address(), Key: clientKey}
 	err = testTimeout(10*time.Millisecond, client2.Initialise)
 	if err == nil {
 		t.Error("Expected an error")
