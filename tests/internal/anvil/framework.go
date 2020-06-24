@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package anvil runs functional tests for the IoT SDK
+// Package anvil runs functional tests for the Thing SDK
 package anvil
 
 import (

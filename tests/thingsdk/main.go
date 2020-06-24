@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	execDir     = "./tests/iotsdk"
+	execDir     = "./tests/thingsdk"
 	testdataDir = execDir + "/testdata"
 	debugDir    = execDir + "/debug"
 
@@ -131,9 +131,9 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 
 func runTests() (err error) {
 	fmt.Println()
-	fmt.Println("====================")
-	fmt.Println("-- IoT SDK Tests  --")
-	fmt.Println("====================")
+	fmt.Println("=====================")
+	fmt.Println("-- Thing SDK Tests --")
+	fmt.Println("=====================")
 
 	var logfile *os.File
 	// delete old debug files by removing the debug directory
@@ -141,8 +141,8 @@ func runTests() (err error) {
 	if err != nil {
 		return err
 	}
-	iotsdkLogger, logfile := anvil.NewFileDebugger(debugDir, "iotsdk")
-	am.DebugLogger, things.DebugLogger = iotsdkLogger, iotsdkLogger
+	thingsdkLogger, logfile := anvil.NewFileDebugger(debugDir, "thingsdk")
+	am.DebugLogger, things.DebugLogger = thingsdkLogger, thingsdkLogger
 	defer func() {
 		_ = logfile.Close()
 	}()
