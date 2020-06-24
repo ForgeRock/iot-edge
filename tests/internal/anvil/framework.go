@@ -46,7 +46,7 @@ const (
 	failStr = "--- FAIL:"
 
 	// Standard timeout used in SDK calls in tests
-	StdTimeOut = 5 * time.Second
+	StdTimeOut = 10 * time.Second
 )
 
 var DebugLogger = log.New(ioutil.Discard, "", 0)

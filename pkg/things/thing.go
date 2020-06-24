@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
 	"log"
@@ -155,16 +154,7 @@ func signedJWTBody(session *Session, url string, version string, body interface{
 	// increment the nonce so that the token can be used in a subsequent request
 	session.IncrementNonce()
 
-	// check that the signer is supported
-	alg, err := signingJWAFromKey(session.confirmationKey)
-	if err != nil {
-		return "", err
-	}
-
-	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(session.confirmationKey)
-
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+	sig, err := newJOSESigner(session.confirmationKey, opts)
 	if err != nil {
 		return "", err
 	}
