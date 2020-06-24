@@ -195,16 +195,7 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *Aut
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
-	// check that the signer is supported
-	alg, err := signingJWAFromKey(h.ConfirmationKey)
-	if err != nil {
-		return err
-	}
-
-	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(h.ConfirmationKey)
-
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+	sig, err := newJOSESigner(h.ConfirmationKey, opts)
 	if err != nil {
 		return err
 	}

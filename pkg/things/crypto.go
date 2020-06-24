@@ -27,6 +27,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"math/big"
 )
 
@@ -84,4 +85,64 @@ func publicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
 		PrivateKey:  key,
 		Leaf:        &template,
 	}, nil
+}
+
+// pssOpaqueSigner implements the jose.OpaqueSigner interface for PSS signature keys
+// Similar to the crytosigner.Opaque implementation for PSS keys except different salt lengths are used
+type pssOpaqueSigner struct {
+	alg    jose.SignatureAlgorithm
+	signer crypto.Signer
+}
+
+func (r pssOpaqueSigner) Public() *jose.JSONWebKey {
+	return &jose.JSONWebKey{Key: r.signer.Public()}
+}
+
+func (r pssOpaqueSigner) Algs() []jose.SignatureAlgorithm {
+	return []jose.SignatureAlgorithm{r.alg}
+}
+
+func (r pssOpaqueSigner) SignPayload(payload []byte, alg jose.SignatureAlgorithm) ([]byte, error) {
+	var hash crypto.Hash
+	switch alg {
+	case jose.PS256:
+		hash = crypto.SHA256
+	case jose.PS384:
+		hash = crypto.SHA384
+	case jose.PS512:
+		hash = crypto.SHA512
+	default:
+		return nil, jose.ErrUnsupportedAlgorithm
+	}
+
+	var hashed []byte
+	if hash != crypto.Hash(0) {
+		hasher := hash.New()
+		if _, err := hasher.Write(payload); err != nil {
+			return nil, err
+		}
+		hashed = hasher.Sum(nil)
+	}
+	return r.signer.Sign(rand.Reader, hashed, &rsa.PSSOptions{
+		SaltLength: rsa.PSSSaltLengthEqualsHash,
+		Hash:       hash,
+	})
+}
+
+// newJOSESigner creates a new JOSE signer from the crypto signer
+func newJOSESigner(key crypto.Signer, opts *jose.SignerOptions) (jose.Signer, error) {
+	// check that the signer is supported
+	alg, err := signingJWAFromKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	var opaque jose.OpaqueSigner
+	switch alg {
+	case jose.PS256, jose.PS384, jose.PS512:
+		opaque = pssOpaqueSigner{alg: alg, signer: key}
+	default:
+		opaque = cryptosigner.Opaque(key)
+	}
+	return jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 }
