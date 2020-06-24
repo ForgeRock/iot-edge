@@ -302,7 +302,7 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 
 // TestIEC creates a test IEC
 func TestIEC(realm string, authTree string) (*things.IEC, error) {
-	jwk, signer, err := GenerateConfirmationKey(jose.ES256)
+	jwk, signer, err := ConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
 	}

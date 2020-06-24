@@ -34,7 +34,7 @@ type AccessTokenWithExactScopes struct {
 
 func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -66,7 +66,7 @@ type AccessTokenWithASubsetOfScopes struct {
 
 func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -98,7 +98,7 @@ type AccessTokenWithUnsupportedScopes struct {
 
 func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -131,7 +131,7 @@ type AccessTokenWithNoScopes struct {
 
 func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(t.alg)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(t.alg)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -168,7 +168,7 @@ type AccessTokenFromCustomClient struct {
 
 func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -235,7 +235,7 @@ type AccessTokenRepeat struct {
 
 func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
