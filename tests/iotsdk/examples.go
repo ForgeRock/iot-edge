@@ -58,7 +58,7 @@ type SimpleThingExample struct {
 
 func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -123,7 +123,7 @@ type SimpleIECExample struct {
 
 func (t *SimpleIECExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -192,7 +192,7 @@ func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.Thing
 		return data, false
 	}
 
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false

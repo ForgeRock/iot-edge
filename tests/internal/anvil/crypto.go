@@ -28,29 +28,74 @@ import (
 	jose "gopkg.in/square/go-jose.v2"
 )
 
-// GenerateConfirmationKey generates a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
-func GenerateConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private SigningKey, err error) {
+var (
+	es256 *ecdsa.PrivateKey
+	es384 *ecdsa.PrivateKey
+	es512 *ecdsa.PrivateKey
+	ed    ed25519.PrivateKey
+	ps256 *rsa.PrivateKey
+	ps384 *rsa.PrivateKey
+	ps512 *rsa.PrivateKey
+)
+
+func init() {
+	var err error
+	es256, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	es384, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	es512, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	_, ed, err = ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	ps256, err = rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		panic(err)
+	}
+
+	ps384, err = rsa.GenerateKey(rand.Reader, 3072)
+	if err != nil {
+		panic(err)
+	}
+
+	ps512, err = rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// ConfirmationKey returns a key for signing requests to AM that is accompanied by a restricted PoP SSO token.
+func ConfirmationKey(algorithm jose.SignatureAlgorithm) (public jose.JSONWebKeySet, private SigningKey, err error) {
 	// create a new key
 	switch algorithm {
 	case jose.ES256:
-		private.Signer, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		private.Signer = es256
 	case jose.ES384:
-		private.Signer, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		private.Signer = es384
 	case jose.ES512:
-		private.Signer, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		private.Signer = es512
 	case jose.EdDSA:
-		_, private.Signer, err = ed25519.GenerateKey(rand.Reader)
+		private.Signer = ed
 	case jose.PS256:
-		private.Signer, err = rsa.GenerateKey(rand.Reader, 2048)
+		private.Signer = ps256
 	case jose.PS384:
-		private.Signer, err = rsa.GenerateKey(rand.Reader, 3072)
+		private.Signer = ps384
 	case jose.PS512:
-		private.Signer, err = rsa.GenerateKey(rand.Reader, 4096)
+		private.Signer = ps512
 	default:
-		err = fmt.Errorf("unsupported signing algorithm %s", algorithm)
-	}
-	if err != nil {
-		return public, private, err
+		return public, private, fmt.Errorf("unsupported signing algorithm %s", algorithm)
 	}
 
 	webKey := jose.JSONWebKey{Key: private.Signer.Public(), Algorithm: string(algorithm), Use: "sig"}

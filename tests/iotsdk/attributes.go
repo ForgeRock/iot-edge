@@ -104,7 +104,7 @@ func (t *AttributesWithFilter) Run(state anvil.TestState, data anvil.ThingData) 
 
 func doSetup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.GenerateConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
