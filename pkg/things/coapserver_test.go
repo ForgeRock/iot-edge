@@ -97,11 +97,11 @@ func testCOAPServerAuthenticate(m *mockClient) (err error) {
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		panic(err)
 	}
-	_, err = client.Authenticate(AuthenticatePayload{})
+	_, err = client.authenticate(authenticatePayload{})
 	return err
 }
 
@@ -112,8 +112,8 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(AuthenticatePayload) (authenticate AuthenticatePayload, err error) {
-			return AuthenticatePayload{}, errors.New("AM auth error")
+		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(authenticatePayload) (authenticate authenticatePayload, err error) {
+			return authenticatePayload{}, errors.New("AM auth error")
 		}}},
 	}
 	for _, subtest := range tests {
@@ -129,7 +129,7 @@ func TestCOAPServer_Authenticate(t *testing.T) {
 	}
 }
 
-func testCOAPServerAMInfo(m *mockClient) (info AMInfoSet, err error) {
+func testCOAPServerAMInfo(m *mockClient) (info amInfoSet, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	gateway := testGateway(m)
 	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
@@ -139,11 +139,11 @@ func testCOAPServerAMInfo(m *mockClient) (info AMInfoSet, err error) {
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		panic(err)
 	}
-	return client.AMInfo()
+	return client.amInfo()
 }
 
 func TestCOAPServer_AMInfo(t *testing.T) {
@@ -153,7 +153,7 @@ func TestCOAPServer_AMInfo(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "endpoint-error", client: &mockClient{amInfoFunc: func() (endpoint AMInfoSet, err error) {
+		{name: "endpoint-error", client: &mockClient{amInfoFunc: func() (endpoint amInfoSet, err error) {
 			return endpoint, errors.New("AM endpoint info error")
 		}}},
 	}
@@ -163,8 +163,8 @@ func TestCOAPServer_AMInfo(t *testing.T) {
 			if subtest.successful {
 				if err != nil {
 					t.Error(err)
-				} else if info != subtest.client.amInfo {
-					t.Errorf("Expected info %v, got %v", subtest.client.amInfo, info)
+				} else if info != subtest.client.amInfoSet {
+					t.Errorf("Expected info %v, got %v", subtest.client.amInfoSet, info)
 				}
 				return
 			}
@@ -185,11 +185,11 @@ func testCOAPServerAccessToken(m *mockClient, jws string) (reply []byte, err err
 
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		panic(err)
 	}
-	return client.AccessToken("", applicationJOSE, jws)
+	return client.accessToken("", applicationJOSE, jws)
 }
 
 func TestCOAPServer_AccessToken(t *testing.T) {
@@ -282,7 +282,7 @@ func TestGateway_StartCOAPServer(t *testing.T) {
 	// create client to ensure that the connection is up
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	client := &GatewayClient{Address: gateway.Address(), Key: clientKey}
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,7 +324,7 @@ func TestGateway_ShutdownCOAPServer(t *testing.T) {
 	// create client to ensure that the connection is up
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	client1 := &GatewayClient{Address: gateway.Address(), Key: clientKey}
-	err = client1.Initialise()
+	err = client1.initialise()
 	// shutdown server
 	gateway.ShutdownCOAPServer()
 	if err != nil {
@@ -333,9 +333,9 @@ func TestGateway_ShutdownCOAPServer(t *testing.T) {
 	client1.conn.Close()
 
 	client2 := &GatewayClient{Address: gateway.Address(), Key: clientKey}
-	err = testTimeout(10*time.Millisecond, client2.Initialise)
+	err = testTimeout(10*time.Millisecond, client2.initialise)
 	if err == nil {
 		t.Error("Expected an error")
 	}
-	err = client1.Initialise()
+	err = client1.initialise()
 }

@@ -49,7 +49,7 @@ func NewThingGateway(baseURL string, realm string, authTree string, handlers []H
 
 // Initialise the Thing Gateway
 func (c *ThingGateway) Initialise() error {
-	err := c.Thing.Client.Initialise()
+	err := c.Thing.Client.initialise()
 	if err != nil {
 		return err
 	}
@@ -57,14 +57,14 @@ func (c *ThingGateway) Initialise() error {
 	return err
 }
 
-// Authenticate a Thing with AM using the given payload
-func (c *ThingGateway) Authenticate(auth AuthenticatePayload) (reply AuthenticatePayload, err error) {
+// authenticate a Thing with AM using the given payload
+func (c *ThingGateway) authenticate(auth authenticatePayload) (reply authenticatePayload, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
 	auth.AuthIDKey = ""
 
-	reply, err = c.Thing.Client.Authenticate(auth)
+	reply, err = c.Thing.Client.authenticate(auth)
 	if err != nil {
 		return
 	}

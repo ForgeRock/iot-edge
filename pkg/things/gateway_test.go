@@ -26,22 +26,22 @@ import (
 
 // mockClient mocks a thing.mockClient
 type mockClient struct {
-	AuthenticateFunc func(AuthenticatePayload) (AuthenticatePayload, error)
-	amInfoFunc       func() (AMInfoSet, error)
-	amInfo           AMInfoSet
+	AuthenticateFunc func(authenticatePayload) (authenticatePayload, error)
+	amInfoFunc       func() (amInfoSet, error)
+	amInfoSet        amInfoSet
 	accessTokenFunc  func(string, string) ([]byte, error)
 	attributesFunc   func(string, string, []string) ([]byte, error)
 }
 
-func (m *mockClient) Initialise() error {
-	m.amInfo = AMInfoSet{
+func (m *mockClient) initialise() error {
+	m.amInfoSet = amInfoSet{
 		AccessTokenURL: "/things",
 		ThingsVersion:  "1",
 	}
 	return nil
 }
 
-func (m *mockClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+func (m *mockClient) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
 	if m.AuthenticateFunc != nil {
 		return m.AuthenticateFunc(payload)
 	}
@@ -49,21 +49,21 @@ func (m *mockClient) Authenticate(payload AuthenticatePayload) (reply Authentica
 	return reply, nil
 }
 
-func (m *mockClient) AMInfo() (info AMInfoSet, err error) {
+func (m *mockClient) amInfo() (info amInfoSet, err error) {
 	if m.amInfoFunc != nil {
 		return m.amInfoFunc()
 	}
-	return m.amInfo, nil
+	return m.amInfoSet, nil
 }
 
-func (m *mockClient) AccessToken(tokenID string, _ contentType, payload string) (reply []byte, err error) {
+func (m *mockClient) accessToken(tokenID string, _ contentType, payload string) (reply []byte, err error) {
 	if m.accessTokenFunc != nil {
 		return m.accessTokenFunc(tokenID, payload)
 	}
 	return []byte("{}"), nil
 }
 
-func (m *mockClient) Attributes(tokenID string, _ contentType, payload string, names []string) (reply []byte, err error) {
+func (m *mockClient) attributes(tokenID string, _ contentType, payload string, names []string) (reply []byte, err error) {
 	if m.attributesFunc != nil {
 		return m.attributesFunc(tokenID, payload, names)
 	}
@@ -82,7 +82,7 @@ func testGateway(client *mockClient) *ThingGateway {
 func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+		AuthenticateFunc: func(payload authenticatePayload) (reply authenticatePayload, err error) {
 			if payload.AuthIDKey != "" {
 				return reply, fmt.Errorf("don't send auth id digest")
 			}
@@ -91,11 +91,11 @@ func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 
 		}}
 	gateway := testGateway(mockClient)
-	reply, err := gateway.Authenticate(AuthenticatePayload{})
+	reply, err := gateway.authenticate(authenticatePayload{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = gateway.Authenticate(reply)
+	_, err = gateway.authenticate(reply)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,13 +105,13 @@ func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ AuthenticatePayload) (reply AuthenticatePayload, _ error) {
+		AuthenticateFunc: func(_ authenticatePayload) (reply authenticatePayload, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
 		}}
 	gateway := testGateway(mockClient)
-	reply, _ := gateway.Authenticate(AuthenticatePayload{})
+	reply, _ := gateway.authenticate(authenticatePayload{})
 	if reply.AuthId != "" {
 		t.Fatal("AuthId has been returned")
 	}
@@ -121,13 +121,13 @@ func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 func TestGateway_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ AuthenticatePayload) (reply AuthenticatePayload, _ error) {
+		AuthenticateFunc: func(_ authenticatePayload) (reply authenticatePayload, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
 		}}
 	gateway := testGateway(mockClient)
-	reply, _ := gateway.Authenticate(AuthenticatePayload{})
+	reply, _ := gateway.authenticate(authenticatePayload{})
 	id, ok := gateway.authCache.Get(reply.AuthIDKey)
 	if !ok {
 		t.Fatal("The authId has not been stored")
