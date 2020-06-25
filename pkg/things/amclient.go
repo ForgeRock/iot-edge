@@ -91,8 +91,8 @@ func parseAMError(response []byte, status int) error {
 	return fmt.Errorf("%s: %s", amError.Reason, amError.Message)
 }
 
-// Initialise checks that the server can be reached and prepares the client for further communication
-func (c *AMClient) Initialise() error {
+// initialise checks that the server can be reached and prepares the client for further communication
+func (c *AMClient) initialise() error {
 	info, err := c.getServerInfo()
 	if err != nil {
 		return err
@@ -101,9 +101,9 @@ func (c *AMClient) Initialise() error {
 	return nil
 }
 
-// Authenticate with the AM authTree using the given payload
+// authenticate with the AM authTree using the given payload
 // This is a single round trip
-func (c *AMClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+func (c *AMClient) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
@@ -201,9 +201,9 @@ func fieldsQuery(fields []string) string {
 	return ""
 }
 
-// AMInfo returns AM related information to the client
-func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
-	return AMInfoSet{
+// amInfo returns AM related information to the client
+func (c *AMClient) amInfo() (info amInfoSet, err error) {
+	return amInfoSet{
 		Realm:          c.Realm,
 		AccessTokenURL: c.accessTokenURL(),
 		AttributesURL:  c.attributesURL(),
@@ -211,8 +211,8 @@ func (c *AMClient) AMInfo() (info AMInfoSet, err error) {
 	}, nil
 }
 
-// AccessToken makes an access token request with the given session token and payload
-func (c *AMClient) AccessToken(tokenID string, content contentType, payload string) ([]byte, error) {
+// accessToken makes an access token request with the given session token and payload
+func (c *AMClient) accessToken(tokenID string, content contentType, payload string) ([]byte, error) {
 	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(payload))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
@@ -221,8 +221,8 @@ func (c *AMClient) AccessToken(tokenID string, content contentType, payload stri
 	return c.makeCommandRequest(tokenID, content, request)
 }
 
-// Attributes makes a thing attributes request with the given session token and payload
-func (c *AMClient) Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+// attributes makes a thing attributes request with the given session token and payload
+func (c *AMClient) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
 	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), strings.NewReader(payload))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))

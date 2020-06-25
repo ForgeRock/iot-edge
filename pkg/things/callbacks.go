@@ -100,8 +100,8 @@ type AuthMetadata struct {
 	ConfirmationKey crypto.Signer
 }
 
-// ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
-func ProcessCallbacks(id ThingIdentity, handlers []Handler, callbacks []Callback, metadata *AuthMetadata) (err error) {
+// processCallbacks attempts to respond to the callbacks with the given callback handlers
+func processCallbacks(id ThingIdentity, handlers []Handler, callbacks []Callback, metadata *AuthMetadata) (err error) {
 	for _, cb := range callbacks {
 	handlerLoop:
 		for _, h := range handlers {

@@ -103,7 +103,7 @@ func dtlsClientConfig(cert ...tls.Certificate) *dtls.Config {
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c *GatewayClient) Initialise() (err error) {
+func (c *GatewayClient) initialise() (err error) {
 	// create certificate
 	cert, err := publicKeyCertificate(c.Key)
 	if err != nil {
@@ -131,8 +131,8 @@ func (c *GatewayClient) Initialise() (err error) {
 	return err
 }
 
-// Authenticate with the AM authTree using the given payload
-func (c *GatewayClient) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
+// authenticate with the AM authTree using the given payload
+func (c *GatewayClient) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return reply, err
@@ -164,8 +164,8 @@ func (c *GatewayClient) Authenticate(payload AuthenticatePayload) (reply Authent
 	return reply, nil
 }
 
-// AMInfo makes a request to the Thing Gateway for AM related information
-func (c *GatewayClient) AMInfo() (info AMInfoSet, err error) {
+// amInfo makes a request to the Thing Gateway for AM related information
+func (c *GatewayClient) amInfo() (info amInfoSet, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return info, err
@@ -193,9 +193,9 @@ type thingEndpointPayload struct {
 	Payload string `json:"payload,omitempty"`
 }
 
-// AccessToken makes an access token request with the given session token and payload
+// accessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by Thing Gateway
-func (c *GatewayClient) AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
+func (c *GatewayClient) accessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -232,9 +232,9 @@ func (c *GatewayClient) AccessToken(tokenID string, content contentType, payload
 	return response.Payload(), nil
 }
 
-// Attributes makes a thing attributes request with the given payload
+// attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by Thing Gateway
-func (c *GatewayClient) Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+func (c *GatewayClient) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err

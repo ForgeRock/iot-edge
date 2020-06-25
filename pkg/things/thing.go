@@ -44,20 +44,20 @@ const (
 
 // Client is an interface that describes the connection to the ForgeRock platform
 type Client interface {
-	// Initialise the client. Must be called before the Client is used by a Thing
-	Initialise() error
+	// initialise the client. Must be called before the Client is used by a Thing
+	initialise() error
 
-	// Authenticate sends an Authenticate request to the ForgeRock platform
-	Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error)
+	// authenticate sends an authenticate request to the ForgeRock platform
+	authenticate(payload authenticatePayload) (reply authenticatePayload, err error)
 
-	// AMInfo returns the information required to construct valid signed JWTs
-	AMInfo() (info AMInfoSet, err error)
+	// amInfo returns the information required to construct valid signed JWTs
+	amInfo() (info amInfoSet, err error)
 
-	// AccessToken makes an access token request with the given session token and payload
-	AccessToken(tokenID string, content contentType, payload string) (reply []byte, err error)
+	// accessToken makes an access token request with the given session token and payload
+	accessToken(tokenID string, content contentType, payload string) (reply []byte, err error)
 
-	// Attributes makes a thing attributes request with the given session token and payload
-	Attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error)
+	// attributes makes a thing attributes request with the given session token and payload
+	attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error)
 }
 
 // ThingType describes the Thing type
@@ -74,14 +74,6 @@ type Thing struct {
 	Client   Client
 	handlers []Handler
 	session  *Session
-}
-
-// NewThing creates a new Thing
-func NewThing(client Client, handlers []Handler) *Thing {
-	return &Thing{
-		Client:   client,
-		handlers: handlers,
-	}
 }
 
 // Session holds session data
@@ -118,17 +110,17 @@ func (s *Session) IncrementNonce() {
 
 // authenticate the Thing
 func (t *Thing) authenticate() (session *Session, err error) {
-	auth := AuthenticatePayload{}
+	auth := authenticatePayload{}
 	metadata := AuthMetadata{}
 	for {
-		if auth, err = t.Client.Authenticate(auth); err != nil {
+		if auth, err = t.Client.authenticate(auth); err != nil {
 			return session, err
 		}
 
 		if auth.HasSessionToken() {
 			return &Session{token: auth.TokenId, confirmationKey: metadata.ConfirmationKey}, nil
 		}
-		if err = ProcessCallbacks(t, t.handlers, auth.Callbacks, &metadata); err != nil {
+		if err = processCallbacks(t, t.handlers, auth.Callbacks, &metadata); err != nil {
 			return session, err
 		}
 	}
@@ -174,27 +166,28 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 		return
 	}
 
+	payload := getAccessTokenPayload{Scope: scopes}
 	var requestBody string
 	var content contentType
 	if session.HasRestrictedToken() {
-		info, err := t.Client.AMInfo()
+		info, err := t.Client.amInfo()
 		if err != nil {
 			return response, err
 		}
-		requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, NewGetAccessToken(scopes))
+		requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, payload)
 		if err != nil {
 			return response, err
 		}
 		content = applicationJOSE
 	} else {
-		b, err := json.Marshal(NewGetAccessToken(scopes))
+		b, err := json.Marshal(payload)
 		if err != nil {
 			return response, err
 		}
 		requestBody = string(b)
 		content = applicationJSON
 	}
-	reply, err := t.Client.AccessToken(session.token, content, requestBody)
+	reply, err := t.Client.accessToken(session.token, content, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}
@@ -217,7 +210,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 	var requestBody string
 	var content contentType
 	if session.HasRestrictedToken() {
-		info, err := t.Client.AMInfo()
+		info, err := t.Client.amInfo()
 		if err != nil {
 			return response, err
 		}
@@ -229,7 +222,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 	} else {
 		content = applicationJSON
 	}
-	reply, err := t.Client.Attributes(session.token, content, requestBody, names)
+	reply, err := t.Client.attributes(session.token, content, requestBody, names)
 	if reply != nil {
 		DebugLogger.Println("RequestAttributes response: ", string(reply))
 	}
@@ -243,7 +236,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 
 // Realm returns the Thing's AM realm
 func (t *Thing) Realm() string {
-	info, err := t.Client.AMInfo()
+	info, err := t.Client.amInfo()
 	if err != nil {
 		DebugLogger.Println(err)
 	}
@@ -266,7 +259,7 @@ type initialiser struct {
 }
 
 func (b *initialiser) Initialise() (*Thing, error) {
-	err := b.client.Initialise()
+	err := b.client.initialise()
 	if err != nil {
 		return nil, err
 	}

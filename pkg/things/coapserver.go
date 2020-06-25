@@ -37,12 +37,12 @@ import (
 // ErrCOAPServerAlreadyStarted indicates that a COAP server has already been started by the Thing Gateway
 var ErrCOAPServerAlreadyStarted = errors.New("COAP server has already been started")
 
-var HeartBeat time.Duration = time.Millisecond * 100
+var heartBeat time.Duration = time.Millisecond * 100
 
 // authenticateHandler handles authentication requests
 func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("authenticateHandler")
-	var auth AuthenticatePayload
+	var auth authenticatePayload
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
 		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)
@@ -50,7 +50,7 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 		return
 	}
 
-	reply, err := c.Authenticate(auth)
+	reply, err := c.authenticate(auth)
 	if err != nil {
 		DebugLogger.Printf("Error connecting to AM; %s", err)
 		w.SetCode(codes.Unauthorized)
@@ -73,7 +73,7 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 // amInfoHandler handles AM Info requests
 func (c *ThingGateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	DebugLogger.Println("amInfoHandler")
-	info, err := c.Thing.Client.AMInfo()
+	info, err := c.Thing.Client.amInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(""))
@@ -130,7 +130,7 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 		return
 	}
 
-	b, err := c.Thing.Client.AccessToken(token, content, payload)
+	b, err := c.Thing.Client.accessToken(token, content, payload)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))
@@ -152,7 +152,7 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	b, err := c.Thing.Client.Attributes(token, format, payload, names)
+	b, err := c.Thing.Client.attributes(token, format, payload, names)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(err.Error()))
@@ -190,7 +190,7 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 	if err != nil {
 		return err
 	}
-	l, err := net.NewDTLSListener("udp", address, dtlsServerConfig(cert), HeartBeat)
+	l, err := net.NewDTLSListener("udp", address, dtlsServerConfig(cert), heartBeat)
 	if err != nil {
 		return err
 	}

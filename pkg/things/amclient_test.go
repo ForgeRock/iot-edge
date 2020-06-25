@@ -76,7 +76,7 @@ func testAMClientInitialise(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.Initialise()
+	err = c.initialise()
 	if err != nil {
 		return err
 	}
@@ -144,12 +144,12 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.Initialise()
+	err = c.initialise()
 	if err != nil {
 		return err
 	}
 
-	reply, err := c.Authenticate(AuthenticatePayload{})
+	reply, err := c.authenticate(authenticatePayload{})
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 }
 
 func TestAMClient_Authenticate(t *testing.T) {
-	info := AuthenticatePayload{
+	info := authenticatePayload{
 		TokenId: "12345",
 	}
 	b, err := json.Marshal(info)
@@ -197,7 +197,7 @@ func TestAMClient_AMInfo(t *testing.T) {
 		Realm:    testRealm,
 		AuthTree: testTree,
 	}
-	info, err := client.AMInfo()
+	info, err := client.amInfo()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,12 +239,12 @@ func testAMClientAccessToken(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.Initialise()
+	err = c.initialise()
 	if err != nil {
 		return err
 	}
 
-	_, err = c.AccessToken("aToken", applicationJOSE, "aSignedWT")
+	_, err = c.accessToken("aToken", applicationJOSE, "aSignedWT")
 	return err
 }
 
@@ -294,12 +294,12 @@ func testAMClientAttributes(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.Initialise()
+	err = c.initialise()
 	if err != nil {
 		return err
 	}
 
-	_, err = c.Attributes("aToken", applicationJOSE, "aSignedWT", []string{})
+	_, err = c.attributes("aToken", applicationJOSE, "aSignedWT", []string{})
 	return err
 }
 

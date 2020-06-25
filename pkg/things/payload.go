@@ -23,16 +23,16 @@ import (
 	"fmt"
 )
 
-// AMInfoSet contains the information required to construct valid signed JWTs
-type AMInfoSet struct {
+// amInfoSet contains the information required to construct valid signed JWTs
+type amInfoSet struct {
 	Realm          string
 	AccessTokenURL string
 	AttributesURL  string
 	ThingsVersion  string
 }
 
-// AuthenticatePayload represents the outbound and inbound data during an authentication request
-type AuthenticatePayload struct {
+// authenticatePayload represents the outbound and inbound data during an authentication request
+type authenticatePayload struct {
 	TokenId   string     `json:"tokenId,omitempty"`
 	AuthId    string     `json:"authId,omitempty"`
 	AuthIDKey string     `json:"auth_id_digest,omitempty"`
@@ -41,7 +41,7 @@ type AuthenticatePayload struct {
 
 // HasSessionToken returns true if the payload contains a session token
 // Indicates that the authentication workflow has completed successfully
-func (p AuthenticatePayload) HasSessionToken() bool {
+func (p authenticatePayload) HasSessionToken() bool {
 	return p.TokenId != ""
 }
 
@@ -49,14 +49,7 @@ type getAccessTokenPayload struct {
 	Scope []string `json:"scope"`
 }
 
-// NewGetAccessToken constructs an access token request
-func NewGetAccessToken(scope []string) interface{} {
-	return getAccessTokenPayload{
-		Scope: scope,
-	}
-}
-
-func (p AuthenticatePayload) String() string {
+func (p authenticatePayload) String() string {
 	return payloadToString(p)
 }
 

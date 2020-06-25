@@ -72,7 +72,7 @@ type testCOAPServer struct {
 }
 
 func (s testCOAPServer) Start() (address string, cancel func(), err error) {
-	l, err := net.NewDTLSListener("udp", ":0", s.config, HeartBeat)
+	l, err := net.NewDTLSListener("udp", ":0", s.config, heartBeat)
 	if err != nil {
 		return "", func() {}, err
 	}
@@ -101,7 +101,7 @@ func testGatewayClientInitialise(client *GatewayClient, server *testCOAPServer) 
 		defer cancel()
 	}
 
-	return client.Initialise()
+	return client.initialise()
 }
 
 func TestGatewayClient_Initialise(t *testing.T) {
@@ -151,7 +151,7 @@ func TestGatewayClient_Initialise_Concurrent(t *testing.T) {
 			Key:     key,
 		}
 		errGroup.Go(func() error {
-			return client.Initialise()
+			return client.initialise()
 		})
 	}
 	err = errGroup.Wait()
@@ -170,16 +170,16 @@ func testGatewayClientAuthenticate(client *GatewayClient, server *testCOAPServer
 		defer cancel()
 	}
 
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		return err
 	}
-	_, err = client.Authenticate(AuthenticatePayload{})
+	_, err = client.authenticate(authenticatePayload{})
 	return err
 }
 
 func TestGatewayClient_Authenticate(t *testing.T) {
-	info := AuthenticatePayload{
+	info := authenticatePayload{
 		TokenId: "12345",
 	}
 	b, err := json.Marshal(info)
@@ -225,16 +225,16 @@ func testGatewayClientAMInfo(client *GatewayClient, server *testCOAPServer) (err
 		defer cancel()
 	}
 
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		return err
 	}
-	_, err = client.AMInfo()
+	_, err = client.amInfo()
 	return err
 }
 
 func TestGatewayClient_AMInfo(t *testing.T) {
-	info := AMInfoSet{
+	info := amInfoSet{
 		AccessTokenURL: "/things",
 		ThingsVersion:  "1",
 	}
@@ -281,11 +281,11 @@ func testGatewayClientAccessToken(client *GatewayClient, server *testCOAPServer)
 		defer cancel()
 	}
 
-	err = client.Initialise()
+	err = client.initialise()
 	if err != nil {
 		return err
 	}
-	_, err = client.AccessToken("token", applicationJOSE, "signedWT")
+	_, err = client.accessToken("token", applicationJOSE, "signedWT")
 	return err
 }
 

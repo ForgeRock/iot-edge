@@ -150,7 +150,7 @@ func TestProcessCallbacks(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := ProcessCallbacks(mockThingIdentity{}, subtest.handlers, subtest.callbacks, &AuthMetadata{})
+			err := processCallbacks(mockThingIdentity{}, subtest.handlers, subtest.callbacks, &AuthMetadata{})
 			if subtest.ok && err != nil {
 				t.Errorf("unexpected error but got: %v", err)
 
