@@ -53,7 +53,7 @@ func testServerInfoHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 
 // testSetRootCAs sets the root certificate authorities on the AM client as the same as the test server client
 // Function is careful not to change any existing transport configuration except the root CAs
-func testSetRootCAs(client *AMClient, server *httptest.Server) {
+func testSetRootCAs(client *amConnection, server *httptest.Server) {
 	transport, ok := client.Transport.(*http.Transport)
 	if !ok {
 		transport = &http.Transport{}
@@ -69,10 +69,10 @@ func testAMClientInitialise(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := &AMClient{
-		BaseURL:  server.URL,
-		Realm:    testRealm,
-		AuthTree: testTree,
+	c := &amConnection{
+		baseURL:  server.URL,
+		realm:    testRealm,
+		authTree: testTree,
 	}
 	testSetRootCAs(c, server)
 
@@ -137,10 +137,10 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := &AMClient{
-		BaseURL:  server.URL,
-		Realm:    testRealm,
-		AuthTree: testTree,
+	c := &amConnection{
+		baseURL:  server.URL,
+		realm:    testRealm,
+		authTree: testTree,
 	}
 	testSetRootCAs(c, server)
 
@@ -192,10 +192,10 @@ func TestAMClient_Authenticate(t *testing.T) {
 
 func TestAMClient_AMInfo(t *testing.T) {
 	url := "http://same-path.org"
-	client := &AMClient{
-		BaseURL:  url,
-		Realm:    testRealm,
-		AuthTree: testTree,
+	client := &amConnection{
+		baseURL:  url,
+		realm:    testRealm,
+		authTree: testTree,
 	}
 	info, err := client.amInfo()
 	if err != nil {
@@ -232,10 +232,10 @@ func testAMClientAccessToken(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := &AMClient{
-		BaseURL:  server.URL,
-		Realm:    testRealm,
-		AuthTree: testTree,
+	c := &amConnection{
+		baseURL:  server.URL,
+		realm:    testRealm,
+		authTree: testTree,
 	}
 	testSetRootCAs(c, server)
 
@@ -287,10 +287,10 @@ func testAMClientAttributes(mux *http.ServeMux) (err error) {
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()
 
-	c := &AMClient{
-		BaseURL:  server.URL,
-		Realm:    testRealm,
-		AuthTree: testTree,
+	c := &amConnection{
+		baseURL:  server.URL,
+		realm:    testRealm,
+		authTree: testTree,
 	}
 	testSetRootCAs(c, server)
 

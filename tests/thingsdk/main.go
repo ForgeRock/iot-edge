@@ -103,10 +103,10 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 
 	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", realm)
 
-	fmt.Printf("-- Running AM Client Tests --\n\n")
+	fmt.Printf("-- Running AM Connection Tests --\n\n")
 	result = runAllTestsForContext(&anvil.AMTestState{TestRealm: realm})
 
-	fmt.Printf("\n-- Running Thing Gateway COAP Client Tests --\n\n")
+	fmt.Printf("\n-- Running Thing Gateway COAP Connection Tests --\n\n")
 
 	// run the Thing Gateway
 	gateway, err := anvil.TestThingGateway(realm, jwtPopAuthTree)
