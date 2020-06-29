@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 )
 
 const (
@@ -39,29 +38,6 @@ const (
 	authIndexTypeQueryKey = "authIndexType"
 	authTreeQueryKey      = "authIndexValue"
 )
-
-type amThingBuilder struct {
-	initialiser
-}
-
-func (b *amThingBuilder) AddHandler(h Handler) Builder {
-	b.handlers = append(b.handlers, h)
-	return b
-}
-
-func (b *amThingBuilder) SetTimeout(d time.Duration) Builder {
-	b.client.(*AMClient).Timeout = d
-	return b
-}
-
-// AMThing returns a Builder that can setup and initialise a Thing that communicates directly to AM
-// Note that the realm must be the fully-qualified name including the parent path e.g.
-// root realm; "/"
-// a sub-realm of root called "alfheim"; "/alfheim"
-// a sub-realm of alfheim called "svartalfheim"; "/alfheim/svartalfheim"
-func AMThing(baseURL, realm, authTree string) Builder {
-	return &amThingBuilder{initialiser: initialiser{client: &AMClient{BaseURL: baseURL, Realm: realm, AuthTree: authTree}}}
-}
 
 // AMClient contains information for connecting directly to AM
 type AMClient struct {

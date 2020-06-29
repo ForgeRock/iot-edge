@@ -18,12 +18,16 @@ package things
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"time"
 )
 
@@ -32,7 +36,9 @@ import (
 var DebugLogger = log.New(ioutil.Discard, "", 0)
 
 var (
-	ErrUnauthorised = errors.New("unauthorised")
+	ErrBuilderNoConnection      = errors.New("builder has no defined connection")
+	ErrBuilderUnsupportedScheme = errors.New("builder connecting with unsupported scheme")
+	ErrUnauthorised             = errors.New("unauthorised")
 )
 
 type contentType string
@@ -245,26 +251,80 @@ func (t *Thing) Realm() string {
 
 // Builder interface provides methods to setup and initialise a Thing
 type Builder interface {
-	// AddHandler adds a callback handler
-	AddHandler(Handler) Builder
-	// SetTimeout sets the timeout on the communications between the Thing and AM\Thing Gateway
-	SetTimeout(time.Duration) Builder
-	// Initialise a Thing instance and authenticates\registers it with AM
-	Initialise() (*Thing, error)
+	// ConnectTo to the server at the given URL
+	ConnectTo(url *url.URL) Builder
+	// InRealm sets which realm the thing belongs to
+	// Note that the realm must be the fully-qualified name including the parent path e.g.
+	// root realm; "/"
+	// a sub-realm of root called "alfheim"; "/alfheim"
+	// a sub-realm of alfheim called "svartalfheim"; "/alfheim/svartalfheim"
+	InRealm(realm string) Builder
+	// AuthenticateWith the named authentication tree
+	AuthenticateWith(tree string) Builder
+	// HandleCallbacksWith the supplied handlers
+	HandleCallbacksWith(handlers ...Handler) Builder
+	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM\Thing Gateway
+	TimeoutRequestAfter(time.Duration) Builder
+	// Create a Thing instance and authenticates\registers it with AM
+	Create() (*Thing, error)
 }
 
-type initialiser struct {
-	client   Client
+type baseBuilder struct {
+	u        *url.URL
+	realm    string
+	tree     string
+	timeout  time.Duration
 	handlers []Handler
 }
 
-func (b *initialiser) Initialise() (*Thing, error) {
-	err := b.client.initialise()
+func (b *baseBuilder) ConnectTo(u *url.URL) Builder {
+	b.u = u
+	return b
+}
+
+func (b *baseBuilder) HandleCallbacksWith(handlers ...Handler) Builder {
+	b.handlers = handlers
+	return b
+}
+
+func (b *baseBuilder) InRealm(realm string) Builder {
+	b.realm = realm
+	return b
+}
+
+func (b *baseBuilder) AuthenticateWith(tree string) Builder {
+	b.tree = tree
+	return b
+}
+
+func (b *baseBuilder) TimeoutRequestAfter(d time.Duration) Builder {
+	b.timeout = d
+	return b
+}
+
+func (b *baseBuilder) Create() (*Thing, error) {
+	if b.u == nil {
+		return nil, ErrBuilderNoConnection
+	}
+	var client Client
+	switch b.u.Scheme {
+	case "http", "https":
+		client = &AMClient{BaseURL: b.u.String(), Realm: b.realm, AuthTree: b.tree}
+	case "coap", "coaps":
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+		client = &GatewayClient{Address: b.u.Host, Key: key}
+	default:
+		return nil, ErrBuilderUnsupportedScheme
+	}
+	err := client.initialise()
 	if err != nil {
 		return nil, err
 	}
 	thing := &Thing{
-		Client:   b.client,
+		Client:   client,
 		handlers: b.handlers,
 	}
 	_, err = thing.authenticate()
@@ -272,4 +332,9 @@ func (b *initialiser) Initialise() (*Thing, error) {
 		return thing, err
 	}
 	return thing, err
+}
+
+// New returns a new Thing builder
+func New() Builder {
+	return &baseBuilder{}
 }
