@@ -51,13 +51,24 @@ func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData,
 }
 
 func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(jwtPopRegCertTree)
-	builder.AddHandler(things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer})
-	builder.AddHandler(
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
-			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates},
-	)
-	_, err := builder.Initialise()
+	state.SetGatewayTree(jwtPopRegCertTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopRegCertTree).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer},
+			things.RegisterHandler{
+				ThingID:           data.Id.Name,
+				ThingType:         things.TypeDevice,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer,
+				Certificates:      data.Certificates},
+		)
+	_, err := builder.Create()
 	if err != nil {
 		return false
 	}
@@ -83,14 +94,23 @@ func (t *RegisterDeviceWithoutCert) Setup(state anvil.TestState) (data anvil.Thi
 }
 
 func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(jwtPopRegCertTree)
-	builder.AddHandler(
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer})
-	builder.AddHandler(
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
-			ConfirmationKey: data.Signer.Signer})
+	state.SetGatewayTree(jwtPopRegCertTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopRegCertTree).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer},
+			things.RegisterHandler{
+				ThingID:           data.Id.Name,
+				ThingType:         things.TypeDevice,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer})
 
-	_, err := builder.Initialise()
+	_, err := builder.Create()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Printf("Expected Not Authorised; got %v", err)
 		return false
@@ -132,17 +152,27 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 	amAttribute := struct {
 		EmployeeNumber []string `json:"employeeNumber"`
 	}{}
-	builder := state.Builder(jwtPopRegCertTree)
-	builder.AddHandler(
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer},
-	)
-	builder.AddHandler(
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeDevice, ConfirmationKeyID: data.Signer.KID,
-			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates, Claims: func() interface{} {
-				return sdkAttribute
-			}},
-	)
-	_, err := builder.Initialise()
+	state.SetGatewayTree(jwtPopRegCertTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopRegCertTree).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer},
+			things.RegisterHandler{
+				ThingID:           data.Id.Name,
+				ThingType:         things.TypeDevice,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer,
+				Certificates:      data.Certificates,
+				Claims: func() interface{} {
+					return sdkAttribute
+				}},
+		)
+	_, err := builder.Create()
 	if err != nil {
 		return false
 	}
@@ -185,13 +215,24 @@ func (t *RegisterServiceCert) Setup(state anvil.TestState) (data anvil.ThingData
 }
 
 func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(jwtPopRegCertTree)
-	builder.AddHandler(things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer})
-	builder.AddHandler(
-		things.RegisterHandler{ThingID: data.Id.Name, ThingType: things.TypeService, ConfirmationKeyID: data.Signer.KID,
-			ConfirmationKey: data.Signer.Signer, Certificates: data.Certificates},
-	)
-	_, err := builder.Initialise()
+	state.SetGatewayTree(jwtPopRegCertTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopRegCertTree).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer},
+			things.RegisterHandler{
+				ThingID:           data.Id.Name,
+				ThingType:         things.TypeService,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer,
+				Certificates:      data.Certificates})
+
+	_, err := builder.Create()
 	if err != nil {
 		return false
 	}

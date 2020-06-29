@@ -18,9 +18,6 @@ package main
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
 	"flag"
@@ -28,21 +25,20 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/things"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 )
 
 var (
-	amURL          = flag.String("url", "http://am.localtest.me:8080/am", "AM URL")
-	amRealm        = flag.String("realm", "example", "AM Realm")
-	authTree       = flag.String("tree", "iot-tree", "Authentication tree")
-	thingName      = flag.String("name", "dynamic-thing", "Thing name")
-	server         = flag.String("server", "am", "Server to connect to, am or gateway")
-	gatewayAddress = flag.String("address", "127.0.0.1:5688", "Address of Thing Gateway")
-	key            = flag.String("key", "", "The Thing's key in PEM format")
-	keyID          = flag.String("keyid", "pop.cnf", "The Thing's key ID")
-	keyFile        = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
-	cert           = flag.String("cert", "", "The Thing's certificate in PEM format")
-	certFile       = flag.String("certfile", "./examples/resources/dynamic-thing.cert.pem",
+	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
+	realm     = flag.String("realm", "example", "AM Realm")
+	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
+	thingName = flag.String("name", "dynamic-thing", "Thing name")
+	key       = flag.String("key", "", "The Thing's key in PEM format")
+	keyID     = flag.String("keyid", "pop.cnf", "The Thing's key ID")
+	keyFile   = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
+	cert      = flag.String("cert", "", "The Thing's certificate in PEM format")
+	certFile  = flag.String("certfile", "./examples/resources/dynamic-thing.cert.pem",
 		"The file containing the Thing's certificate if it hasn't been handed directly to the function")
 )
 
@@ -97,25 +93,12 @@ func loadCertificates() ([]*x509.Certificate, error) {
 //     go run github.com/ForgeRock/iot-edge/examples/thing/cert-registration -name "${thingName}" -certfile "${thingName}.cert.pem"
 func certRegThing() (err error) {
 
-	// choose which client to use:
-	// * AMThing communicates directly with AM
-	// * GatewayThing communicates with AM via the Thing Gateway. Run the example Thing Gateway by calling:
-	//   "./run.sh examples simple/gateway"
-
-	var builder things.Builder
-	if *server == "am" {
-		builder = things.AMThing(*amURL, *amRealm, *authTree)
-	} else if *server == "gateway" {
-		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return err
-		}
-		builder = things.GatewayThing(*gatewayAddress, key)
-	} else {
-		log.Fatal("server not supported")
+	u, err := url.Parse(*urlString)
+	if err != nil {
+		return err
 	}
 
-	signer, err := loadKey()
+	key, err := loadKey()
 	if err != nil {
 		return err
 	}
@@ -125,11 +108,25 @@ func certRegThing() (err error) {
 		return err
 	}
 
+	builder := things.New().
+		ConnectTo(u).
+		InRealm(*realm).
+		AuthenticateWith(*authTree).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           *thingName,
+				ConfirmationKeyID: *keyID,
+				ConfirmationKey:   key},
+			things.RegisterHandler{
+				ThingID:           *thingName,
+				ThingType:         things.TypeDevice,
+				ConfirmationKeyID: *keyID,
+				ConfirmationKey:   key,
+				Certificates:      certs,
+			})
+
 	fmt.Printf("Creating Thing %s... ", *thingName)
-	builder.AddHandler(things.AuthenticateHandler{ThingID: *thingName, ConfirmationKeyID: *keyID, ConfirmationKey: signer})
-	builder.AddHandler(things.RegisterHandler{ThingID: *thingName, ThingType: things.TypeDevice, ConfirmationKeyID: *keyID,
-		ConfirmationKey: signer, Certificates: certs})
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		return err
 	}

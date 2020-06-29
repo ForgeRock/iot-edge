@@ -68,12 +68,7 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 }
 
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	var gatewayAddress string
-	switch f := state.(type) {
-	case *anvil.ThingGatewayTestState:
-		gatewayAddress = f.ThingGateway.Address()
-		f.SetThingGatewayAuthTree(jwtPopRegCertTree)
-	}
+	state.SetGatewayTree(jwtPopRegCertTree)
 
 	// encode the key to PEM
 	key, err := encodeKeyToPEM(data.Signer.Signer)
@@ -83,12 +78,10 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	}
 
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
-		"-url", am.AMURL,
+		"-url", state.URL().String(),
 		"-realm", state.Realm(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
-		"-server", state.ClientType(),
-		"-address", gatewayAddress,
 		"-key", key,
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
 
@@ -208,12 +201,7 @@ func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.Thing
 }
 
 func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	var gatewayAddress string
-	switch f := state.(type) {
-	case *anvil.ThingGatewayTestState:
-		gatewayAddress = f.ThingGateway.Address()
-		f.SetThingGatewayAuthTree(jwtPopRegCertTree)
-	}
+	state.SetGatewayTree(jwtPopRegCertTree)
 
 	// encode the key to PEM
 	key, err := encodeKeyToPEM(data.Signer.Signer)
@@ -226,12 +214,10 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data.Certificates[0].Raw})
 
 	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
-		"-url", am.AMURL,
+		"-url", state.URL().String(),
 		"-realm", state.Realm(),
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
-		"-server", state.ClientType(),
-		"-address", gatewayAddress,
 		"-key", key,
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID,
 		"-cert", string(cert))

@@ -23,8 +23,17 @@ import (
 )
 
 func thingJWTAuth(state anvil.TestState, data anvil.ThingData) things.Builder {
-	return state.Builder(jwtPopAuthTree).AddHandler(
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer})
+	state.SetGatewayTree(jwtPopAuthTree)
+	return things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopAuthTree).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer,
+			})
 }
 
 // AuthenticateThingJWT tests the authentication of a pre-registered device
@@ -44,7 +53,7 @@ func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingDat
 }
 
 func (t *AuthenticateThingJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
-	_, err := thingJWTAuth(state, data).Initialise()
+	_, err := thingJWTAuth(state, data).Create()
 	if err != nil {
 		return false
 	}
@@ -72,7 +81,7 @@ func (t *AuthenticateThingJWTNonDefaultKID) Setup(state anvil.TestState) (data a
 }
 
 func (t *AuthenticateThingJWTNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
-	_, err := thingJWTAuth(state, data).Initialise()
+	_, err := thingJWTAuth(state, data).Create()
 	if err != nil {
 		return false
 	}
@@ -98,7 +107,7 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return false
 	}
-	_, err = thingJWTAuth(state, data).Initialise()
+	_, err = thingJWTAuth(state, data).Create()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -124,15 +133,23 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 }
 
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(jwtPopAuthTreeCustomClaims)
-	builder.AddHandler(
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer,
-			Claims: func() interface{} {
-				return struct {
-					LifeUniverseEverything string `json:"life_universe_everything"`
-				}{"42"}
-			}})
-	_, err := builder.Initialise()
+	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopAuthTreeCustomClaims).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer,
+				Claims: func() interface{} {
+					return struct {
+						LifeUniverseEverything string `json:"life_universe_everything"`
+					}{"42"}
+				}})
+
+	_, err := builder.Create()
 	if err != nil {
 		return false
 	}
@@ -157,15 +174,22 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 }
 
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(jwtPopAuthTreeCustomClaims)
-	builder.AddHandler(
-		things.AuthenticateHandler{ThingID: data.Id.Name, ConfirmationKeyID: data.Signer.KID, ConfirmationKey: data.Signer.Signer,
-			Claims: func() interface{} {
-				return struct {
-					LifeUniverseEverything string `json:"life_universe_everything"`
-				}{"0"}
-			}})
-	_, err := builder.Initialise()
+	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(jwtPopAuthTreeCustomClaims).
+		HandleCallbacksWith(
+			things.AuthenticateHandler{
+				ThingID:           data.Id.Name,
+				ConfirmationKeyID: data.Signer.KID,
+				ConfirmationKey:   data.Signer.Signer,
+				Claims: func() interface{} {
+					return struct {
+						LifeUniverseEverything string `json:"life_universe_everything"`
+					}{"0"}
+				}})
+	_, err := builder.Create()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -184,9 +208,16 @@ func (a AuthenticateWithUserPwd) Setup(state anvil.TestState) (data anvil.ThingD
 }
 
 func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(userPwdAuthTree)
-	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
-	_, err := builder.Initialise()
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(userPwdAuthTree).
+		HandleCallbacksWith(
+			things.NameHandler{Name: data.Id.Name},
+			things.PasswordHandler{Password: data.Id.Password})
+
+	_, err := builder.Create()
 	if err != nil {
 		return false
 	}
@@ -204,9 +235,15 @@ func (a AuthenticateWithIncorrectPwd) Setup(state anvil.TestState) (data anvil.T
 }
 
 func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(userPwdAuthTree)
-	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: "wrong"})
-	_, err := builder.Initialise()
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(userPwdAuthTree).
+		HandleCallbacksWith(
+			things.NameHandler{Name: data.Id.Name},
+			things.PasswordHandler{Password: "wrong"})
+	_, err := builder.Create()
 	if err != things.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false

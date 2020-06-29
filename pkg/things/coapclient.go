@@ -34,25 +34,6 @@ import (
 // CoAP Content-Formats registry does not contain a JOSE value, using an unassigned value
 const appJOSE coap.MediaType = 11650
 
-type gatewayThingBuilder struct {
-	initialiser
-}
-
-func (b *gatewayThingBuilder) AddHandler(h Handler) Builder {
-	b.handlers = append(b.handlers, h)
-	return b
-}
-
-func (b *gatewayThingBuilder) SetTimeout(d time.Duration) Builder {
-	b.client.(*GatewayClient).Timeout = d
-	return b
-}
-
-// GatewayThing returns a Builder that can setup and initialise a Thing that communicates with an ThingGateway
-func GatewayThing(address string, key crypto.Signer) Builder {
-	return &gatewayThingBuilder{initialiser{client: &GatewayClient{Address: address, Key: key}}}
-}
-
 type errCoAPStatusCode struct {
 	code    codes.Code
 	payload []byte

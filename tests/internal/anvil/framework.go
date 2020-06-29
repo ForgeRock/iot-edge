@@ -19,8 +19,6 @@ package anvil
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -33,6 +31,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -334,8 +333,10 @@ type TestState interface {
 	Realm() string
 	// ClientType returns 'am' or 'gateway' depending on the type of client
 	ClientType() string
-	// Builder returns a thing builder, which builder is returned is dependant on the client used for the test
-	Builder(thingAuthTree string) things.Builder
+	// URL of the current test server (AM or Gateway)
+	URL() *url.URL
+	// SetGatewayTree sets the auth tree used by the test Thing Gateway
+	SetGatewayTree(tree string)
 }
 
 // AMTestState contains data and methods for testing the AM client
@@ -343,12 +344,17 @@ type AMTestState struct {
 	TestRealm string
 }
 
-func (a *AMTestState) ClientType() string {
-	return "am"
+func (a *AMTestState) SetGatewayTree(tree string) {
+	return
 }
 
-func (a *AMTestState) Builder(thingAuthTree string) things.Builder {
-	return things.AMThing(am.AMURL, a.TestRealm, thingAuthTree).SetTimeout(StdTimeOut)
+func (a *AMTestState) URL() *url.URL {
+	u, _ := url.Parse(am.AMURL)
+	return u
+}
+
+func (a *AMTestState) ClientType() string {
+	return "am"
 }
 
 func (a *AMTestState) Realm() string {
@@ -361,22 +367,17 @@ type ThingGatewayTestState struct {
 	TestRealm    string
 }
 
+func (i *ThingGatewayTestState) SetGatewayTree(tree string) {
+	i.ThingGateway.Thing.Client.(*things.AMClient).AuthTree = tree
+}
+
+func (i *ThingGatewayTestState) URL() *url.URL {
+	u, _ := url.Parse("coap://" + i.ThingGateway.Address())
+	return u
+}
+
 func (i *ThingGatewayTestState) ClientType() string {
 	return "gateway"
-}
-
-// SetThingGatewayAuthTree sets the auth tree used by the test Thing Gateway
-func (i *ThingGatewayTestState) SetThingGatewayAuthTree(thingAuthTree string) {
-	i.ThingGateway.Thing.Client.(*things.AMClient).AuthTree = thingAuthTree
-}
-
-func (i *ThingGatewayTestState) Builder(thingAuthTree string) things.Builder {
-	// set thing auth tree on the test Thing Gateway
-	i.SetThingGatewayAuthTree(thingAuthTree)
-
-	// create a new Thing Gateway client
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	return things.GatewayThing(i.ThingGateway.Address(), key).SetTimeout(StdTimeOut)
 }
 
 func (i *ThingGatewayTestState) Realm() string {

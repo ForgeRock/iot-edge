@@ -34,7 +34,7 @@ func (t *AttributesWithNoFilter) Setup(state anvil.TestState) (data anvil.ThingD
 
 func (t *AttributesWithNoFilter) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -74,7 +74,7 @@ func (t *AttributesWithFilter) Setup(state anvil.TestState) (data anvil.ThingDat
 
 func (t *AttributesWithFilter) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -124,9 +124,15 @@ func (t *AttributesWithNonRestrictedToken) Setup(state anvil.TestState) (data an
 }
 
 func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(userPwdAuthTree)
-	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
-	thing, err := builder.Initialise()
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(userPwdAuthTree).
+		HandleCallbacksWith(
+			things.NameHandler{Name: data.Id.Name},
+			things.PasswordHandler{Password: data.Id.Password})
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false

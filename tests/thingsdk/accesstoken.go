@@ -45,7 +45,7 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -77,7 +77,7 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -109,7 +109,7 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -142,7 +142,7 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -180,7 +180,7 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -246,7 +246,7 @@ func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, 
 
 func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Initialise()
+	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -275,9 +275,16 @@ func (a AccessTokenWithNonRestrictedToken) Setup(state anvil.TestState) (data an
 }
 
 func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := state.Builder(userPwdAuthTree)
-	builder.AddHandler(things.NameHandler{Name: data.Id.Name}).AddHandler(things.PasswordHandler{Password: data.Id.Password})
-	thing, err := builder.Initialise()
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := things.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		AuthenticateWith(userPwdAuthTree).
+		HandleCallbacksWith(
+			things.NameHandler{Name: data.Id.Name},
+			things.PasswordHandler{Password: data.Id.Password})
+
+	thing, err := builder.Create()
 	if err != nil {
 		return false
 	}
