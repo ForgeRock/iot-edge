@@ -91,10 +91,10 @@ func (s testCOAPServer) Start() (address string, cancel func(), err error) {
 	}, nil
 }
 
-func testGatewayClientInitialise(client *GatewayClient, server *testCOAPServer) (err error) {
+func testGatewayClientInitialise(client *gatewayConnection, server *testCOAPServer) (err error) {
 	if server != nil {
 		var cancel func()
-		client.Address, cancel, err = server.Start()
+		client.address, cancel, err = server.Start()
 		if err != nil {
 			panic(err)
 		}
@@ -110,13 +110,13 @@ func TestGatewayClient_Initialise(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
-		client     *GatewayClient
+		client     *gatewayConnection
 		server     *testCOAPServer
 	}{
-		{name: "success", successful: true, client: &GatewayClient{Key: testGenerateSigner()}, server: &testCOAPServer{config: dtlsServerConfig(cert), mux: coap.DefaultServeMux}},
-		{name: "client-no-signer", client: &GatewayClient{Key: nil}, server: nil},
+		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()}, server: &testCOAPServer{config: dtlsServerConfig(cert), mux: coap.DefaultServeMux}},
+		{name: "client-no-signer", client: &gatewayConnection{key: nil}, server: nil},
 		// starting a DTLS server without a certificate or PSK is an error.
-		{name: "server-wrong-tls-signer", client: &GatewayClient{Key: testGenerateSigner()}, server: &testCOAPServer{config: dtlsServerConfig(testWrongTLSSigner()), mux: coap.DefaultServeMux}},
+		{name: "server-wrong-tls-signer", client: &gatewayConnection{key: testGenerateSigner()}, server: &testCOAPServer{config: dtlsServerConfig(testWrongTLSSigner()), mux: coap.DefaultServeMux}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -146,9 +146,9 @@ func TestGatewayClient_Initialise_Concurrent(t *testing.T) {
 	const num = 5
 	for i := 0; i < num; i++ {
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		client := &GatewayClient{
-			Address: addr,
-			Key:     key,
+		client := &gatewayConnection{
+			address: addr,
+			key:     key,
 		}
 		errGroup.Go(func() error {
 			return client.initialise()
@@ -160,10 +160,10 @@ func TestGatewayClient_Initialise_Concurrent(t *testing.T) {
 	}
 }
 
-func testGatewayClientAuthenticate(client *GatewayClient, server *testCOAPServer) (err error) {
+func testGatewayClientAuthenticate(client *gatewayConnection, server *testCOAPServer) (err error) {
 	if server != nil {
 		var cancel func()
-		client.Address, cancel, err = server.Start()
+		client.address, cancel, err = server.Start()
 		if err != nil {
 			panic(err)
 		}
@@ -192,14 +192,14 @@ func TestGatewayClient_Authenticate(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
-		client     *GatewayClient
+		client     *gatewayConnection
 		server     *testCOAPServer
 	}{
-		{name: "success", successful: true, client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAuthCOAPMux(codes.Valid, b)}},
-		{name: "unexpected-code", client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "unexpected-code", client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAuthCOAPMux(codes.BadGateway, b)}},
-		{name: "invalid-auth-payload", client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "invalid-auth-payload", client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAuthCOAPMux(codes.Content, []byte("aaaa"))}},
 	}
 	for _, subtest := range tests {
@@ -215,10 +215,10 @@ func TestGatewayClient_Authenticate(t *testing.T) {
 	}
 }
 
-func testGatewayClientAMInfo(client *GatewayClient, server *testCOAPServer) (err error) {
+func testGatewayClientAMInfo(client *gatewayConnection, server *testCOAPServer) (err error) {
 	if server != nil {
 		var cancel func()
-		client.Address, cancel, err = server.Start()
+		client.address, cancel, err = server.Start()
 		if err != nil {
 			panic(err)
 		}
@@ -248,14 +248,14 @@ func TestGatewayClient_AMInfo(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
-		client     *GatewayClient
+		client     *gatewayConnection
 		server     *testCOAPServer
 	}{
-		{name: "success", successful: true, client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAMInfoCOAPMux(codes.Content, b)}},
-		{name: "unexpected-code", client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "unexpected-code", client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAMInfoCOAPMux(codes.BadGateway, b)}},
-		{name: "invalid-info", client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "invalid-info", client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAMInfoCOAPMux(codes.Content, []byte("aaaa"))}},
 	}
 	for _, subtest := range tests {
@@ -271,10 +271,10 @@ func TestGatewayClient_AMInfo(t *testing.T) {
 	}
 }
 
-func testGatewayClientAccessToken(client *GatewayClient, server *testCOAPServer) (err error) {
+func testGatewayClientAccessToken(client *gatewayConnection, server *testCOAPServer) (err error) {
 	if server != nil {
 		var cancel func()
-		client.Address, cancel, err = server.Start()
+		client.address, cancel, err = server.Start()
 		if err != nil {
 			panic(err)
 		}
@@ -295,12 +295,12 @@ func TestGatewayClient_AccessToken(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
-		client     *GatewayClient
+		client     *gatewayConnection
 		server     *testCOAPServer
 	}{
-		{name: "success", successful: true, client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAccessTokenCOAPMux(codes.Changed, []byte("{}"))}},
-		{name: "unexpected-code", client: &GatewayClient{Key: testGenerateSigner()},
+		{name: "unexpected-code", client: &gatewayConnection{key: testGenerateSigner()},
 			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testAccessTokenCOAPMux(codes.BadGateway, []byte("{}"))}},
 	}
 	for _, subtest := range tests {

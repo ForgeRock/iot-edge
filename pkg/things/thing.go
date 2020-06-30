@@ -48,8 +48,8 @@ const (
 	applicationJOSE contentType = "application/jose"
 )
 
-// Client is an interface that describes the connection to the ForgeRock platform
-type Client interface {
+// connection to the ForgeRock platform
+type connection interface {
 	// initialise the client. Must be called before the Client is used by a Thing
 	initialise() error
 
@@ -77,9 +77,9 @@ const (
 
 // Thing represents an AM Thing identity
 type Thing struct {
-	Client   Client
-	handlers []Handler
-	session  *Session
+	connection connection
+	handlers   []Handler
+	session    *Session
 }
 
 // Session holds session data
@@ -119,7 +119,7 @@ func (t *Thing) authenticate() (session *Session, err error) {
 	auth := authenticatePayload{}
 	metadata := AuthMetadata{}
 	for {
-		if auth, err = t.Client.authenticate(auth); err != nil {
+		if auth, err = t.connection.authenticate(auth); err != nil {
 			return session, err
 		}
 
@@ -176,7 +176,7 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	var requestBody string
 	var content contentType
 	if session.HasRestrictedToken() {
-		info, err := t.Client.amInfo()
+		info, err := t.connection.amInfo()
 		if err != nil {
 			return response, err
 		}
@@ -193,7 +193,7 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 		requestBody = string(b)
 		content = applicationJSON
 	}
-	reply, err := t.Client.accessToken(session.token, content, requestBody)
+	reply, err := t.connection.accessToken(session.token, content, requestBody)
 	if reply != nil {
 		DebugLogger.Println("RequestAccessToken response: ", string(reply))
 	}
@@ -216,7 +216,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 	var requestBody string
 	var content contentType
 	if session.HasRestrictedToken() {
-		info, err := t.Client.amInfo()
+		info, err := t.connection.amInfo()
 		if err != nil {
 			return response, err
 		}
@@ -228,7 +228,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 	} else {
 		content = applicationJSON
 	}
-	reply, err := t.Client.attributes(session.token, content, requestBody, names)
+	reply, err := t.connection.attributes(session.token, content, requestBody, names)
 	if reply != nil {
 		DebugLogger.Println("RequestAttributes response: ", string(reply))
 	}
@@ -242,7 +242,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 
 // Realm returns the Thing's AM realm
 func (t *Thing) Realm() string {
-	info, err := t.Client.amInfo()
+	info, err := t.connection.amInfo()
 	if err != nil {
 		DebugLogger.Println(err)
 	}
@@ -306,16 +306,16 @@ func (b *baseBuilder) Create() (*Thing, error) {
 	if b.u == nil {
 		return nil, ErrBuilderNoConnection
 	}
-	var client Client
+	var client connection
 	switch b.u.Scheme {
 	case "http", "https":
-		client = &AMClient{BaseURL: b.u.String(), Realm: b.realm, AuthTree: b.tree}
+		client = &amConnection{baseURL: b.u.String(), realm: b.realm, authTree: b.tree}
 	case "coap", "coaps":
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return nil, err
 		}
-		client = &GatewayClient{Address: b.u.Host, Key: key}
+		client = &gatewayConnection{address: b.u.Host, key: key}
 	default:
 		return nil, ErrBuilderUnsupportedScheme
 	}
@@ -324,8 +324,8 @@ func (b *baseBuilder) Create() (*Thing, error) {
 		return nil, err
 	}
 	thing := &Thing{
-		Client:   client,
-		handlers: b.handlers,
+		connection: client,
+		handlers:   b.handlers,
 	}
 	_, err = thing.authenticate()
 	if err != nil {

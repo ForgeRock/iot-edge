@@ -368,7 +368,7 @@ type ThingGatewayTestState struct {
 }
 
 func (i *ThingGatewayTestState) SetGatewayTree(tree string) {
-	i.ThingGateway.Thing.Client.(*things.AMClient).AuthTree = tree
+	i.ThingGateway.AuthenticateWith(tree)
 }
 
 func (i *ThingGatewayTestState) URL() *url.URL {

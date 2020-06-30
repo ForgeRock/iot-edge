@@ -47,30 +47,30 @@ func (e errCoAPStatusCode) Error() string {
 	return msg
 }
 
-// GatewayClient contains information for connecting to the Thing Gateway via COAP
-type GatewayClient struct {
-	Address string
-	Timeout time.Duration
-	Key     crypto.Signer
+// gatewayConnection contains information for connecting to the Thing Gateway via COAP
+type gatewayConnection struct {
+	address string
+	timeout time.Duration
+	key     crypto.Signer
 	client  *coap.Client
 	conn    *coap.ClientConn
 }
 
 // dial returns an existing connection or creates a new one
-func (c *GatewayClient) dial() (*coap.ClientConn, error) {
+func (c *gatewayConnection) dial() (*coap.ClientConn, error) {
 	if c.conn != nil {
 		return c.conn, nil
 	}
 	var err error
-	c.client.DialTimeout = c.Timeout
-	c.conn, err = c.client.Dial(c.Address)
+	c.client.DialTimeout = c.timeout
+	c.conn, err = c.client.Dial(c.address)
 	return c.conn, err
 }
 
 // context returns a context to be used with CoAP requests
-func (c *GatewayClient) context() (context.Context, context.CancelFunc) {
-	if c.Timeout > 0 {
-		return context.WithTimeout(context.Background(), c.Timeout)
+func (c *gatewayConnection) context() (context.Context, context.CancelFunc) {
+	if c.timeout > 0 {
+		return context.WithTimeout(context.Background(), c.timeout)
 	}
 	return context.WithCancel(context.Background())
 }
@@ -84,9 +84,9 @@ func dtlsClientConfig(cert ...tls.Certificate) *dtls.Config {
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c *GatewayClient) initialise() (err error) {
+func (c *gatewayConnection) initialise() (err error) {
 	// create certificate
-	cert, err := publicKeyCertificate(c.Key)
+	cert, err := publicKeyCertificate(c.key)
 	if err != nil {
 		return err
 	}
@@ -99,11 +99,11 @@ func (c *GatewayClient) initialise() (err error) {
 	if err != nil {
 		return err
 	}
-	runtime.SetFinalizer(c, func(c *GatewayClient) {
+	runtime.SetFinalizer(c, func(c *gatewayConnection) {
 		c.conn.Close()
 	})
 
-	timeout := c.Timeout
+	timeout := c.timeout
 	if timeout == 0 {
 		// default ping timeout to an hour
 		timeout = 3600 * time.Second
@@ -113,7 +113,7 @@ func (c *GatewayClient) initialise() (err error) {
 }
 
 // authenticate with the AM authTree using the given payload
-func (c *GatewayClient) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
+func (c *gatewayConnection) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return reply, err
@@ -146,7 +146,7 @@ func (c *GatewayClient) authenticate(payload authenticatePayload) (reply authent
 }
 
 // amInfo makes a request to the Thing Gateway for AM related information
-func (c *GatewayClient) amInfo() (info amInfoSet, err error) {
+func (c *gatewayConnection) amInfo() (info amInfoSet, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return info, err
@@ -176,7 +176,7 @@ type thingEndpointPayload struct {
 
 // accessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by Thing Gateway
-func (c *GatewayClient) accessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
+func (c *gatewayConnection) accessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (c *GatewayClient) accessToken(tokenID string, content contentType, payload
 
 // attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by Thing Gateway
-func (c *GatewayClient) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+func (c *gatewayConnection) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err

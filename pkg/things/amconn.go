@@ -39,16 +39,12 @@ const (
 	authTreeQueryKey      = "authIndexValue"
 )
 
-// AMClient contains information for connecting directly to AM
-type AMClient struct {
+// amConnection contains information for connecting directly to AM
+type amConnection struct {
 	http.Client
-	BaseURL string
-	// Realm that the client communicates with, must be the fully-qualified name including the parent path e.g.
-	// root realm; "/"
-	// a sub-realm of root called "alfheim"; "/alfheim"
-	// a sub-realm of alfheim called "svartalfheim"; "/alfheim/svartalfheim"
-	Realm      string
-	AuthTree   string
+	baseURL    string
+	realm      string
+	authTree   string
 	cookieName string
 }
 
@@ -68,7 +64,7 @@ func parseAMError(response []byte, status int) error {
 }
 
 // initialise checks that the server can be reached and prepares the client for further communication
-func (c *AMClient) initialise() error {
+func (c *amConnection) initialise() error {
 	info, err := c.getServerInfo()
 	if err != nil {
 		return err
@@ -79,12 +75,12 @@ func (c *AMClient) initialise() error {
 
 // authenticate with the AM authTree using the given payload
 // This is a single round trip
-func (c *AMClient) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
+func (c *amConnection) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
 	}
-	request, err := http.NewRequest(http.MethodPost, c.BaseURL+"/json/authenticate", bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest(http.MethodPost, c.baseURL+"/json/authenticate", bytes.NewBuffer(requestBody))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return reply, err
@@ -92,9 +88,9 @@ func (c *AMClient) authenticate(payload authenticatePayload) (reply authenticate
 
 	// add realm and auth tree to query
 	q := request.URL.Query()
-	q.Set(realmQueryKey, c.Realm)
+	q.Set(realmQueryKey, c.realm)
 	q.Set(authIndexTypeQueryKey, "service")
-	q.Set(authTreeQueryKey, c.AuthTree)
+	q.Set(authTreeQueryKey, c.authTree)
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
@@ -127,8 +123,8 @@ type serverInfo struct {
 }
 
 // getServerInfo makes a server information request to AM
-func (c *AMClient) getServerInfo() (info serverInfo, err error) {
-	request, err := http.NewRequest(http.MethodGet, c.BaseURL+"/json/serverinfo/*", nil)
+func (c *amConnection) getServerInfo() (info serverInfo, err error) {
+	request, err := http.NewRequest(http.MethodGet, c.baseURL+"/json/serverinfo/*", nil)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return info, err
@@ -162,12 +158,12 @@ func (c *AMClient) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
-func (c *AMClient) accessTokenURL() string {
-	return c.BaseURL + "/json/things/*?_action=get_access_token&realm=" + c.Realm
+func (c *amConnection) accessTokenURL() string {
+	return c.baseURL + "/json/things/*?_action=get_access_token&realm=" + c.realm
 }
 
-func (c *AMClient) attributesURL() string {
-	return c.BaseURL + "/json/things/*?realm=" + c.Realm
+func (c *amConnection) attributesURL() string {
+	return c.baseURL + "/json/things/*?realm=" + c.realm
 }
 
 func fieldsQuery(fields []string) string {
@@ -178,9 +174,9 @@ func fieldsQuery(fields []string) string {
 }
 
 // amInfo returns AM related information to the client
-func (c *AMClient) amInfo() (info amInfoSet, err error) {
+func (c *amConnection) amInfo() (info amInfoSet, err error) {
 	return amInfoSet{
-		Realm:          c.Realm,
+		Realm:          c.realm,
 		AccessTokenURL: c.accessTokenURL(),
 		AttributesURL:  c.attributesURL(),
 		ThingsVersion:  thingsEndpointVersion,
@@ -188,7 +184,7 @@ func (c *AMClient) amInfo() (info amInfoSet, err error) {
 }
 
 // accessToken makes an access token request with the given session token and payload
-func (c *AMClient) accessToken(tokenID string, content contentType, payload string) ([]byte, error) {
+func (c *amConnection) accessToken(tokenID string, content contentType, payload string) ([]byte, error) {
 	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(payload))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
@@ -198,7 +194,7 @@ func (c *AMClient) accessToken(tokenID string, content contentType, payload stri
 }
 
 // attributes makes a thing attributes request with the given session token and payload
-func (c *AMClient) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+func (c *amConnection) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
 	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), strings.NewReader(payload))
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
@@ -207,7 +203,7 @@ func (c *AMClient) attributes(tokenID string, content contentType, payload strin
 	return c.makeCommandRequest(tokenID, content, request)
 }
 
-func (c *AMClient) makeCommandRequest(tokenID string, content contentType, request *http.Request) (reply []byte, err error) {
+func (c *amConnection) makeCommandRequest(tokenID string, content contentType, request *http.Request) (reply []byte, err error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
 	request.Header.Set(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
