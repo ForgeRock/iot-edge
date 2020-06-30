@@ -17,7 +17,8 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -39,7 +40,7 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -71,7 +72,7 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -103,7 +104,7 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -136,7 +137,7 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -173,7 +174,7 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
 	return anvil.CreateIdentity(state.Realm(), data)
 }
@@ -193,7 +194,7 @@ func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.Thin
 	return verifyAccessTokenResponse(response, data.Id.Name, "create", "modify", "delete")
 }
 
-func verifyAccessTokenResponse(response things.AccessTokenResponse, subject string, requestedScopes ...string) bool {
+func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject string, requestedScopes ...string) bool {
 	token, err := response.AccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
@@ -240,7 +241,7 @@ func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, 
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -270,19 +271,19 @@ type AccessTokenWithNonRestrictedToken struct {
 }
 
 func (a AccessTokenWithNonRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(userPwdAuthTree).
 		HandleCallbacksWith(
-			things.NameHandler{Name: data.Id.Name},
-			things.PasswordHandler{Password: data.Id.Password})
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
 
 	thing, err := builder.Create()
 	if err != nil {

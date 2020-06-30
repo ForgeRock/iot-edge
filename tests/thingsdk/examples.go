@@ -21,7 +21,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
@@ -63,7 +63,7 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -121,7 +121,7 @@ func (t *SimpleThingGatewayExample) Setup(state anvil.TestState) (data anvil.Thi
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeGateway
+	data.Id.ThingType = callback.TypeGateway
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -196,7 +196,7 @@ func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.Thing
 		return data, false
 	}
 	data.Certificates = []*x509.Certificate{certificate}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return data, true
 }
 

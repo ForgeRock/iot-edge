@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package things
+package thing
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 )
 
 // amInfoSet contains the information required to construct valid signed JWTs
@@ -33,10 +34,10 @@ type amInfoSet struct {
 
 // authenticatePayload represents the outbound and inbound data during an authentication request
 type authenticatePayload struct {
-	TokenId   string     `json:"tokenId,omitempty"`
-	AuthId    string     `json:"authId,omitempty"`
-	AuthIDKey string     `json:"auth_id_digest,omitempty"`
-	Callbacks []Callback `json:"callbacks,omitempty"`
+	TokenId   string              `json:"tokenId,omitempty"`
+	AuthId    string              `json:"authId,omitempty"`
+	AuthIDKey string              `json:"auth_id_digest,omitempty"`
+	Callbacks []callback.Callback `json:"callbacks,omitempty"`
 }
 
 // HasSessionToken returns true if the payload contains a session token

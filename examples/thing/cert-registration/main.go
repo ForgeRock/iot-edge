@@ -22,7 +22,8 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -108,32 +109,32 @@ func certRegThing() (err error) {
 		return err
 	}
 
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(u).
 		InRealm(*realm).
 		AuthenticateWith(*authTree).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           *thingName,
 				ConfirmationKeyID: *keyID,
 				ConfirmationKey:   key},
-			things.RegisterHandler{
+			callback.RegisterHandler{
 				ThingID:           *thingName,
-				ThingType:         things.TypeDevice,
+				ThingType:         callback.TypeDevice,
 				ConfirmationKeyID: *keyID,
 				ConfirmationKey:   key,
 				Certificates:      certs,
 			})
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
-	thing, err := builder.Create()
+	device, err := builder.Create()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Done\n")
 
 	fmt.Printf("Requesting access token... ")
-	tokenResponse, err := thing.RequestAccessToken("publish")
+	tokenResponse, err := device.RequestAccessToken("publish")
 	if err != nil {
 		return err
 	}
@@ -161,7 +162,7 @@ func main() {
 	flag.Parse()
 
 	// pipe debug to standard out
-	things.DebugLogger.SetOutput(os.Stdout)
+	thing.DebugLogger.SetOutput(os.Stdout)
 
 	if err := certRegThing(); err != nil {
 		log.Fatal(err)

@@ -17,7 +17,8 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 )
@@ -109,7 +110,7 @@ func doSetup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	data.Id.ThingConfig = "host=localhost;port=80"
 	return anvil.CreateIdentity(state.Realm(), data)
 }
@@ -125,13 +126,13 @@ func (t *AttributesWithNonRestrictedToken) Setup(state anvil.TestState) (data an
 
 func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(userPwdAuthTree).
 		HandleCallbacksWith(
-			things.NameHandler{Name: data.Id.Name},
-			things.PasswordHandler{Password: data.Id.Password})
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
 	thing, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)

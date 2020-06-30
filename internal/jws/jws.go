@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package jws
 
 import (
 	"crypto"
@@ -23,23 +23,24 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
-	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
-	"math/big"
+	"strings"
 )
 
 var (
-	errMissingSigner               = errors.New("missing signer")
-	errUnsupportedSigningAlgorithm = errors.New("unsupported algorithm")
+	ErrMissingSigner        = errors.New("missing signer")
+	ErrUnsupportedAlgorithm = errors.New("unsupported algorithm")
 )
 
-// signingJWAFromKey attempts to deduce the signing algorithm by looking at the public key
-func signingJWAFromKey(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
+// JWAFromKey attempts to deduce the signing algorithm by looking at the public key
+func JWAFromKey(s crypto.Signer) (alg jose.SignatureAlgorithm, err error) {
 	if s == nil {
-		return alg, errMissingSigner
+		return alg, ErrMissingSigner
 	}
 	switch k := s.Public().(type) {
 	case *ecdsa.PublicKey:
@@ -63,28 +64,7 @@ func signingJWAFromKey(s crypto.Signer) (alg jose.SignatureAlgorithm, err error)
 			return jose.PS512, nil
 		}
 	}
-	return alg, errUnsupportedSigningAlgorithm
-}
-
-// publicKeyCertificate returns a stripped down tls certificate containing the public key
-func publicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
-	if key == nil {
-		return cert, errMissingSigner
-	}
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-	}
-
-	raw, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
-	if err != nil {
-		return cert, err
-	}
-	return tls.Certificate{
-
-		Certificate: [][]byte{raw},
-		PrivateKey:  key,
-		Leaf:        &template,
-	}, nil
+	return alg, ErrUnsupportedAlgorithm
 }
 
 // pssOpaqueSigner implements the jose.OpaqueSigner interface for PSS signature keys
@@ -129,10 +109,10 @@ func (r pssOpaqueSigner) SignPayload(payload []byte, alg jose.SignatureAlgorithm
 	})
 }
 
-// newJOSESigner creates a new JOSE signer from the crypto signer
-func newJOSESigner(key crypto.Signer, opts *jose.SignerOptions) (jose.Signer, error) {
+// NewSigner creates a new JOSE signer from the crypto signer
+func NewSigner(key crypto.Signer, opts *jose.SignerOptions) (jose.Signer, error) {
 	// check that the signer is supported
-	alg, err := signingJWAFromKey(key)
+	alg, err := JWAFromKey(key)
 	if err != nil {
 		return nil, err
 	}
@@ -145,4 +125,20 @@ func newJOSESigner(key crypto.Signer, opts *jose.SignerOptions) (jose.Signer, er
 		opaque = cryptosigner.Opaque(key)
 	}
 	return jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+}
+
+// ExtractClaims parses a signed JWT and unmarshals the payload into the supplied claims
+// The signature is NOT checked so these claims are unverified.
+// This function exists because the JOSE library fails when parsing a signed token with a non-string nonce,
+// AM requires an integer nonce
+func ExtractClaims(token string, claims interface{}) error {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return fmt.Errorf("unexpected serialisation")
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(payload, claims)
 }

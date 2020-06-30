@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package thing
 
 import (
 	"crypto"
@@ -23,6 +23,9 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/jws"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"io/ioutil"
@@ -66,19 +69,10 @@ type connection interface {
 	attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error)
 }
 
-// ThingType describes the Thing type
-type ThingType string
-
-const (
-	TypeDevice  ThingType = "device"
-	TypeService ThingType = "service"
-	TypeGateway ThingType = "gateway"
-)
-
 // Thing represents an AM Thing identity
 type Thing struct {
 	connection connection
-	handlers   []Handler
+	handlers   []callback.Handler
 	session    *Session
 }
 
@@ -117,7 +111,7 @@ func (s *Session) IncrementNonce() {
 // authenticate the Thing
 func (t *Thing) authenticate() (session *Session, err error) {
 	auth := authenticatePayload{}
-	metadata := AuthMetadata{}
+	metadata := callback.AuthMetadata{}
 	for {
 		if auth, err = t.connection.authenticate(auth); err != nil {
 			return session, err
@@ -144,6 +138,11 @@ func (t *Thing) Session() (session *Session, err error) {
 	return t.session, nil
 }
 
+// signedRequestClaims defines the claims expected in the signed JWT provided with a signed request
+type signedRequestClaims struct {
+	CSRF string `json:"csrf"`
+}
+
 func signedJWTBody(session *Session, url string, version string, body interface{}) (string, error) {
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("aud", url)
@@ -152,7 +151,7 @@ func signedJWTBody(session *Session, url string, version string, body interface{
 	// increment the nonce so that the token can be used in a subsequent request
 	session.IncrementNonce()
 
-	sig, err := newJOSESigner(session.confirmationKey, opts)
+	sig, err := jws.NewSigner(session.confirmationKey, opts)
 	if err != nil {
 		return "", err
 	}
@@ -262,7 +261,7 @@ type Builder interface {
 	// AuthenticateWith the named authentication tree
 	AuthenticateWith(tree string) Builder
 	// HandleCallbacksWith the supplied handlers
-	HandleCallbacksWith(handlers ...Handler) Builder
+	HandleCallbacksWith(handlers ...callback.Handler) Builder
 	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM\Thing Gateway
 	TimeoutRequestAfter(time.Duration) Builder
 	// Create a Thing instance and authenticates\registers it with AM
@@ -274,7 +273,7 @@ type baseBuilder struct {
 	realm    string
 	tree     string
 	timeout  time.Duration
-	handlers []Handler
+	handlers []callback.Handler
 }
 
 func (b *baseBuilder) ConnectTo(u *url.URL) Builder {
@@ -282,7 +281,7 @@ func (b *baseBuilder) ConnectTo(u *url.URL) Builder {
 	return b
 }
 
-func (b *baseBuilder) HandleCallbacksWith(handlers ...Handler) Builder {
+func (b *baseBuilder) HandleCallbacksWith(handlers ...callback.Handler) Builder {
 	b.handlers = handlers
 	return b
 }
@@ -337,4 +336,35 @@ func (b *baseBuilder) Create() (*Thing, error) {
 // New returns a new Thing builder
 func New() Builder {
 	return &baseBuilder{}
+}
+
+// ErrMissingHandler is returned when the callback cannot be handled
+type ErrMissingHandler struct {
+	callback callback.Callback
+}
+
+func (e ErrMissingHandler) Error() string {
+	return fmt.Sprintf("can not respond to %v", e.callback)
+}
+
+// processCallbacks attempts to respond to the callbacks with the given callback handlers
+func processCallbacks(id callback.ThingIdentity, handlers []callback.Handler, callbacks []callback.Callback, metadata *callback.AuthMetadata) (err error) {
+	for _, cb := range callbacks {
+	handlerLoop:
+		for _, h := range handlers {
+			switch err = h.Handle(id, cb, metadata); err {
+			case callback.ErrNotHandled:
+				continue
+			case nil:
+				break handlerLoop
+			default:
+				DebugLogger.Println(err)
+				continue
+			}
+		}
+		if err != nil {
+			return ErrMissingHandler{callback: cb}
+		}
+	}
+	return nil
 }

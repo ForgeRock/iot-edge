@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package callback
 
 import (
 	"crypto/ecdsa"
@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"github.com/ForgeRock/iot-edge/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 	"math/big"
 	"testing"
@@ -75,13 +76,13 @@ func TestCallbackHandler_HandleResult(t *testing.T) {
 	}{
 		// NameHandler
 		{name: "Name/ok", cb: dummyCB(TypeNameCallback), handler: NameHandler{Name: "Odysseus"}, err: nil},
-		{name: "Name/notHandled", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, err: errNotHandled},
+		{name: "Name/notHandled", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, err: ErrNotHandled},
 		// PasswordHandler
 		{name: "Password/ok", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, err: nil},
-		{name: "Password/notHandled", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, err: errNotHandled},
+		{name: "Password/notHandled", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, err: ErrNotHandled},
 		// AuthenticateHandler
-		{name: "Authenticate/notHandled", cb: dummyCB(TypeNameCallback), handler: AuthenticateHandler{ThingID: "Odysseus"}, err: errNotHandled},
-		{name: "Register/notHandled", cb: dummyCB(TypeNameCallback), handler: RegisterHandler{ThingID: "Odysseus"}, err: errNotHandled},
+		{name: "Authenticate/notHandled", cb: dummyCB(TypeNameCallback), handler: AuthenticateHandler{ThingID: "Odysseus"}, err: ErrNotHandled},
+		{name: "Register/notHandled", cb: dummyCB(TypeNameCallback), handler: RegisterHandler{ThingID: "Odysseus"}, err: ErrNotHandled},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -134,34 +135,6 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	}
 }
 
-func TestProcessCallbacks(t *testing.T) {
-	nameCB := dummyCB(TypeNameCallback)
-	nameHandler := NameHandler{Name: "Odysseus"}
-	pwdCB := dummyCB(TypePasswordCallback)
-
-	tests := []struct {
-		name      string
-		callbacks []Callback
-		handlers  []Handler
-		ok        bool
-	}{
-		{"ok", []Callback{nameCB}, []Handler{nameHandler}, true},
-		{"error", []Callback{pwdCB}, []Handler{nameHandler}, false},
-	}
-	for _, subtest := range tests {
-		t.Run(subtest.name, func(t *testing.T) {
-			err := processCallbacks(mockThingIdentity{}, subtest.handlers, subtest.callbacks, &AuthMetadata{})
-			if subtest.ok && err != nil {
-				t.Errorf("unexpected error but got: %v", err)
-
-			} else if !subtest.ok && err == nil {
-				t.Errorf("expected an error")
-
-			}
-		})
-	}
-}
-
 func TestAuthenticateHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
 	lue := "42"
@@ -188,7 +161,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 		Nonce                  string `json:"nonce"`
 		LifeUniverseEverything string `json:"life_universe_everything"` // custom value
 	}{}
-	err = extractJWTPayload(response, &claims)
+	err := jws.ExtractClaims(response, &claims)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +236,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 		Nonce        string `json:"nonce"`
 		SerialNumber string `json:"serialNumber"`
 	}{}
-	err = extractJWTPayload(response, &claims)
+	err = jws.ExtractClaims(response, &claims)
 	if err != nil {
 		t.Fatal(err)
 	}

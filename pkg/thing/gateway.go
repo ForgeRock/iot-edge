@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package things
+package thing
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	coapnet "github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
+	"math/big"
 	"net"
 	"time"
 )
@@ -52,7 +57,7 @@ type ThingGateway struct {
 }
 
 // NewThingGateway creates a new Thing Gateway
-func NewThingGateway(baseURL string, realm string, authTree string, handlers []Handler) *ThingGateway {
+func NewThingGateway(baseURL string, realm string, authTree string, handlers []callback.Handler) *ThingGateway {
 	return &ThingGateway{
 		Thing: Thing{
 			connection: &amConnection{baseURL: baseURL, realm: realm, authTree: authTree},
@@ -183,7 +188,7 @@ func decodeThingEndpointRequest(msg coap.Message) (token string, content content
 		payload = string(msg.Payload())
 		// get SSO token from the CSRF claim in the JWT
 		var claims signedRequestClaims
-		if err := extractJWTPayload(payload, &claims); err != nil {
+		if err := jws.ExtractClaims(payload, &claims); err != nil {
 			return token, content, payload, err
 		}
 		token = claims.CSRF
@@ -250,7 +255,7 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 		return ErrCOAPServerAlreadyStarted
 	}
 	if key == nil {
-		return errMissingSigner
+		return jws.ErrMissingSigner
 	}
 	c.coapChan = make(chan error, 1)
 	mux := coap.NewServeMux()
@@ -306,4 +311,25 @@ func (c *ThingGateway) Address() string {
 		return ""
 	}
 	return c.address.String()
+}
+
+// publicKeyCertificate returns a stripped down tls certificate containing the public key
+func publicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
+	if key == nil {
+		return cert, jws.ErrMissingSigner
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+	}
+
+	raw, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
+	if err != nil {
+		return cert, err
+	}
+	return tls.Certificate{
+
+		Certificate: [][]byte{raw},
+		PrivateKey:  key,
+		Leaf:        &template,
+	}, nil
 }
