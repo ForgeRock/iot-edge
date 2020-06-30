@@ -17,19 +17,20 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 )
 
-func thingJWTAuth(state anvil.TestState, data anvil.ThingData) things.Builder {
+func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
 	state.SetGatewayTree(jwtPopAuthTree)
-	return things.New().
+	return thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopAuthTree).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer,
@@ -48,7 +49,7 @@ func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingDat
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -76,7 +77,7 @@ func (t *AuthenticateThingJWTNonDefaultKID) Setup(state anvil.TestState) (data a
 	data.Id.ThingKeys.Keys[0].KeyID = "pop.cnf"
 	data.Signer.KID = "pop.cnf"
 
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -95,7 +96,7 @@ type AuthenticateWithoutConfirmationKey struct {
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
@@ -108,7 +109,7 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 		return false
 	}
 	_, err = thingJWTAuth(state, data).Create()
-	if err != things.ErrUnauthorised {
+	if err != thing.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -128,18 +129,18 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopAuthTreeCustomClaims).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer,
@@ -169,18 +170,18 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopAuthTreeCustomClaims).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer,
@@ -190,7 +191,7 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 					}{"0"}
 				}})
 	_, err := builder.Create()
-	if err != things.ErrUnauthorised {
+	if err != thing.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -203,19 +204,19 @@ type AuthenticateWithUserPwd struct {
 }
 
 func (a AuthenticateWithUserPwd) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(userPwdAuthTree).
 		HandleCallbacksWith(
-			things.NameHandler{Name: data.Id.Name},
-			things.PasswordHandler{Password: data.Id.Password})
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
 
 	_, err := builder.Create()
 	if err != nil {
@@ -230,21 +231,21 @@ type AuthenticateWithIncorrectPwd struct {
 }
 
 func (a AuthenticateWithIncorrectPwd) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
 func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(userPwdAuthTree).
 		HandleCallbacksWith(
-			things.NameHandler{Name: data.Id.Name},
-			things.PasswordHandler{Password: "wrong"})
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: "wrong"})
 	_, err := builder.Create()
-	if err != things.ErrUnauthorised {
+	if err != thing.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
 	}

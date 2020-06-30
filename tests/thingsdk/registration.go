@@ -18,7 +18,8 @@ package main
 
 import (
 	"crypto/x509"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 )
@@ -46,24 +47,24 @@ func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData,
 		return data, false
 	}
 	data.Certificates = []*x509.Certificate{certificate}
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return data, true
 }
 
 func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer},
-			things.RegisterHandler{
+			callback.RegisterHandler{
 				ThingID:           data.Id.Name,
-				ThingType:         things.TypeDevice,
+				ThingType:         callback.TypeDevice,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer,
 				Certificates:      data.Certificates},
@@ -89,29 +90,29 @@ func (t *RegisterDeviceWithoutCert) Setup(state anvil.TestState) (data anvil.Thi
 		return data, false
 	}
 
-	data.Id.ThingType = things.TypeDevice
+	data.Id.ThingType = callback.TypeDevice
 	return data, true
 }
 
 func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer},
-			things.RegisterHandler{
+			callback.RegisterHandler{
 				ThingID:           data.Id.Name,
-				ThingType:         things.TypeDevice,
+				ThingType:         callback.TypeDevice,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer})
 
 	_, err := builder.Create()
-	if err != things.ErrUnauthorised {
+	if err != thing.ErrUnauthorised {
 		anvil.DebugLogger.Printf("Expected Not Authorised; got %v", err)
 		return false
 	}
@@ -153,18 +154,18 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 		EmployeeNumber []string `json:"employeeNumber"`
 	}{}
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer},
-			things.RegisterHandler{
+			callback.RegisterHandler{
 				ThingID:           data.Id.Name,
-				ThingType:         things.TypeDevice,
+				ThingType:         callback.TypeDevice,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer,
 				Certificates:      data.Certificates,
@@ -216,18 +217,18 @@ func (t *RegisterServiceCert) Setup(state anvil.TestState) (data anvil.ThingData
 
 func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := things.New().
+	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
-			things.AuthenticateHandler{
+			callback.AuthenticateHandler{
 				ThingID:           data.Id.Name,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer},
-			things.RegisterHandler{
+			callback.RegisterHandler{
 				ThingID:           data.Id.Name,
-				ThingType:         things.TypeService,
+				ThingType:         callback.TypeService,
 				ConfirmationKeyID: data.Signer.KID,
 				ConfirmationKey:   data.Signer.Signer,
 				Certificates:      data.Certificates})

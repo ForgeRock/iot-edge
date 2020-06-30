@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package jws
 
 import (
 	"crypto"
@@ -23,7 +23,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"gopkg.in/square/go-jose.v2"
+	"io"
 	"testing"
 )
 
@@ -37,6 +39,17 @@ var (
 	rsa512Key, _     = rsa.GenerateKey(rand.Reader, 4096)
 )
 
+type testBadSigner struct {
+}
+
+func (_ testBadSigner) Public() crypto.PublicKey {
+	return 1
+}
+
+func (_ testBadSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
+	return nil, errors.New("i haven't a pen")
+}
+
 func TestSigningJWKAlgorithmFromKey(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -44,8 +57,8 @@ func TestSigningJWKAlgorithmFromKey(t *testing.T) {
 		alg    jose.SignatureAlgorithm
 		err    error
 	}{
-		{name: "missing-signer", signer: nil, err: errMissingSigner},
-		{name: "unsupported-algorithm", signer: testBadSigner{}, err: errUnsupportedSigningAlgorithm},
+		{name: "missing-signer", signer: nil, err: ErrMissingSigner},
+		{name: "unsupported-algorithm", signer: testBadSigner{}, err: ErrUnsupportedAlgorithm},
 		{name: "es256-key", signer: es256Key, alg: jose.ES256},
 		{name: "es384-key", signer: es384Key, alg: jose.ES384},
 		{name: "es521-key", signer: es512Key, alg: jose.ES512},
@@ -56,9 +69,53 @@ func TestSigningJWKAlgorithmFromKey(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			alg, err := signingJWAFromKey(subtest.signer)
+			alg, err := JWAFromKey(subtest.signer)
 			if err != subtest.err || alg != subtest.alg {
 				t.Errorf("Expected %s,%s; got %s, %s", subtest.alg, subtest.err, alg, err)
+			}
+		})
+	}
+}
+
+type dummyClaims struct {
+	Command string `json:"command"`
+}
+
+func TestExtractPayload_Failure(t *testing.T) {
+	tests := []struct {
+		name     string
+		rawToken string
+	}{
+		{name: "not-compact-serialisation1", rawToken: "12345"},
+		{name: "not-compact-serialisation2", rawToken: "12345.67890"},
+		{name: "invalid-base64", rawToken: ".AA%."},
+		{name: "base64-with-padding", rawToken: ".AA=."},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			claims := dummyClaims{}
+			if err := ExtractClaims(subtest.rawToken, &claims); err == nil {
+				t.Errorf("expected an error")
+			}
+		})
+	}
+}
+
+func TestExtractPayload_Success(t *testing.T) {
+	tests := []struct {
+		name     string
+		rawToken string
+		claims   dummyClaims
+	}{
+		{name: "simple", rawToken: ".eyJjb21tYW5kIjoiZGFuY2UifQ.", claims: dummyClaims{Command: "dance"}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			claims := dummyClaims{}
+			if err := ExtractClaims(subtest.rawToken, &claims); err != nil {
+				t.Error(err)
+			} else if claims != subtest.claims {
+				t.Errorf("Expected %s, got %s", subtest.claims, claims)
 			}
 		})
 	}

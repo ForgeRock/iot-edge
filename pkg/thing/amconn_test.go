@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package thing
 
 import (
 	"crypto/tls"

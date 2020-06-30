@@ -26,7 +26,8 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"io/ioutil"
 	"log"
 	"os"
@@ -80,8 +81,8 @@ func simpleThingGateway() error {
 	if err != nil {
 		return err
 	}
-	gateway := things.NewThingGateway(*amURL, *amRealm, *authTree, []things.Handler{
-		things.AuthenticateHandler{ThingID: *gatewayName, ConfirmationKeyID: *keyID, ConfirmationKey: amKey},
+	gateway := thing.NewThingGateway(*amURL, *amRealm, *authTree, []callback.Handler{
+		callback.AuthenticateHandler{ThingID: *gatewayName, ConfirmationKeyID: *keyID, ConfirmationKey: amKey},
 	})
 
 	err = gateway.Initialise()
@@ -108,7 +109,7 @@ func main() {
 	flag.Parse()
 
 	// pipe debug to standard out
-	things.DebugLogger.SetOutput(os.Stdout)
+	thing.DebugLogger.SetOutput(os.Stdout)
 
 	if err := simpleThingGateway(); err != nil {
 		log.Fatal(err)

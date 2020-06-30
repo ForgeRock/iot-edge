@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/things"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"io"
 	"io/ioutil"
 	"log"
@@ -287,7 +287,7 @@ func DeleteRealm(realmId string) (err error) {
 type IdAttributes struct {
 	Name                  string             `json:"username"`
 	Password              string             `json:"userPassword,omitempty"`
-	ThingType             things.ThingType   `json:"thingType,omitempty"`
+	ThingType             callback.ThingType `json:"thingType,omitempty"`
 	ThingKeys             jose.JSONWebKeySet `json:"thingKeys,omitempty"`
 	ThingOAuth2ClientName string             `json:"thingOAuth2ClientName,omitempty"`
 	ThingConfig           string             `json:"thingConfig,omitempty"`

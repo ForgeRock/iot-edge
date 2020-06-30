@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package things
+package callback
 
 import (
 	"crypto"
@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -31,7 +32,7 @@ import (
 var (
 	ErrNoInput    = errors.New("no input Entry to put response")
 	ErrNoOutput   = errors.New("no output Entry for response")
-	errNotHandled = errors.New("callback not handled")
+	ErrNotHandled = errors.New("callback not handled")
 )
 
 const (
@@ -87,39 +88,8 @@ type Handler interface {
 	Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error
 }
 
-// ErrMissingHandler is returned when the callback cannot be handled
-type ErrMissingHandler struct {
-	callback Callback
-}
-
-func (e ErrMissingHandler) Error() string {
-	return fmt.Sprintf("can not respond to %v", e.callback)
-}
-
 type AuthMetadata struct {
 	ConfirmationKey crypto.Signer
-}
-
-// processCallbacks attempts to respond to the callbacks with the given callback handlers
-func processCallbacks(id ThingIdentity, handlers []Handler, callbacks []Callback, metadata *AuthMetadata) (err error) {
-	for _, cb := range callbacks {
-	handlerLoop:
-		for _, h := range handlers {
-			switch err = h.Handle(id, cb, metadata); err {
-			case errNotHandled:
-				continue
-			case nil:
-				break handlerLoop
-			default:
-				DebugLogger.Println(err)
-				continue
-			}
-		}
-		if err != nil {
-			return ErrMissingHandler{callback: cb}
-		}
-	}
-	return nil
 }
 
 // NameHandler handles an AM Username Collector callback
@@ -130,7 +100,7 @@ type NameHandler struct {
 
 func (h NameHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.Type != TypeNameCallback {
-		return errNotHandled
+		return ErrNotHandled
 	}
 	if len(cb.Input) == 0 {
 		return ErrNoInput
@@ -147,7 +117,7 @@ type PasswordHandler struct {
 
 func (h PasswordHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.Type != TypePasswordCallback {
-		return errNotHandled
+		return ErrNotHandled
 	}
 	if len(cb.Input) == 0 {
 		return ErrNoInput
@@ -164,6 +134,23 @@ type AuthenticateHandler struct {
 	Claims          func() interface{}
 }
 
+type jwtVerifyClaims struct {
+	Sub       string    `json:"sub"`
+	Aud       string    `json:"aud"`
+	ThingType ThingType `json:"thingType"`
+	Iat       int64     `json:"iat"`
+	Exp       int64     `json:"exp"`
+	Nonce     string    `json:"nonce"`
+	CNF       struct {
+		KID string           `json:"kid,omitempty"`
+		JWK *jose.JSONWebKey `json:"jwk,omitempty"`
+	} `json:"cnf"`
+}
+
+func (c jwtVerifyClaims) String() string {
+	return fmt.Sprintf("{sub:%s, aud:%s, ThingType:%s}", c.Sub, c.Aud, c.ThingType)
+}
+
 func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
 	return jwtVerifyClaims{
 		Sub:   thingID,
@@ -176,7 +163,7 @@ func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
 
 func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.ID() != "jwt-pop-authentication" {
-		return errNotHandled
+		return ErrNotHandled
 	}
 	if len(cb.Input) == 0 {
 		return ErrNoInput
@@ -195,7 +182,7 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *Aut
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
-	sig, err := newJOSESigner(h.ConfirmationKey, opts)
+	sig, err := jws.NewSigner(h.ConfirmationKey, opts)
 	if err != nil {
 		return err
 	}
@@ -236,7 +223,7 @@ func createKID(key crypto.Signer) (string, error) {
 
 func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
 	if cb.ID() != "jwt-pop-registration" {
-		return errNotHandled
+		return ErrNotHandled
 	}
 	if len(cb.Input) == 0 {
 		return ErrNoInput
@@ -256,7 +243,7 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMet
 	opts.WithHeader("typ", "JWT")
 
 	// check that the signer is supported
-	alg, err := signingJWAFromKey(h.ConfirmationKey)
+	alg, err := jws.JWAFromKey(h.ConfirmationKey)
 	if err != nil {
 		return err
 	}
@@ -290,3 +277,12 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMet
 	metadata.ConfirmationKey = h.ConfirmationKey
 	return nil
 }
+
+// ThingType describes the Thing type
+type ThingType string
+
+const (
+	TypeDevice  ThingType = "device"
+	TypeService ThingType = "service"
+	TypeGateway ThingType = "gateway"
+)
