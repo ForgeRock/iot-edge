@@ -81,10 +81,10 @@ type Handler interface {
 	Handle(cb Callback) error
 }
 
-// RestrictedHandler responds to an AM callback that creates a restricted session
-type RestrictedHandler interface {
+// ProofOfPossessionHandler responds to an AM proof of possession callback
+type ProofOfPossessionHandler interface {
 	Handler
-	ConfirmationKey() crypto.Signer
+	SigningKey() crypto.Signer
 }
 
 // NameHandler handles an AM Username Collector callback
@@ -129,7 +129,7 @@ type AuthenticateHandler struct {
 	Claims  func() interface{}
 }
 
-func (h AuthenticateHandler) ConfirmationKey() crypto.Signer {
+func (h AuthenticateHandler) SigningKey() crypto.Signer {
 	return h.Key
 }
 
@@ -210,7 +210,7 @@ type RegisterHandler struct {
 	Claims       func() interface{}
 }
 
-func (h RegisterHandler) ConfirmationKey() crypto.Signer {
+func (h RegisterHandler) SigningKey() crypto.Signer {
 	return h.Key
 }
 

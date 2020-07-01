@@ -191,7 +191,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	}
 
 	// check that the handler returns a confirmation key
-	if h.ConfirmationKey() == nil {
+	if h.SigningKey() == nil {
 		t.Fatal("metadata is missing confirmation key")
 	}
 }
@@ -282,7 +282,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	}
 
 	// check that the handler returns a confirmation key
-	if h.ConfirmationKey() == nil {
+	if h.SigningKey() == nil {
 		t.Fatal("metadata is missing confirmation key")
 	}
 }

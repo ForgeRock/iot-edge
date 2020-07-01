@@ -92,8 +92,8 @@ func (s *Session) HasRestrictedToken() bool {
 	return s.confirmationKey != nil
 }
 
-// ConfirmationKey returns the signing key associated with a restricted SSO token
-func (s *Session) ConfirmationKey() crypto.Signer {
+// SigningKey returns the signing key associated with a restricted SSO token
+func (s *Session) SigningKey() crypto.Signer {
 	return s.confirmationKey
 }
 
@@ -337,8 +337,8 @@ func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback
 			case callback.ErrNotHandled:
 				continue
 			case nil:
-				if r, ok := h.(callback.RestrictedHandler); ok {
-					confirmationKey = r.ConfirmationKey()
+				if r, ok := h.(callback.ProofOfPossessionHandler); ok {
+					confirmationKey = r.SigningKey()
 				}
 				break handlerLoop
 			default:
