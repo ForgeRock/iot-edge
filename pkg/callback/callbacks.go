@@ -75,21 +75,16 @@ func (c Callback) ID() string {
 	return ""
 }
 
-// ThingIdentity allows a callback handler to request information from the Thing
-// This is especially important for dynamic data
-type ThingIdentity interface {
-	// Realm returns the realm that the identity belongs
-	Realm() string
-}
-
 // CallbackHandler is an interface for an AM callback handler
 type Handler interface {
 	// Handle the callback by modifying it
-	Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error
+	Handle(cb Callback) error
 }
 
-type AuthMetadata struct {
-	ConfirmationKey crypto.Signer
+// ProofOfPossessionHandler responds to an AM proof of possession callback
+type ProofOfPossessionHandler interface {
+	Handler
+	SigningKey() crypto.Signer
 }
 
 // NameHandler handles an AM Username Collector callback
@@ -98,7 +93,7 @@ type NameHandler struct {
 	Name string
 }
 
-func (h NameHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
+func (h NameHandler) Handle(cb Callback) error {
 	if cb.Type != TypeNameCallback {
 		return ErrNotHandled
 	}
@@ -115,7 +110,7 @@ type PasswordHandler struct {
 	Password string
 }
 
-func (h PasswordHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
+func (h PasswordHandler) Handle(cb Callback) error {
 	if cb.Type != TypePasswordCallback {
 		return ErrNotHandled
 	}
@@ -127,11 +122,15 @@ func (h PasswordHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMet
 }
 
 type AuthenticateHandler struct {
-	ThingID           string
-	ConfirmationKeyID string
-	// Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
-	ConfirmationKey crypto.Signer
-	Claims          func() interface{}
+	Realm   string
+	ThingID string
+	KeyID   string
+	Key     crypto.Signer
+	Claims  func() interface{}
+}
+
+func (h AuthenticateHandler) SigningKey() crypto.Signer {
+	return h.Key
 }
 
 type jwtVerifyClaims struct {
@@ -161,7 +160,7 @@ func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
 	}
 }
 
-func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
+func (h AuthenticateHandler) Handle(cb Callback) error {
 	if cb.ID() != "jwt-pop-authentication" {
 		return ErrNotHandled
 	}
@@ -182,12 +181,12 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *Aut
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
-	sig, err := jws.NewSigner(h.ConfirmationKey, opts)
+	sig, err := jws.NewSigner(h.Key, opts)
 	if err != nil {
 		return err
 	}
-	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
-	claims.CNF.KID = h.ConfirmationKeyID
+	claims := baseJWTClaims(h.ThingID, h.Realm, challenge)
+	claims.CNF.KID = h.KeyID
 	builder := jwt.Signed(sig).Claims(claims)
 	if h.Claims != nil {
 		builder = builder.Claims(h.Claims())
@@ -198,18 +197,21 @@ func (h AuthenticateHandler) Handle(id ThingIdentity, cb Callback, metadata *Aut
 	}
 
 	cb.Input[0].Value = response
-	metadata.ConfirmationKey = h.ConfirmationKey
 	return nil
 }
 
 type RegisterHandler struct {
-	ThingID           string
-	ThingType         ThingType
-	ConfirmationKeyID string
-	// Restrictions: confirmationKey uses ECDSA with a P-256, P-384 or P-512 curve. Sign returns the signature ans1 encoded.
-	ConfirmationKey crypto.Signer
-	Certificates    []*x509.Certificate
-	Claims          func() interface{}
+	Realm        string
+	ThingID      string
+	ThingType    ThingType
+	KeyID        string
+	Key          crypto.Signer
+	Certificates []*x509.Certificate
+	Claims       func() interface{}
+}
+
+func (h RegisterHandler) SigningKey() crypto.Signer {
+	return h.Key
 }
 
 // createKID creates a key ID for a signer
@@ -221,7 +223,7 @@ func createKID(key crypto.Signer) (string, error) {
 	return base64.URLEncoding.EncodeToString(thumbprint), nil
 }
 
-func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMetadata) error {
+func (h RegisterHandler) Handle(cb Callback) error {
 	if cb.ID() != "jwt-pop-registration" {
 		return ErrNotHandled
 	}
@@ -243,24 +245,24 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMet
 	opts.WithHeader("typ", "JWT")
 
 	// check that the signer is supported
-	alg, err := jws.JWAFromKey(h.ConfirmationKey)
+	alg, err := jws.JWAFromKey(h.Key)
 	if err != nil {
 		return err
 	}
 
 	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(h.ConfirmationKey)
+	opaque := cryptosigner.Opaque(h.Key)
 
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
 	if err != nil {
 		return err
 	}
-	claims := baseJWTClaims(h.ThingID, id.Realm(), challenge)
+	claims := baseJWTClaims(h.ThingID, h.Realm, challenge)
 	claims.ThingType = h.ThingType
 	claims.CNF.JWK = &jose.JSONWebKey{
-		Key:          h.ConfirmationKey.Public(),
+		Key:          h.Key.Public(),
 		Certificates: h.Certificates,
-		KeyID:        h.ConfirmationKeyID,
+		KeyID:        h.KeyID,
 		Algorithm:    string(alg),
 		Use:          "sig",
 	}
@@ -274,7 +276,6 @@ func (h RegisterHandler) Handle(id ThingIdentity, cb Callback, metadata *AuthMet
 	}
 
 	cb.Input[0].Value = response
-	metadata.ConfirmationKey = h.ConfirmationKey
 	return nil
 }
 

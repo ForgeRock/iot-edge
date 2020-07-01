@@ -82,7 +82,11 @@ func simpleThingGateway() error {
 		return err
 	}
 	gateway := thing.NewThingGateway(*amURL, *amRealm, *authTree, []callback.Handler{
-		callback.AuthenticateHandler{ThingID: *gatewayName, ConfirmationKeyID: *keyID, ConfirmationKey: amKey},
+		callback.AuthenticateHandler{
+			Realm:   *amRealm,
+			ThingID: *gatewayName,
+			KeyID:   *keyID,
+			Key:     amKey},
 	})
 
 	err = gateway.Initialise()
