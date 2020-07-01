@@ -77,9 +77,9 @@ type Thing struct {
 
 // Session holds session data
 type Session struct {
-	token           string
-	nonce           int
-	confirmationKey crypto.Signer
+	token string
+	nonce int
+	key   crypto.Signer
 }
 
 // Token returns the session token
@@ -89,12 +89,12 @@ func (s *Session) Token() string {
 
 // HasRestrictedToken returns true if the session has a restricted token
 func (s *Session) HasRestrictedToken() bool {
-	return s.confirmationKey != nil
+	return s.key != nil
 }
 
 // SigningKey returns the signing key associated with a restricted SSO token
 func (s *Session) SigningKey() crypto.Signer {
-	return s.confirmationKey
+	return s.key
 }
 
 // Nonce returns the session nonce
@@ -117,7 +117,7 @@ func (t *Thing) authenticate() (session *Session, err error) {
 		}
 
 		if auth.HasSessionToken() {
-			return &Session{token: auth.TokenId, confirmationKey: key}, nil
+			return &Session{token: auth.TokenId, key: key}, nil
 		}
 		if key, err = processCallbacks(t.handlers, auth.Callbacks); err != nil {
 			return session, err
@@ -150,7 +150,7 @@ func signedJWTBody(session *Session, url string, version string, body interface{
 	// increment the nonce so that the token can be used in a subsequent request
 	session.IncrementNonce()
 
-	sig, err := jws.NewSigner(session.confirmationKey, opts)
+	sig, err := jws.NewSigner(session.key, opts)
 	if err != nil {
 		return "", err
 	}
@@ -329,7 +329,7 @@ func New() Builder {
 }
 
 // processCallbacks attempts to respond to the callbacks with the given callback handlers
-func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback) (confirmationKey crypto.Signer, err error) {
+func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback) (key crypto.Signer, err error) {
 	for _, cb := range callbacks {
 	handlerLoop:
 		for _, h := range handlers {
@@ -338,7 +338,7 @@ func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback
 				continue
 			case nil:
 				if r, ok := h.(callback.ProofOfPossessionHandler); ok {
-					confirmationKey = r.SigningKey()
+					key = r.SigningKey()
 				}
 				break handlerLoop
 			default:
@@ -347,8 +347,8 @@ func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback
 			}
 		}
 		if err != nil {
-			return confirmationKey, err
+			return key, err
 		}
 	}
-	return confirmationKey, nil
+	return key, nil
 }
