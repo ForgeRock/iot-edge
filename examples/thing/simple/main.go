@@ -90,9 +90,10 @@ func simpleThing() error {
 		AuthenticateWith(*authTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           *thingName,
-				ConfirmationKeyID: *keyID,
-				ConfirmationKey:   key})
+				Realm:   *realm,
+				ThingID: *thingName,
+				KeyID:   *keyID,
+				Key:     key})
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
 	device, err := builder.Create()

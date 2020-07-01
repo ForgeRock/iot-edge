@@ -31,9 +31,10 @@ func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
 		AuthenticateWith(jwtPopAuthTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer,
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer,
 			})
 }
 
@@ -141,9 +142,10 @@ func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.Thi
 		AuthenticateWith(jwtPopAuthTreeCustomClaims).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer,
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer,
 				Claims: func() interface{} {
 					return struct {
 						LifeUniverseEverything string `json:"life_universe_everything"`
@@ -182,9 +184,10 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 		AuthenticateWith(jwtPopAuthTreeCustomClaims).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer,
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer,
 				Claims: func() interface{} {
 					return struct {
 						LifeUniverseEverything string `json:"life_universe_everything"`

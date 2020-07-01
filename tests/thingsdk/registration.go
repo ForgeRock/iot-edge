@@ -59,15 +59,17 @@ func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bo
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer},
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer},
 			callback.RegisterHandler{
-				ThingID:           data.Id.Name,
-				ThingType:         callback.TypeDevice,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer,
-				Certificates:      data.Certificates},
+				Realm:        state.Realm(),
+				ThingID:      data.Id.Name,
+				ThingType:    callback.TypeDevice,
+				KeyID:        data.Signer.KID,
+				Key:          data.Signer.Signer,
+				Certificates: data.Certificates},
 		)
 	_, err := builder.Create()
 	if err != nil {
@@ -102,14 +104,16 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer},
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer},
 			callback.RegisterHandler{
-				ThingID:           data.Id.Name,
-				ThingType:         callback.TypeDevice,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer})
+				Realm:     state.Realm(),
+				ThingID:   data.Id.Name,
+				ThingType: callback.TypeDevice,
+				KeyID:     data.Signer.KID,
+				Key:       data.Signer.Signer})
 
 	_, err := builder.Create()
 	if err != thing.ErrUnauthorised {
@@ -160,15 +164,17 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer},
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer},
 			callback.RegisterHandler{
-				ThingID:           data.Id.Name,
-				ThingType:         callback.TypeDevice,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer,
-				Certificates:      data.Certificates,
+				Realm:        state.Realm(),
+				ThingID:      data.Id.Name,
+				ThingType:    callback.TypeDevice,
+				KeyID:        data.Signer.KID,
+				Key:          data.Signer.Signer,
+				Certificates: data.Certificates,
 				Claims: func() interface{} {
 					return sdkAttribute
 				}},
@@ -223,15 +229,17 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 		AuthenticateWith(jwtPopRegCertTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           data.Id.Name,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer},
+				Realm:   state.Realm(),
+				ThingID: data.Id.Name,
+				KeyID:   data.Signer.KID,
+				Key:     data.Signer.Signer},
 			callback.RegisterHandler{
-				ThingID:           data.Id.Name,
-				ThingType:         callback.TypeService,
-				ConfirmationKeyID: data.Signer.KID,
-				ConfirmationKey:   data.Signer.Signer,
-				Certificates:      data.Certificates})
+				Realm:        state.Realm(),
+				ThingID:      data.Id.Name,
+				ThingType:    callback.TypeService,
+				KeyID:        data.Signer.KID,
+				Key:          data.Signer.Signer,
+				Certificates: data.Certificates})
 
 	_, err := builder.Create()
 	if err != nil {

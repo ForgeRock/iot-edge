@@ -23,7 +23,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"gopkg.in/square/go-jose.v2"
@@ -111,16 +110,16 @@ func (s *Session) IncrementNonce() {
 // authenticate the Thing
 func (t *Thing) authenticate() (session *Session, err error) {
 	auth := authenticatePayload{}
-	metadata := callback.AuthMetadata{}
+	var key crypto.Signer
 	for {
 		if auth, err = t.connection.authenticate(auth); err != nil {
 			return session, err
 		}
 
 		if auth.HasSessionToken() {
-			return &Session{token: auth.TokenId, confirmationKey: metadata.ConfirmationKey}, nil
+			return &Session{token: auth.TokenId, confirmationKey: key}, nil
 		}
-		if err = processCallbacks(t, t.handlers, auth.Callbacks, &metadata); err != nil {
+		if key, err = processCallbacks(t.handlers, auth.Callbacks); err != nil {
 			return session, err
 		}
 	}
@@ -239,15 +238,6 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 	return
 }
 
-// Realm returns the Thing's AM realm
-func (t *Thing) Realm() string {
-	info, err := t.connection.amInfo()
-	if err != nil {
-		DebugLogger.Println(err)
-	}
-	return info.Realm
-}
-
 // Builder interface provides methods to setup and initialise a Thing
 type Builder interface {
 	// ConnectTo to the server at the given URL
@@ -338,24 +328,18 @@ func New() Builder {
 	return &baseBuilder{}
 }
 
-// ErrMissingHandler is returned when the callback cannot be handled
-type ErrMissingHandler struct {
-	callback callback.Callback
-}
-
-func (e ErrMissingHandler) Error() string {
-	return fmt.Sprintf("can not respond to %v", e.callback)
-}
-
 // processCallbacks attempts to respond to the callbacks with the given callback handlers
-func processCallbacks(id callback.ThingIdentity, handlers []callback.Handler, callbacks []callback.Callback, metadata *callback.AuthMetadata) (err error) {
+func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback) (confirmationKey crypto.Signer, err error) {
 	for _, cb := range callbacks {
 	handlerLoop:
 		for _, h := range handlers {
-			switch err = h.Handle(id, cb, metadata); err {
+			switch err = h.Handle(cb); err {
 			case callback.ErrNotHandled:
 				continue
 			case nil:
+				if r, ok := h.(callback.RestrictedHandler); ok {
+					confirmationKey = r.ConfirmationKey()
+				}
 				break handlerLoop
 			default:
 				DebugLogger.Println(err)
@@ -363,8 +347,8 @@ func processCallbacks(id callback.ThingIdentity, handlers []callback.Handler, ca
 			}
 		}
 		if err != nil {
-			return ErrMissingHandler{callback: cb}
+			return confirmationKey, err
 		}
 	}
-	return nil
+	return confirmationKey, nil
 }

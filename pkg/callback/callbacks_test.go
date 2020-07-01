@@ -29,15 +29,14 @@ import (
 	"time"
 )
 
-var testKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-var testKID = "testKID"
+var (
+	testKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+)
 
-type mockThingIdentity struct {
-}
-
-func (id mockThingIdentity) Realm() string {
-	return "testRealm"
-}
+const (
+	testKID   = "testKID"
+	testRealm = "testRealm"
+)
 
 func dummyCB(callbackType string, prompts ...string) Callback {
 	l := len(prompts)
@@ -86,7 +85,7 @@ func TestCallbackHandler_HandleResult(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			if got := subtest.handler.Handle(nil, subtest.cb, &AuthMetadata{}); got != subtest.err {
+			if got := subtest.handler.Handle(subtest.cb); got != subtest.err {
 				t.Errorf("Handle() = %v, want %v", got, subtest.err)
 			}
 		})
@@ -104,7 +103,7 @@ func TestCallbackHandler_Respond_NoInput(t *testing.T) {
 	for _, subtest := range tests {
 		cb := Callback{}
 		t.Run(subtest.name, func(t *testing.T) {
-			if err := subtest.handler.Handle(nil, cb, &AuthMetadata{}); err == nil {
+			if err := subtest.handler.Handle(cb); err == nil {
 				t.Errorf("Expected an error")
 			}
 		})
@@ -115,7 +114,7 @@ func TestNameCallbackHandler_Respond(t *testing.T) {
 	name := "Odysseus"
 	handler := NameHandler{Name: name}
 	cb := dummyCB(TypeNameCallback)
-	if err := handler.Handle(mockThingIdentity{}, cb, &AuthMetadata{}); err != nil {
+	if err := handler.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != name {
@@ -127,7 +126,7 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	p := "password"
 	handler := PasswordHandler{Password: p}
 	cb := dummyCB(TypePasswordCallback)
-	if err := handler.Handle(mockThingIdentity{}, cb, &AuthMetadata{}); err != nil {
+	if err := handler.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != p {
@@ -138,14 +137,18 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 func TestAuthenticateHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
 	lue := "42"
-	h := AuthenticateHandler{ThingID: thingID, ConfirmationKeyID: testKID, ConfirmationKey: testKey, Claims: func() interface{} {
-		return struct {
-			LifeUniverseEverything string `json:"life_universe_everything"`
-		}{LifeUniverseEverything: lue}
-	}}
+	h := AuthenticateHandler{
+		Realm:   testRealm,
+		ThingID: thingID,
+		KeyID:   testKID,
+		Key:     testKey,
+		Claims: func() interface{} {
+			return struct {
+				LifeUniverseEverything string `json:"life_universe_everything"`
+			}{LifeUniverseEverything: lue}
+		}}
 	cb := jwtVerifyCB(false)
-	metadata := AuthMetadata{}
-	if err := h.Handle(mockThingIdentity{}, cb, &metadata); err != nil {
+	if err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
@@ -168,7 +171,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	if claims.Sub != thingID {
 		t.Fatal("missing subject")
 	}
-	if claims.Aud == "" {
+	if claims.Aud != testRealm {
 		t.Fatal("missing audience")
 	}
 	if claims.Iat == 0 {
@@ -187,8 +190,8 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 		t.Fatal("incorrect custom claim")
 	}
 
-	// check that the confirmation key has been added to the metadata
-	if metadata.ConfirmationKey == nil {
+	// check that the handler returns a confirmation key
+	if h.ConfirmationKey() == nil {
 		t.Fatal("metadata is missing confirmation key")
 	}
 }
@@ -212,15 +215,19 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := RegisterHandler{ThingID: thingID, ThingType: TypeDevice, ConfirmationKeyID: testKID, ConfirmationKey: key,
+	h := RegisterHandler{
+		Realm:        testRealm,
+		ThingID:      thingID,
+		ThingType:    TypeDevice,
+		KeyID:        testKID,
+		Key:          key,
 		Certificates: []*x509.Certificate{cert}, Claims: func() interface{} {
 			return struct {
 				SerialNumber string `json:"serialNumber"`
 			}{SerialNumber: serialNumber}
 		}}
 	cb := jwtVerifyCB(true)
-	metadata := AuthMetadata{}
-	if err := h.Handle(mockThingIdentity{}, cb, &metadata); err != nil {
+	if err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
@@ -243,7 +250,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if claims.Sub != thingID {
 		t.Fatal("missing subject")
 	}
-	if claims.Aud == "" {
+	if claims.Aud != testRealm {
 		t.Fatal("missing audience")
 	}
 	if claims.ThingType != "device" {
@@ -274,8 +281,8 @@ func TestRegisterHandler_Handle(t *testing.T) {
 		t.Fatal("incorrect serial number")
 	}
 
-	// check that the confirmation key has been added to the metadata
-	if metadata.ConfirmationKey == nil {
+	// check that the handler returns a confirmation key
+	if h.ConfirmationKey() == nil {
 		t.Fatal("metadata is missing confirmation key")
 	}
 }

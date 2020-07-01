@@ -115,15 +115,17 @@ func certRegThing() (err error) {
 		AuthenticateWith(*authTree).
 		HandleCallbacksWith(
 			callback.AuthenticateHandler{
-				ThingID:           *thingName,
-				ConfirmationKeyID: *keyID,
-				ConfirmationKey:   key},
+				Realm:   *realm,
+				ThingID: *thingName,
+				KeyID:   *keyID,
+				Key:     key},
 			callback.RegisterHandler{
-				ThingID:           *thingName,
-				ThingType:         callback.TypeDevice,
-				ConfirmationKeyID: *keyID,
-				ConfirmationKey:   key,
-				Certificates:      certs,
+				Realm:        *realm,
+				ThingID:      *thingName,
+				ThingType:    callback.TypeDevice,
+				KeyID:        *keyID,
+				Key:          key,
+				Certificates: certs,
 			})
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
