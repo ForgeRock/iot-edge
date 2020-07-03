@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"time"
 )
@@ -234,16 +233,7 @@ func (h RegisterHandler) Handle(cb Callback) error {
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("typ", "JWT")
 
-	// check that the signer is supported
-	alg, err := jws.JWAFromKey(h.Key)
-	if err != nil {
-		return err
-	}
-
-	// create a jose.OpaqueSigner from the crypto.Signer
-	opaque := cryptosigner.Opaque(h.Key)
-
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: opaque}, opts)
+	sig, err := jws.NewSigner(h.Key, opts)
 	if err != nil {
 		return err
 	}
@@ -253,7 +243,6 @@ func (h RegisterHandler) Handle(cb Callback) error {
 		Key:          h.Key.Public(),
 		Certificates: h.Certificates,
 		KeyID:        h.KeyID,
-		Algorithm:    string(alg),
 		Use:          "sig",
 	}
 	builder := jwt.Signed(sig).Claims(claims)
