@@ -338,8 +338,13 @@ func (b *baseBuilder) TimeoutRequestAfter(d time.Duration) Builder {
 	return b
 }
 
-// createKID creates a key ID for a signer
-func createKID(key crypto.Signer) (string, error) {
+// JWKThumbprint calculates the base64url-encoded JWK Thumbprint value for the given key.
+// The thumbprint can be used for identifying or selecting the key.
+// See https://tools.ietf.org/html/rfc7638
+func JWKThumbprint(key crypto.Signer) (string, error) {
+	if key == nil {
+		return "", jws.ErrMissingSigner
+	}
 	thumbprint, err := (&jose.JSONWebKey{Key: key.Public()}).Thumbprint(crypto.SHA256)
 	if err != nil {
 		return "", err
@@ -369,40 +374,36 @@ func (b *baseBuilder) Create() (*Thing, error) {
 		return nil, err
 	}
 	if b.authHandler != nil {
-		// check we have a signer
+		// check we have a signer and key ID
 		if b.authHandler.key == nil {
-			return nil, fmt.Errorf("no key to authenticate thing with")
+			return nil, fmt.Errorf("authenticate thing requires Key")
 		}
+		if b.authHandler.keyID == "" {
+			return nil, fmt.Errorf("authenticate thing requires Key ID")
+		}
+		// get AM info to obtain the realm from the gateway
 		info, err := client.amInfo()
 		if err != nil {
 			return nil, err
 		}
-		auth := callback.AuthenticateHandler{
+		b.handlers = append(b.handlers, callback.AuthenticateHandler{
 			Realm:   info.Realm,
 			ThingID: b.authHandler.thingID,
 			KeyID:   b.authHandler.keyID,
 			Key:     b.authHandler.key,
 			Claims:  b.authHandler.claims,
-		}
+		})
 		if b.regHandler != nil {
-			if auth.KeyID == "" {
-				auth.KeyID, err = createKID(auth.Key)
-				if err != nil {
-					return nil, err
-				}
-			}
 			b.handlers = append(b.handlers, callback.RegisterHandler{
 				Realm:        info.Realm,
-				ThingID:      auth.ThingID,
+				ThingID:      b.authHandler.thingID,
 				ThingType:    b.thingType,
-				KeyID:        auth.KeyID,
-				Key:          auth.Key,
+				KeyID:        b.authHandler.keyID,
+				Key:          b.authHandler.key,
 				Certificates: b.regHandler.certificates,
 				Claims:       b.regHandler.claims,
 			})
 		}
-		b.handlers = append(b.handlers, auth)
-
 	}
 	thing := &Thing{
 		connection: client,

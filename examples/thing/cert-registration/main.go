@@ -35,7 +35,6 @@ var (
 	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
 	thingName = flag.String("name", "dynamic-thing", "Thing name")
 	key       = flag.String("key", "", "The Thing's key in PEM format")
-	keyID     = flag.String("keyid", "pop.cnf", "The Thing's key ID")
 	keyFile   = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
 	cert      = flag.String("cert", "", "The Thing's certificate in PEM format")
 	certFile  = flag.String("certfile", "./examples/resources/dynamic-thing.cert.pem",
@@ -103,6 +102,12 @@ func certRegThing() (err error) {
 		return err
 	}
 
+	// use key thumbprint as key id
+	keyID, err := thing.JWKThumbprint(key)
+	if err != nil {
+		return err
+	}
+
 	certs, err := loadCertificates()
 	if err != nil {
 		return err
@@ -112,7 +117,7 @@ func certRegThing() (err error) {
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateThing(*thingName, *keyID, key, nil).
+		AuthenticateThing(*thingName, keyID, key, nil).
 		RegisterThing(certs, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)

@@ -212,7 +212,7 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 	return true
 }
 
-// RegisterDeviceNoKeyID checks that dynamic registration can succeed without a key ID
+// RegisterDeviceNoKeyID checks that dynamic registration fails gracefully when no key is provided
 type RegisterDeviceNoKeyID struct {
 	anvil.NopSetupCleanup
 }
@@ -247,7 +247,7 @@ func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData)
 		AuthenticateThing(data.Id.Name, "", data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
-	if err != nil {
+	if err == nil {
 		return false
 	}
 	return true
