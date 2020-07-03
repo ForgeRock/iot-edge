@@ -22,7 +22,6 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"io/ioutil"
 	"log"
@@ -87,13 +86,8 @@ func simpleThing() error {
 	builder := thing.New().
 		ConnectTo(u).
 		InRealm(*realm).
-		AuthenticateWith(*authTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   *realm,
-				ThingID: *thingName,
-				KeyID:   *keyID,
-				Key:     key})
+		WithTree(*authTree).
+		AuthenticateThing(*thingName, *keyID, key, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
 	device, err := builder.Create()

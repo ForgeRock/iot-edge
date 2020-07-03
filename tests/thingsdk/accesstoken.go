@@ -280,7 +280,7 @@ func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(userPwdAuthTree).
+		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: data.Id.Password})

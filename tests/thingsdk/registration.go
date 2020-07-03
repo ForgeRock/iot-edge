@@ -18,10 +18,10 @@ package main
 
 import (
 	"crypto/x509"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
+	"strings"
 )
 
 // RegisterDeviceCert tests the dynamic registration of a device with a valid x509 certificate
@@ -47,7 +47,6 @@ func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData,
 		return data, false
 	}
 	data.Certificates = []*x509.Certificate{certificate}
-	data.Id.ThingType = callback.TypeDevice
 	return data, true
 }
 
@@ -56,21 +55,9 @@ func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bo
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopRegCertTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer},
-			callback.RegisterHandler{
-				Realm:        state.Realm(),
-				ThingID:      data.Id.Name,
-				ThingType:    callback.TypeDevice,
-				KeyID:        data.Signer.KID,
-				Key:          data.Signer.Signer,
-				Certificates: data.Certificates},
-		)
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	if err != nil {
 		return false
@@ -91,8 +78,6 @@ func (t *RegisterDeviceWithoutCert) Setup(state anvil.TestState) (data anvil.Thi
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-
-	data.Id.ThingType = callback.TypeDevice
 	return data, true
 }
 
@@ -101,19 +86,9 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopRegCertTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer},
-			callback.RegisterHandler{
-				Realm:     state.Realm(),
-				ThingID:   data.Id.Name,
-				ThingType: callback.TypeDevice,
-				KeyID:     data.Signer.KID,
-				Key:       data.Signer.Signer})
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(nil, nil)
 
 	_, err := builder.Create()
 	if err != thing.ErrUnauthorised {
@@ -161,24 +136,11 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopRegCertTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer},
-			callback.RegisterHandler{
-				Realm:        state.Realm(),
-				ThingID:      data.Id.Name,
-				ThingType:    callback.TypeDevice,
-				KeyID:        data.Signer.KID,
-				Key:          data.Signer.Signer,
-				Certificates: data.Certificates,
-				Claims: func() interface{} {
-					return sdkAttribute
-				}},
-		)
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, func() interface{} {
+			return sdkAttribute
+		})
 	_, err := builder.Create()
 	if err != nil {
 		return false
@@ -195,7 +157,7 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 	return true
 }
 
-// RegisterServiceCert tests the dynamic registration of a service with a valid x509 certificate
+// RegisterServiceCert tests dynamic registration of a service with a valid x509 certificate
 type RegisterServiceCert struct {
 	anvil.NopSetupCleanup
 }
@@ -226,23 +188,91 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopRegCertTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer},
-			callback.RegisterHandler{
-				Realm:        state.Realm(),
-				ThingID:      data.Id.Name,
-				ThingType:    callback.TypeService,
-				KeyID:        data.Signer.KID,
-				Key:          data.Signer.Signer,
-				Certificates: data.Certificates})
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, nil).
+		AsService()
 
 	_, err := builder.Create()
 	if err != nil {
+		return false
+	}
+	var amAttribute struct {
+		ThingType []string
+	}
+	err = anvil.GetIdentityAttributes(state.Realm(), data.Id.Name, &amAttribute)
+	if err != nil {
+		anvil.DebugLogger.Printf("Getting attribute %s failed; %s", amAttribute, err)
+		return false
+	}
+	if len(amAttribute.ThingType) == 0 || strings.ToLower(amAttribute.ThingType[0]) != "service" {
+		anvil.DebugLogger.Printf("Expected thing type service; got %s", amAttribute)
+		return false
+	}
+	return true
+}
+
+// RegisterDeviceNoKeyID checks that dynamic registration fails gracefully when no key is provided
+type RegisterDeviceNoKeyID struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *RegisterDeviceNoKeyID) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.Name = anvil.RandomName()
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	serverWebKey, err := anvil.CertVerificationKey()
+	if err != nil {
+		return data, false
+	}
+
+	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	if err != nil {
+		return data, false
+	}
+	data.Certificates = []*x509.Certificate{certificate}
+	return data, true
+}
+
+func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertTree)
+	builder := thing.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, "", data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, nil)
+	_, err := builder.Create()
+	if err == nil {
+		return false
+	}
+	return true
+}
+
+// RegisterDeviceNoKey checks that dynamic registration fails gracefully when no key is provided
+type RegisterDeviceNoKey struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *RegisterDeviceNoKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.Name = anvil.RandomName()
+	return data, true
+}
+
+func (t *RegisterDeviceNoKey) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertTree)
+	builder := thing.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, "", nil, nil).
+		RegisterThing(data.Certificates, nil)
+	_, err := builder.Create()
+	if err == nil {
 		return false
 	}
 	return true

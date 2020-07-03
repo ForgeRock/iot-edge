@@ -219,7 +219,6 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
 		"-key", key,
-		"-keyid", data.Id.ThingKeys.Keys[0].KeyID,
 		"-cert", string(cert))
 
 	// send standard out and error to debugger

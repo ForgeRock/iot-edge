@@ -21,8 +21,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"gopkg.in/square/go-jose.v2"
@@ -248,8 +251,14 @@ type Builder interface {
 	// a sub-realm of root called "alfheim"; "/alfheim"
 	// a sub-realm of alfheim called "svartalfheim"; "/alfheim/svartalfheim"
 	InRealm(realm string) Builder
-	// AuthenticateWith the named authentication tree
-	AuthenticateWith(tree string) Builder
+	// WithTree sets the tree that the thing authenticates with
+	WithTree(tree string) Builder
+	// AsService registers the thing as a service. By default, a thing is registered as a device
+	AsService() Builder
+	// AuthenticateThing with the ForgeRock Authenticate Thing tree node
+	AuthenticateThing(thingID string, keyID string, key crypto.Signer, claims func() interface{}) Builder
+	// RegisterThing with the ForgeRock Register Thing tree node
+	RegisterThing(certificates []*x509.Certificate, claims func() interface{}) Builder
 	// HandleCallbacksWith the supplied handlers
 	HandleCallbacksWith(handlers ...callback.Handler) Builder
 	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM\Thing Gateway
@@ -258,12 +267,50 @@ type Builder interface {
 	Create() (*Thing, error)
 }
 
+type authHandlerBuilder struct {
+	thingID string
+	keyID   string
+	key     crypto.Signer
+	claims  func() interface{}
+}
+
+type regHandlerBuilder struct {
+	certificates []*x509.Certificate
+	claims       func() interface{}
+}
+
 type baseBuilder struct {
-	u        *url.URL
-	realm    string
-	tree     string
-	timeout  time.Duration
-	handlers []callback.Handler
+	u           *url.URL
+	realm       string
+	tree        string
+	thingType   callback.ThingType
+	timeout     time.Duration
+	handlers    []callback.Handler
+	authHandler *authHandlerBuilder
+	regHandler  *regHandlerBuilder
+}
+
+func (b *baseBuilder) AsService() Builder {
+	b.thingType = callback.TypeService
+	return b
+}
+
+func (b *baseBuilder) AuthenticateThing(thingID string, keyID string, key crypto.Signer, claims func() interface{}) Builder {
+	b.authHandler = &authHandlerBuilder{
+		thingID: thingID,
+		keyID:   keyID,
+		key:     key,
+		claims:  claims,
+	}
+	return b
+}
+
+func (b *baseBuilder) RegisterThing(certificates []*x509.Certificate, claims func() interface{}) Builder {
+	b.regHandler = &regHandlerBuilder{
+		certificates: certificates,
+		claims:       claims,
+	}
+	return b
 }
 
 func (b *baseBuilder) ConnectTo(u *url.URL) Builder {
@@ -281,7 +328,7 @@ func (b *baseBuilder) InRealm(realm string) Builder {
 	return b
 }
 
-func (b *baseBuilder) AuthenticateWith(tree string) Builder {
+func (b *baseBuilder) WithTree(tree string) Builder {
 	b.tree = tree
 	return b
 }
@@ -289,6 +336,20 @@ func (b *baseBuilder) AuthenticateWith(tree string) Builder {
 func (b *baseBuilder) TimeoutRequestAfter(d time.Duration) Builder {
 	b.timeout = d
 	return b
+}
+
+// JWKThumbprint calculates the base64url-encoded JWK Thumbprint value for the given key.
+// The thumbprint can be used for identifying or selecting the key.
+// See https://tools.ietf.org/html/rfc7638
+func JWKThumbprint(key crypto.Signer) (string, error) {
+	if key == nil {
+		return "", jws.ErrMissingSigner
+	}
+	thumbprint, err := (&jose.JSONWebKey{Key: key.Public()}).Thumbprint(crypto.SHA256)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(thumbprint), nil
 }
 
 func (b *baseBuilder) Create() (*Thing, error) {
@@ -312,6 +373,38 @@ func (b *baseBuilder) Create() (*Thing, error) {
 	if err != nil {
 		return nil, err
 	}
+	if b.authHandler != nil {
+		// check we have a signer and key ID
+		if b.authHandler.key == nil {
+			return nil, fmt.Errorf("authenticate thing requires Key")
+		}
+		if b.authHandler.keyID == "" {
+			return nil, fmt.Errorf("authenticate thing requires Key ID")
+		}
+		// get AM info to obtain the realm from the gateway
+		info, err := client.amInfo()
+		if err != nil {
+			return nil, err
+		}
+		b.handlers = append(b.handlers, callback.AuthenticateHandler{
+			Realm:   info.Realm,
+			ThingID: b.authHandler.thingID,
+			KeyID:   b.authHandler.keyID,
+			Key:     b.authHandler.key,
+			Claims:  b.authHandler.claims,
+		})
+		if b.regHandler != nil {
+			b.handlers = append(b.handlers, callback.RegisterHandler{
+				Realm:        info.Realm,
+				ThingID:      b.authHandler.thingID,
+				ThingType:    b.thingType,
+				KeyID:        b.authHandler.keyID,
+				Key:          b.authHandler.key,
+				Certificates: b.regHandler.certificates,
+				Claims:       b.regHandler.claims,
+			})
+		}
+	}
 	thing := &Thing{
 		connection: client,
 		handlers:   b.handlers,
@@ -325,7 +418,9 @@ func (b *baseBuilder) Create() (*Thing, error) {
 
 // New returns a new Thing builder
 func New() Builder {
-	return &baseBuilder{}
+	return &baseBuilder{
+		thingType: callback.TypeDevice,
+	}
 }
 
 // processCallbacks attempts to respond to the callbacks with the given callback handlers
