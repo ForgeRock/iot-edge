@@ -22,7 +22,6 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"io/ioutil"
 	"log"
@@ -112,21 +111,9 @@ func certRegThing() (err error) {
 	builder := thing.New().
 		ConnectTo(u).
 		InRealm(*realm).
-		AuthenticateWith(*authTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   *realm,
-				ThingID: *thingName,
-				KeyID:   *keyID,
-				Key:     key},
-			callback.RegisterHandler{
-				Realm:        *realm,
-				ThingID:      *thingName,
-				ThingType:    callback.TypeDevice,
-				KeyID:        *keyID,
-				Key:          key,
-				Certificates: certs,
-			})
+		WithTree(*authTree).
+		AuthenticateThing(*thingName, *keyID, key, nil).
+		RegisterThing(certs, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
 	device, err := builder.Create()

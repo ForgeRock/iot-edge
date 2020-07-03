@@ -19,7 +19,6 @@ package callback
 import (
 	"crypto"
 	"crypto/x509"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/jws"
@@ -212,15 +211,6 @@ type RegisterHandler struct {
 
 func (h RegisterHandler) SigningKey() crypto.Signer {
 	return h.Key
-}
-
-// createKID creates a key ID for a signer
-func createKID(key crypto.Signer) (string, error) {
-	thumbprint, err := (&jose.JSONWebKey{Key: key.Public()}).Thumbprint(crypto.SHA256)
-	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(thumbprint), nil
 }
 
 func (h RegisterHandler) Handle(cb Callback) error {

@@ -28,14 +28,8 @@ func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
 	return thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopAuthTree).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer,
-			})
+		WithTree(jwtPopAuthTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil)
 }
 
 // AuthenticateThingJWT tests the authentication of a pre-registered device
@@ -139,18 +133,12 @@ func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.Thi
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopAuthTreeCustomClaims).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer,
-				Claims: func() interface{} {
-					return struct {
-						LifeUniverseEverything string `json:"life_universe_everything"`
-					}{"42"}
-				}})
+		WithTree(jwtPopAuthTreeCustomClaims).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, func() interface{} {
+			return struct {
+				LifeUniverseEverything string `json:"life_universe_everything"`
+			}{"42"}
+		})
 
 	_, err := builder.Create()
 	if err != nil {
@@ -181,18 +169,12 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(jwtPopAuthTreeCustomClaims).
-		HandleCallbacksWith(
-			callback.AuthenticateHandler{
-				Realm:   state.Realm(),
-				ThingID: data.Id.Name,
-				KeyID:   data.Signer.KID,
-				Key:     data.Signer.Signer,
-				Claims: func() interface{} {
-					return struct {
-						LifeUniverseEverything string `json:"life_universe_everything"`
-					}{"0"}
-				}})
+		WithTree(jwtPopAuthTreeCustomClaims).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, func() interface{} {
+			return struct {
+				LifeUniverseEverything string `json:"life_universe_everything"`
+			}{"0"}
+		})
 	_, err := builder.Create()
 	if err != thing.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
@@ -216,7 +198,7 @@ func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(userPwdAuthTree).
+		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: data.Id.Password})
@@ -243,7 +225,7 @@ func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.Thin
 	builder := thing.New().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
-		AuthenticateWith(userPwdAuthTree).
+		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: "wrong"})
@@ -251,6 +233,41 @@ func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.Thin
 	if err != thing.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
+	}
+	return true
+}
+
+// AuthenticateThingThroughGateway tests authentication with the minimum setup required by the gateway
+type AuthenticateThingThroughGateway struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateThingThroughGateway) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopAuthTree)
+	_, err := thing.New().
+		ConnectTo(state.URL()).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
+		Create()
+	switch state.ClientType() {
+	case "gateway":
+		if err != nil {
+			return false
+		}
+	default:
+		if err == nil {
+			return false
+		}
 	}
 	return true
 }
