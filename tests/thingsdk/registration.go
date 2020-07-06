@@ -26,13 +26,14 @@ import (
 
 // RegisterDeviceCert tests the dynamic registration of a device with a valid x509 certificate
 type RegisterDeviceCert struct {
+	alg jose.SignatureAlgorithm
 	anvil.NopSetupCleanup
 }
 
 func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(t.alg)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -63,6 +64,10 @@ func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bo
 		return false
 	}
 	return true
+}
+
+func (t *RegisterDeviceCert) NameSuffix() string {
+	return string(t.alg)
 }
 
 // RegisterDeviceWithoutCert tries to dynamically register a device without a x509 certificate
