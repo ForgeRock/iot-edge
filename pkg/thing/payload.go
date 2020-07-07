@@ -47,7 +47,7 @@ func (p authenticatePayload) HasSessionToken() bool {
 }
 
 type getAccessTokenPayload struct {
-	Scope []string `json:"scope"`
+	Scope []string `json:"scope,omitempty"`
 }
 
 func (p authenticatePayload) String() string {

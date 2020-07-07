@@ -265,17 +265,18 @@ func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) boo
 	return true
 }
 
-// AccessTokenWithNonRestrictedToken requests an access token with a non-restricted session token
-type AccessTokenWithNonRestrictedToken struct {
+// AccessTokenWithExactScopesNonRestricted requests an access token with specified scopes using a non-restricted session
+// token
+type AccessTokenWithExactScopesNonRestricted struct {
 	anvil.NopSetupCleanup
 }
 
-func (a AccessTokenWithNonRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func (a AccessTokenWithExactScopesNonRestricted) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := thing.New().
 		ConnectTo(state.URL()).
@@ -289,10 +290,42 @@ func (a AccessTokenWithNonRestrictedToken) Run(state anvil.TestState, data anvil
 	if err != nil {
 		return false
 	}
-	_, err = thing.RequestAccessToken("publish", "subscribe")
+	response, err := thing.RequestAccessToken("publish", "subscribe")
 	if err != nil {
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return true
+	return verifyAccessTokenResponse(response, data.Id.Name, "publish", "subscribe")
+}
+
+// AccessTokenWithNoScopesNonRestricted requests an access token with no scopes using a non-restricted session token
+type AccessTokenWithNoScopesNonRestricted struct {
+	anvil.NopSetupCleanup
+}
+
+func (a AccessTokenWithNoScopesNonRestricted) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := thing.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithTree(userPwdAuthTree).
+		HandleCallbacksWith(
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
+
+	thing, err := builder.Create()
+	if err != nil {
+		return false
+	}
+	response, err := thing.RequestAccessToken()
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	return verifyAccessTokenResponse(response, data.Id.Name, "subscribe")
 }
