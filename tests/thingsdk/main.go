@@ -77,12 +77,16 @@ var tests = []anvil.SDKTest{
 	&AccessTokenRepeat{},
 	&AccessTokenWithExactScopesNonRestricted{},
 	&AccessTokenWithNoScopesNonRestricted{},
+	&AccessTokenExpiredSession{},
 	&SimpleThingExample{},
 	&SimpleThingGatewayExample{},
 	&CertRegistrationExample{},
 	&AttributesWithNoFilter{},
 	&AttributesWithFilter{},
 	&AttributesWithNonRestrictedToken{},
+	&AttributesExpiredSession{},
+	&SessionValid{},
+	&SessionInvalid{},
 }
 
 // run the full test set for a single client

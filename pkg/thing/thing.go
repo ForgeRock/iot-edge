@@ -41,7 +41,7 @@ import (
 var DebugLogger = log.New(ioutil.Discard, "", 0)
 
 var (
-	ErrBuilderNoConnection      = errors.New("builder has no defined connection")
+	ErrNoConnection             = errors.New("no defined connection")
 	ErrBuilderUnsupportedScheme = errors.New("builder connecting with unsupported scheme")
 	ErrUnauthorised             = errors.New("unauthorised")
 )
@@ -64,6 +64,9 @@ type connection interface {
 	// amInfo returns the information required to construct valid signed JWTs
 	amInfo() (info amInfoSet, err error)
 
+	// validateSession sends a valiate session request
+	validateSession(tokenID string) (ok bool, err error)
+
 	// accessToken makes an access token request with the given session token and payload
 	accessToken(tokenID string, content contentType, payload string) (reply []byte, err error)
 
@@ -80,9 +83,10 @@ type Thing struct {
 
 // Session holds session data
 type Session struct {
-	token string
-	nonce int
-	key   crypto.Signer
+	connection connection
+	token      string
+	nonce      int
+	key        crypto.Signer
 }
 
 // Token returns the session token
@@ -110,6 +114,14 @@ func (s *Session) IncrementNonce() {
 	s.nonce++
 }
 
+// Valid returns true if the session is valid
+func (s *Session) Valid() (bool, error) {
+	if s.connection == nil {
+		return false, ErrNoConnection
+	}
+	return s.connection.validateSession(s.token)
+}
+
 // authenticate the Thing
 func (t *Thing) authenticate() (session *Session, err error) {
 	auth := authenticatePayload{}
@@ -120,7 +132,7 @@ func (t *Thing) authenticate() (session *Session, err error) {
 		}
 
 		if auth.HasSessionToken() {
-			return &Session{token: auth.TokenId, key: key}, nil
+			return &Session{connection: t.connection, token: auth.TokenID, key: key}, nil
 		}
 		if key, err = processCallbacks(t.handlers, auth.Callbacks); err != nil {
 			return session, err
@@ -138,6 +150,28 @@ func (t *Thing) Session() (session *Session, err error) {
 		t.session = session
 	}
 	return t.session, nil
+}
+
+// makeAuthorisedRequest makes a request that requires a session token
+// if the session has expired, the session is renewed and the request is repeated
+func (t *Thing) makeAuthorisedRequest(f func(session *Session) error) (err error) {
+	for i := 0; i < 2; i++ {
+		var session *Session
+		session, err = t.Session()
+		if err != nil {
+			return err
+		}
+		err = f(session)
+		if err == nil || !errors.Is(err, ErrUnauthorised) {
+			return err
+		}
+		valid, validateErr := t.connection.validateSession(t.session.token)
+		if validateErr != nil || valid {
+			return err
+		}
+		t.session = nil
+	}
+	return err
 }
 
 // signedRequestClaims defines the claims expected in the signed JWT provided with a signed request
@@ -168,77 +202,68 @@ func signedJWTBody(session *Session, url string, version string, body interface{
 // if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
 // will include the default scopes configured in the OAuth 2.0 Client.
 func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error) {
-	session, err := t.Session()
-	if err != nil {
-		return
-	}
-
 	payload := getAccessTokenPayload{Scope: scopes}
 	var requestBody string
 	var content contentType
-	if session.HasRestrictedToken() {
-		info, err := t.connection.amInfo()
-		if err != nil {
-			return response, err
+
+	err = t.makeAuthorisedRequest(func(session *Session) error {
+		if session.HasRestrictedToken() {
+			info, err := t.connection.amInfo()
+			if err != nil {
+				return err
+			}
+			requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, payload)
+			if err != nil {
+				return err
+			}
+			content = applicationJOSE
+		} else {
+			b, err := json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			requestBody = string(b)
+			content = applicationJSON
 		}
-		requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, payload)
-		if err != nil {
-			return response, err
+		reply, err := t.connection.accessToken(session.token, content, requestBody)
+		if reply != nil {
+			DebugLogger.Println("RequestAccessToken response: ", string(reply))
 		}
-		content = applicationJOSE
-	} else {
-		b, err := json.Marshal(payload)
 		if err != nil {
-			return response, err
+			return err
 		}
-		requestBody = string(b)
-		content = applicationJSON
-	}
-	reply, err := t.connection.accessToken(session.token, content, requestBody)
-	if reply != nil {
-		DebugLogger.Println("RequestAccessToken response: ", string(reply))
-	}
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(reply, &response.Content)
-	DebugLogger.Println("RequestAccessToken request completed successfully")
-	return
+		return json.Unmarshal(reply, &response.Content)
+	})
+	return response, err
 }
 
 // RequestAttributes requests the attributes with the specified names associated with the thing's identity.
 // If no names are specified then all the allowed attributes will be returned.
 func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse, err error) {
-	session, err := t.Session()
-	if err != nil {
-		return
-	}
-
-	var requestBody string
-	var content contentType
-	if session.HasRestrictedToken() {
-		info, err := t.connection.amInfo()
-		if err != nil {
-			return response, err
+	err = t.makeAuthorisedRequest(func(session *Session) error {
+		var requestBody string
+		var content contentType
+		if session.HasRestrictedToken() {
+			info, err := t.connection.amInfo()
+			if err != nil {
+				return err
+			}
+			requestBody, err = signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
+			if err != nil {
+				return err
+			}
+			content = applicationJOSE
+		} else {
+			content = applicationJSON
 		}
-		requestBody, err = signedJWTBody(session, info.AttributesURL+fieldsQuery(names), info.ThingsVersion, nil)
+		reply, err := t.connection.attributes(session.token, content, requestBody, names)
 		if err != nil {
-			return response, err
+			DebugLogger.Println("RequestAttributes response: ", string(reply))
+			return err
 		}
-		content = applicationJOSE
-	} else {
-		content = applicationJSON
-	}
-	reply, err := t.connection.attributes(session.token, content, requestBody, names)
-	if reply != nil {
-		DebugLogger.Println("RequestAttributes response: ", string(reply))
-	}
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(reply, &response.Content)
-	DebugLogger.Println("RequestAttributes request completed successfully")
-	return
+		return json.Unmarshal(reply, &response.Content)
+	})
+	return response, err
 }
 
 // Builder interface provides methods to setup and initialise a Thing
@@ -354,7 +379,7 @@ func JWKThumbprint(key crypto.Signer) (string, error) {
 
 func (b *baseBuilder) Create() (*Thing, error) {
 	if b.u == nil {
-		return nil, ErrBuilderNoConnection
+		return nil, ErrNoConnection
 	}
 	var client connection
 	switch b.u.Scheme {

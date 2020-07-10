@@ -20,6 +20,7 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"reflect"
@@ -328,4 +329,48 @@ func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data an
 		return false
 	}
 	return verifyAccessTokenResponse(response, data.Id.Name, "subscribe")
+}
+
+// AccessTokenExpiredSession requests an access token after the current session has been 'expired'
+type AccessTokenExpiredSession struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AccessTokenExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := thing.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithTree(userPwdAuthTree).
+		HandleCallbacksWith(
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
+	thing, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	session, err := thing.Session()
+	if err != nil {
+		anvil.DebugLogger.Println("session request failed", err)
+		return false
+	}
+
+	err = am.LogoutSession(session.Token())
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed", err)
+		return false
+	}
+
+	_, err = thing.RequestAccessToken("publish", "subscribe")
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed: ", err)
+		return false
+	}
+	return true
 }

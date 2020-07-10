@@ -54,8 +54,8 @@ var httpClient = http.Client{
 	Timeout: 30 * time.Second,
 }
 
-// crestCreate makes an HTTP POST request with the CREST 'create' action appended to the given endpoint.
-func crestCreate(endpoint string, version string, payload io.Reader) (reply []byte, err error) {
+// crestAction makes an HTTP POST request with the action appended to the given endpoint.
+func crestAction(endpoint, action, version string, payload io.Reader, expectedCode int) (reply []byte, err error) {
 	// get SSO token
 	ssoToken, err := getSSOToken()
 	if err != nil {
@@ -67,7 +67,7 @@ func crestCreate(endpoint string, version string, payload io.Reader) (reply []by
 	}
 
 	q := req.URL.Query()
-	q.Set("_action", "create")
+	q.Set("_action", action)
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Set(headerContentType, "application/json")
@@ -76,12 +76,11 @@ func crestCreate(endpoint string, version string, payload io.Reader) (reply []by
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		dumpHTTPRoundTrip(req, res)
 		return reply, err
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != expectedCode {
 		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
@@ -91,6 +90,11 @@ func crestCreate(endpoint string, version string, payload io.Reader) (reply []by
 	}
 
 	return reply, nil
+}
+
+// crestCreate makes an HTTP POST request with the CREST 'create' action appended to the given endpoint.
+func crestCreate(endpoint string, version string, payload io.Reader) (reply []byte, err error) {
+	return crestAction(endpoint, "create", version, payload, http.StatusCreated)
 }
 
 // crestUpdate makes an HTTP PUT request to the given endpoint as described in the CREST update protocol.
@@ -452,4 +456,22 @@ func dumpHTTPRoundTrip(req *http.Request, res *http.Response) {
 		dump, _ := httputil.DumpResponse(res, true)
 		DebugLogger.Println(string(dump))
 	}
+}
+
+// LogoutSession represented by the given token
+func LogoutSession(token string) (err error) {
+	payload := struct {
+		TokenID string `json:"tokenId"`
+	}{TokenID: token}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	_, err = crestAction(
+		AMURL+"/json/sessions",
+		"logout",
+		"resource=4.0",
+		bytes.NewReader(b),
+		http.StatusOK)
+	return err
 }

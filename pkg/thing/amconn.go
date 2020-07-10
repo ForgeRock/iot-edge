@@ -48,6 +48,51 @@ type amConnection struct {
 	cookieName string
 }
 
+func (c *amConnection) validateSession(tokenID string) (ok bool, err error) {
+	b, err := json.Marshal(sessionToken{TokenID: tokenID})
+	if err != nil {
+		return false, err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, c.baseURL+"/json/sessions?_action=validate", bytes.NewReader(b))
+	if err != nil {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return false, err
+	}
+
+	request.Header.Add(acceptAPIVersion, "resource=4.0")
+	request.Header.Add(httpContentType, string(applicationJSON))
+	response, err := c.Do(request)
+	if err != nil {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return false, err
+	}
+	defer response.Body.Close()
+
+	switch response.StatusCode {
+	case http.StatusOK:
+	case http.StatusUnauthorized:
+		return false, nil
+	default:
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return false, fmt.Errorf("session validation failed")
+	}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return false, err
+	}
+	info := struct {
+		Valid bool `json:"valid"`
+	}{}
+	if err = json.Unmarshal(responseBody, &info); err != nil {
+		return false, err
+	}
+	return info.Valid, nil
+
+}
+
 // amError is used to unmarshal an AM error response
 type amError struct {
 	Code    int    `json:"code"`
@@ -55,12 +100,19 @@ type amError struct {
 	Message string `json:"message"`
 }
 
+func (e amError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Reason, e.Message)
+}
+
 func parseAMError(response []byte, status int) error {
 	var amError amError
 	if err := json.Unmarshal(response, &amError); err != nil {
 		return fmt.Errorf("request failed with status code %d", status)
 	}
-	return fmt.Errorf("%s: %s", amError.Reason, amError.Message)
+	if amError.Code == http.StatusUnauthorized {
+		return ErrUnauthorised
+	}
+	return amError
 }
 
 // initialise checks that the server can be reached and prepares the client for further communication

@@ -180,7 +180,7 @@ func testGatewayClientAuthenticate(client *gatewayConnection, server *testCOAPSe
 
 func TestGatewayClient_Authenticate(t *testing.T) {
 	info := authenticatePayload{
-		TokenId: "12345",
+		sessionToken: sessionToken{TokenID: "12345"},
 	}
 	b, err := json.Marshal(info)
 	if err != nil {

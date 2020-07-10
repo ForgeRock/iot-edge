@@ -207,10 +207,14 @@ func (c *gatewayConnection) accessToken(tokenID string, content contentType, pay
 		return nil, err
 	}
 
-	if response.Code() != codes.Changed {
+	switch response.Code() {
+	case codes.Changed:
+		return response.Payload(), nil
+	case codes.Unauthorized:
+		return nil, ErrUnauthorised
+	default:
 		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
 	}
-	return response.Payload(), nil
 }
 
 // attributes makes a thing attributes request with the given payload
@@ -249,9 +253,42 @@ func (c *gatewayConnection) attributes(tokenID string, content contentType, payl
 	if err != nil {
 		return nil, err
 	}
-
-	if response.Code() != codes.Changed {
+	switch response.Code() {
+	case codes.Changed:
+		return response.Payload(), nil
+	case codes.Unauthorized:
+		return nil, ErrUnauthorised
+	default:
 		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
 	}
-	return response.Payload(), nil
+}
+
+// validateSession represented by the given token
+func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error) {
+	conn, err := c.dial()
+	if err != nil {
+		return false, err
+	}
+
+	ctx, cancel := c.context()
+	defer cancel()
+
+	b, err := json.Marshal(sessionToken{TokenID: tokenID})
+	if err != nil {
+		return false, err
+	}
+
+	response, err := conn.PostWithContext(ctx, "/session", coap.AppJSON, bytes.NewReader(b))
+	if err != nil {
+		return false, err
+	}
+
+	switch response.Code() {
+	case codes.Changed:
+		return true, nil
+	case codes.Unauthorized:
+		return false, nil
+	default:
+		return false, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
 }

@@ -161,7 +161,7 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 
 func TestAMClient_Authenticate(t *testing.T) {
 	info := authenticatePayload{
-		TokenId: "12345",
+		sessionToken: sessionToken{TokenID: "12345"},
 	}
 	b, err := json.Marshal(info)
 	if err != nil {

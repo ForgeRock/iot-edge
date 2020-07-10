@@ -43,6 +43,10 @@ type mockClient struct {
 	attributesFunc   func(string, string, []string) ([]byte, error)
 }
 
+func (m *mockClient) validateSession(tokenID string) (ok bool, err error) {
+	return true, nil
+}
+
 func (m *mockClient) initialise() error {
 	m.amInfoSet = amInfoSet{
 		AccessTokenURL: "/things",
@@ -55,7 +59,7 @@ func (m *mockClient) authenticate(payload authenticatePayload) (reply authentica
 	if m.AuthenticateFunc != nil {
 		return m.AuthenticateFunc(payload)
 	}
-	reply.TokenId = uniuri.New()
+	reply.TokenID = uniuri.New()
 	return reply, nil
 }
 

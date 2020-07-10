@@ -210,7 +210,11 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 
 	b, err := c.Thing.connection.accessToken(token, content, payload)
 	if err != nil {
-		w.SetCode(codes.GatewayTimeout)
+		if errors.Is(err, ErrUnauthorised) {
+			w.SetCode(codes.Unauthorized)
+		} else {
+			w.SetCode(codes.GatewayTimeout)
+		}
 		w.Write([]byte(err.Error()))
 		return
 	}
@@ -232,13 +236,42 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 	}
 	b, err := c.Thing.connection.attributes(token, format, payload, names)
 	if err != nil {
-		w.SetCode(codes.GatewayTimeout)
+		if errors.Is(err, ErrUnauthorised) {
+			w.SetCode(codes.Unauthorized)
+		} else {
+			w.SetCode(codes.GatewayTimeout)
+		}
 		w.Write([]byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Changed)
 	w.Write(b)
 	DebugLogger.Println("attributesHandler: success")
+}
+
+// sessionHandler handles a session validation request
+func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
+	DebugLogger.Println("sessionHandler")
+
+	var token sessionToken
+	if err := json.Unmarshal(r.Msg.Payload(), &token); err != nil {
+		w.SetCode(codes.BadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	valid, err := c.Thing.connection.validateSession(token.TokenID)
+	if err != nil {
+		w.SetCode(codes.GatewayTimeout)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	if valid {
+		w.SetCode(codes.Changed)
+	} else {
+		w.SetCode(codes.Unauthorized)
+	}
+	w.Write(nil)
+	DebugLogger.Printf("sessionHandler: success. validate %v", valid)
 }
 
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
@@ -263,6 +296,7 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 	mux.HandleFunc("/aminfo", c.amInfoHandler)
 	mux.HandleFunc("/accesstoken", c.accessTokenHandler)
 	mux.HandleFunc("/attributes", c.attributesHandler)
+	mux.HandleFunc("/session", c.sessionHandler)
 
 	cert, err := publicKeyCertificate(key)
 	if err != nil {
