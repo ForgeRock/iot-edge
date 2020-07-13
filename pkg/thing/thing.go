@@ -64,7 +64,7 @@ type connection interface {
 	// amInfo returns the information required to construct valid signed JWTs
 	amInfo() (info amInfoSet, err error)
 
-	// validateSession sends a valiate session request
+	// validateSession sends a validate session request
 	validateSession(tokenID string) (ok bool, err error)
 
 	// accessToken makes an access token request with the given session token and payload
