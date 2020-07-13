@@ -34,7 +34,7 @@ type amInfoSet struct {
 
 // authenticatePayload represents the outbound and inbound data during an authentication request
 type authenticatePayload struct {
-	TokenId   string              `json:"tokenId,omitempty"`
+	sessionToken
 	AuthId    string              `json:"authId,omitempty"`
 	AuthIDKey string              `json:"auth_id_digest,omitempty"`
 	Callbacks []callback.Callback `json:"callbacks,omitempty"`
@@ -43,7 +43,7 @@ type authenticatePayload struct {
 // HasSessionToken returns true if the payload contains a session token
 // Indicates that the authentication workflow has completed successfully
 func (p authenticatePayload) HasSessionToken() bool {
-	return p.TokenId != ""
+	return p.TokenID != ""
 }
 
 type getAccessTokenPayload struct {
@@ -136,4 +136,9 @@ func (a AttributesResponse) Get(key string) ([]string, error) {
 		valuesAsStrings[i] = v.(string)
 	}
 	return valuesAsStrings, nil
+}
+
+// sessionToken holds a session token
+type sessionToken struct {
+	TokenID string `json:"tokenId,omitempty"`
 }
