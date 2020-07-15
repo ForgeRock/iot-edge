@@ -355,13 +355,8 @@ func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingD
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	session, err := thing.Session()
-	if err != nil {
-		anvil.DebugLogger.Println("session request failed", err)
-		return false
-	}
 
-	err = am.LogoutSession(session.Token())
+	err = am.LogoutSession(thing.Session().Token())
 	if err != nil {
 		anvil.DebugLogger.Println("session logout failed", err)
 		return false

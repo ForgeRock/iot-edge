@@ -73,8 +73,7 @@ func (c *ThingGateway) Initialise() error {
 	if err != nil {
 		return err
 	}
-	_, err = c.Thing.Session()
-	return err
+	return c.Thing.authenticate()
 }
 
 // AuthenticateWith the given authentication tree
@@ -259,19 +258,36 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	valid, err := c.Thing.connection.validateSession(token.TokenID)
-	if err != nil {
-		w.SetCode(codes.GatewayTimeout)
-		w.Write([]byte(err.Error()))
+	switch r.Msg.QueryString() {
+	case "_action=validate":
+		valid, err := c.Thing.connection.validateSession(token.TokenID)
+		if err != nil {
+			w.SetCode(codes.GatewayTimeout)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		if valid {
+			w.SetCode(codes.Changed)
+		} else {
+			w.SetCode(codes.Unauthorized)
+		}
+		w.Write(nil)
+		DebugLogger.Printf("sessionHandler: success. validate %v", valid)
+	case "_action=logout":
+		err := c.Thing.connection.logoutSession(token.TokenID)
+		if err != nil {
+			w.SetCode(codes.GatewayTimeout)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		w.SetCode(codes.Changed)
+		w.Write(nil)
+		DebugLogger.Printf("sessionHandler: success. log out")
+	default:
+		w.SetCode(codes.BadRequest)
+		w.Write([]byte("unknown/missing query"))
 		return
 	}
-	if valid {
-		w.SetCode(codes.Changed)
-	} else {
-		w.SetCode(codes.Unauthorized)
-	}
-	w.Write(nil)
-	DebugLogger.Printf("sessionHandler: success. validate %v", valid)
 }
 
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {

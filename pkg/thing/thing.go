@@ -67,6 +67,9 @@ type connection interface {
 	// validateSession sends a validate session request
 	validateSession(tokenID string) (ok bool, err error)
 
+	// logoutSession makes a request to logout the session
+	logoutSession(tokenID string) (err error)
+
 	// accessToken makes an access token request with the given session token and payload
 	accessToken(tokenID string, content contentType, payload string) (reply []byte, err error)
 
@@ -128,6 +131,11 @@ func (s *Session) Reauthenticate() (session *Session, err error) {
 	return s.thing.session, err
 }
 
+// Logout the session
+func (s *Session) Logout() error {
+	return s.thing.connection.logoutSession(s.token)
+}
+
 // authenticate the Thing
 func (t *Thing) authenticate() (err error) {
 	auth := authenticatePayload{}
@@ -147,26 +155,16 @@ func (t *Thing) authenticate() (err error) {
 	}
 }
 
-// Session returns a session for the Thing
-func (t *Thing) Session() (session *Session, err error) {
-	if t.session == nil {
-		err = t.authenticate()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return t.session, nil
+// Session returns the Thing's current session
+func (t *Thing) Session() *Session {
+	return t.session
 }
 
 // makeAuthorisedRequest makes a request that requires a session token
 // if the session has expired, the session is renewed and the request is repeated
 func (t *Thing) makeAuthorisedRequest(f func(session *Session) error) (err error) {
+	session := t.Session()
 	for i := 0; i < 2; i++ {
-		var session *Session
-		session, err = t.Session()
-		if err != nil {
-			return err
-		}
 		err = f(session)
 		if err == nil || !errors.Is(err, ErrUnauthorised) {
 			return err
@@ -175,7 +173,10 @@ func (t *Thing) makeAuthorisedRequest(f func(session *Session) error) (err error
 		if validateErr != nil || valid {
 			return err
 		}
-		t.session = nil
+		session, err = session.Reauthenticate()
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }

@@ -263,11 +263,11 @@ func (c *gatewayConnection) attributes(tokenID string, content contentType, payl
 	}
 }
 
-// validateSession represented by the given token
-func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error) {
+// makeSessionRequest sends a request to the session endpoint with the given action
+func (c *gatewayConnection) makeSessionRequest(tokenID string, action string) (response coap.Message, err error) {
 	conn, err := c.dial()
 	if err != nil {
-		return false, err
+		return response, err
 	}
 
 	ctx, cancel := c.context()
@@ -275,10 +275,21 @@ func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error)
 
 	b, err := json.Marshal(sessionToken{TokenID: tokenID})
 	if err != nil {
-		return false, err
+		return response, err
 	}
 
-	response, err := conn.PostWithContext(ctx, "/session", coap.AppJSON, bytes.NewReader(b))
+	message, err := conn.NewPostRequest("/session", coap.AppJSON, bytes.NewReader(b))
+	if err != nil {
+		return response, err
+	}
+
+	message.SetQueryString(fmt.Sprintf("_action=%s", action))
+	return conn.ExchangeWithContext(ctx, message)
+}
+
+// validateSession represented by the given token
+func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error) {
+	response, err := c.makeSessionRequest(tokenID, "validate")
 	if err != nil {
 		return false, err
 	}
@@ -290,5 +301,20 @@ func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error)
 		return false, nil
 	default:
 		return false, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
+}
+
+// logoutSession represented by the given token
+func (c *gatewayConnection) logoutSession(tokenID string) (err error) {
+	response, err := c.makeSessionRequest(tokenID, "logout")
+	if err != nil {
+		return err
+	}
+
+	switch response.Code() {
+	case codes.Changed:
+		return nil
+	default:
+		return errCoAPStatusCode{response.Code(), response.Payload()}
 	}
 }
