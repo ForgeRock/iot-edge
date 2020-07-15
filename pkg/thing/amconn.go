@@ -49,20 +49,51 @@ type amConnection struct {
 	cookieName string
 }
 
-func (c *amConnection) validateSession(tokenID string) (ok bool, err error) {
-	b, err := json.Marshal(sessionToken{TokenID: tokenID})
+// newSessionRequest returns a new session request
+func (c *amConnection) newSessionRequest(tokenID string, action string) (request *http.Request, err error) {
+	request, err = http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("%s/json/sessions?_action=%s", c.baseURL, action),
+		nil)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	request, err := http.NewRequest(http.MethodPost, c.baseURL+"/json/sessions?_action=validate", bytes.NewReader(b))
+	request.Header.Add(acceptAPIVersion, sessionEndpointVersion)
+	request.Header.Add(httpContentType, string(applicationJSON))
+	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
+	return request, nil
+}
+
+// logoutSession represented by the given token
+func (c *amConnection) logoutSession(tokenID string) (err error) {
+	request, err := c.newSessionRequest(tokenID, "logout")
+	if err != nil {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return err
+	}
+
+	response, err := c.Do(request)
+	if err != nil {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return fmt.Errorf("session logout failed")
+	}
+	return nil
+}
+
+// validateSession represented by the given token
+func (c *amConnection) validateSession(tokenID string) (ok bool, err error) {
+	request, err := c.newSessionRequest(tokenID, "validate")
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return false, err
 	}
 
-	request.Header.Add(acceptAPIVersion, sessionEndpointVersion)
-	request.Header.Add(httpContentType, string(applicationJSON))
 	response, err := c.Do(request)
 	if err != nil {
 		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))

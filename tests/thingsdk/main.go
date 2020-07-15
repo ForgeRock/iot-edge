@@ -88,6 +88,7 @@ var tests = []anvil.SDKTest{
 	&SessionValid{},
 	&SessionInvalid{},
 	&SessionReauthenticate{},
+	&SessionLogout{},
 }
 
 // run the full test set for a single client

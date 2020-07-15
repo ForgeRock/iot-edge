@@ -48,13 +48,8 @@ func (t *SessionValid) Run(state anvil.TestState, data anvil.ThingData) bool {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	session, err := thing.Session()
-	if err != nil {
-		anvil.DebugLogger.Println("session request failed", err)
-		return false
-	}
 
-	valid, err := session.Valid()
+	valid, err := thing.Session().Valid()
 	if err != nil {
 		anvil.DebugLogger.Println("session logout failed", err)
 		return false
@@ -91,12 +86,8 @@ func (t *SessionInvalid) Run(state anvil.TestState, data anvil.ThingData) bool {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	session, err := thing.Session()
-	if err != nil {
-		anvil.DebugLogger.Println("session request failed", err)
-		return false
-	}
 
+	session := thing.Session()
 	err = am.LogoutSession(session.Token())
 	if err != nil {
 		anvil.DebugLogger.Println("session logout failed", err)
@@ -142,12 +133,8 @@ func (t *SessionReauthenticate) Run(state anvil.TestState, data anvil.ThingData)
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	session, err := thing.Session()
-	if err != nil {
-		anvil.DebugLogger.Println("session request failed", err)
-		return false
-	}
 
+	session := thing.Session()
 	firstToken := session.Token()
 	err = am.LogoutSession(firstToken)
 	if err != nil {
@@ -172,13 +159,54 @@ func (t *SessionReauthenticate) Run(state anvil.TestState, data anvil.ThingData)
 	}
 
 	// check that the session on the thing has been updated
-	session, err = thing.Session()
-	if err != nil {
-		anvil.DebugLogger.Println("session request failed", err)
+	if firstToken == thing.Session().Token() {
+		anvil.DebugLogger.Println("thing hasn't updated the session")
 		return false
 	}
-	if firstToken == session.Token() {
-		anvil.DebugLogger.Println("thing hasn't updated the session")
+
+	return true
+}
+
+// SessionLogout checks that the Logout method invalidates the session
+type SessionLogout struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *SessionLogout) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *SessionLogout) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := thing.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithTree(userPwdAuthTree).
+		HandleCallbacksWith(
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
+
+	thing, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	session := thing.Session()
+	err = session.Logout()
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed", err)
+		return false
+	}
+
+	// check that session has been invalidated
+	valid, err := session.Valid()
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed", err)
+		return false
+	} else if valid {
+		anvil.DebugLogger.Println("invalidated session is shown as valid")
 		return false
 	}
 
