@@ -77,67 +77,101 @@ type connection interface {
 	attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error)
 }
 
-// Thing represents an AM Thing identity
-type Thing struct {
-	connection connection
-	handlers   []callback.Handler
-	session    *Session
+// Thing represents a device or a service with a digital identity in the ForgeRock Identity Platform.
+type Thing interface {
+
+	// RequestAccessToken requests an OAuth 2.0 access token for a thing. The provided scopes will be included in the token
+	// if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
+	// will include the default scopes configured in the OAuth 2.0 Client.
+	RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error)
+
+	// RequestAttributes requests the attributes with the specified names associated with the thing's identity.
+	// If no names are specified then all the allowed attributes will be returned.
+	RequestAttributes(names ...string) (response AttributesResponse, err error)
+
+	// Session returns the current session for the Thing.
+	Session() Session
 }
 
 // Session holds session data
-type Session struct {
-	thing *Thing
+type Session interface {
+
+	// Token returns the session token
+	Token() string
+
+	// HasRestrictedToken returns true if the session has a restricted token
+	HasRestrictedToken() bool
+
+	// SigningKey returns the signing key associated with a restricted SSO token
+	SigningKey() crypto.Signer
+
+	// Nonce returns the session nonce
+	Nonce() int
+
+	// IncrementNonce increments the session nonce
+	IncrementNonce()
+
+	// Valid returns true if the session is valid
+	Valid() (bool, error)
+
+	// Reauthenticate the thing to create a new session
+	Reauthenticate() (session Session, err error)
+
+	// Logout the session
+	Logout() error
+}
+
+type defaultThing struct {
+	connection connection
+	handlers   []callback.Handler
+	session    Session
+}
+
+type defaultSession struct {
+	thing Thing
 	token string
 	nonce int
 	key   crypto.Signer
 }
 
-// Token returns the session token
-func (s *Session) Token() string {
+func (s *defaultSession) Token() string {
 	return s.token
 }
 
-// HasRestrictedToken returns true if the session has a restricted token
-func (s *Session) HasRestrictedToken() bool {
+func (s *defaultSession) HasRestrictedToken() bool {
 	return s.key != nil
 }
 
-// SigningKey returns the signing key associated with a restricted SSO token
-func (s *Session) SigningKey() crypto.Signer {
+func (s *defaultSession) SigningKey() crypto.Signer {
 	return s.key
 }
 
-// Nonce returns the session nonce
-func (s *Session) Nonce() int {
+func (s *defaultSession) Nonce() int {
 	return s.nonce
 }
 
-// IncrementNonce increments the session nonce
-func (s *Session) IncrementNonce() {
+func (s *defaultSession) IncrementNonce() {
 	s.nonce++
 }
 
-// Valid returns true if the session is valid
-func (s *Session) Valid() (bool, error) {
-	if s.thing == nil || s.thing.connection == nil {
+func (s *defaultSession) Valid() (bool, error) {
+	if s.thing == nil || s.thing.(*defaultThing).connection == nil {
 		return false, ErrNoConnection
 	}
-	return s.thing.connection.validateSession(s.token)
+	return s.thing.(*defaultThing).connection.validateSession(s.token)
 }
 
-// Reauthenticate the thing to create a new session
-func (s *Session) Reauthenticate() (session *Session, err error) {
-	err = s.thing.authenticate()
-	return s.thing.session, err
+func (s *defaultSession) Reauthenticate() (session Session, err error) {
+	err = s.thing.(*defaultThing).authenticate()
+	return s.thing.Session(), err
 }
 
-// Logout the session
-func (s *Session) Logout() error {
-	return s.thing.connection.logoutSession(s.token)
+func (s *defaultSession) Logout() error {
+	return s.thing.(*defaultThing).connection.logoutSession(s.token)
 }
 
 // authenticate the Thing
-func (t *Thing) authenticate() (err error) {
+func (t *defaultThing) authenticate() (err error) {
 	auth := authenticatePayload{}
 	var key crypto.Signer
 	for {
@@ -146,7 +180,7 @@ func (t *Thing) authenticate() (err error) {
 		}
 
 		if auth.HasSessionToken() {
-			t.session = &Session{thing: t, token: auth.TokenID, key: key}
+			t.session = &defaultSession{thing: t, token: auth.TokenID, key: key}
 			return nil
 		}
 		if key, err = processCallbacks(t.handlers, auth.Callbacks); err != nil {
@@ -155,21 +189,20 @@ func (t *Thing) authenticate() (err error) {
 	}
 }
 
-// Session returns the Thing's current session
-func (t *Thing) Session() *Session {
+func (t *defaultThing) Session() Session {
 	return t.session
 }
 
 // makeAuthorisedRequest makes a request that requires a session token
 // if the session has expired, the session is renewed and the request is repeated
-func (t *Thing) makeAuthorisedRequest(f func(session *Session) error) (err error) {
+func (t *defaultThing) makeAuthorisedRequest(f func(session Session) error) (err error) {
 	session := t.Session()
 	for i := 0; i < 2; i++ {
 		err = f(session)
 		if err == nil || !errors.Is(err, ErrUnauthorised) {
 			return err
 		}
-		valid, validateErr := t.connection.validateSession(t.session.token)
+		valid, validateErr := t.connection.validateSession(t.session.Token())
 		if validateErr != nil || valid {
 			return err
 		}
@@ -186,34 +219,31 @@ type signedRequestClaims struct {
 	CSRF string `json:"csrf"`
 }
 
-func signedJWTBody(session *Session, url string, version string, body interface{}) (string, error) {
+func signedJWTBody(session Session, url string, version string, body interface{}) (string, error) {
 	opts := &jose.SignerOptions{}
 	opts.WithHeader("aud", url)
 	opts.WithHeader("api", version)
-	opts.WithHeader("nonce", session.nonce)
+	opts.WithHeader("nonce", session.Nonce())
 	// increment the nonce so that the token can be used in a subsequent request
 	session.IncrementNonce()
 
-	sig, err := jws.NewSigner(session.key, opts)
+	sig, err := jws.NewSigner(session.SigningKey(), opts)
 	if err != nil {
 		return "", err
 	}
-	builder := jwt.Signed(sig).Claims(signedRequestClaims{CSRF: session.token})
+	builder := jwt.Signed(sig).Claims(signedRequestClaims{CSRF: session.Token()})
 	if body != nil {
 		builder = builder.Claims(body)
 	}
 	return builder.CompactSerialize()
 }
 
-// RequestAccessToken requests an OAuth 2.0 access token for a thing. The provided scopes will be included in the token
-// if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
-// will include the default scopes configured in the OAuth 2.0 Client.
-func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error) {
+func (t *defaultThing) RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error) {
 	payload := getAccessTokenPayload{Scope: scopes}
 	var requestBody string
 	var content contentType
 
-	err = t.makeAuthorisedRequest(func(session *Session) error {
+	err = t.makeAuthorisedRequest(func(session Session) error {
 		if session.HasRestrictedToken() {
 			info, err := t.connection.amInfo()
 			if err != nil {
@@ -232,7 +262,7 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 			requestBody = string(b)
 			content = applicationJSON
 		}
-		reply, err := t.connection.accessToken(session.token, content, requestBody)
+		reply, err := t.connection.accessToken(session.Token(), content, requestBody)
 		if reply != nil {
 			DebugLogger.Println("RequestAccessToken response: ", string(reply))
 		}
@@ -244,10 +274,8 @@ func (t *Thing) RequestAccessToken(scopes ...string) (response AccessTokenRespon
 	return response, err
 }
 
-// RequestAttributes requests the attributes with the specified names associated with the thing's identity.
-// If no names are specified then all the allowed attributes will be returned.
-func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse, err error) {
-	err = t.makeAuthorisedRequest(func(session *Session) error {
+func (t *defaultThing) RequestAttributes(names ...string) (response AttributesResponse, err error) {
+	err = t.makeAuthorisedRequest(func(session Session) error {
 		var requestBody string
 		var content contentType
 		if session.HasRestrictedToken() {
@@ -263,7 +291,7 @@ func (t *Thing) RequestAttributes(names ...string) (response AttributesResponse,
 		} else {
 			content = applicationJSON
 		}
-		reply, err := t.connection.attributes(session.token, content, requestBody, names)
+		reply, err := t.connection.attributes(session.Token(), content, requestBody, names)
 		if err != nil {
 			DebugLogger.Println("RequestAttributes response: ", string(reply))
 			return err
@@ -296,7 +324,7 @@ type Builder interface {
 	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM\Thing Gateway
 	TimeoutRequestAfter(time.Duration) Builder
 	// Create a Thing instance and authenticates\registers it with AM
-	Create() (*Thing, error)
+	Create() (Thing, error)
 }
 
 type authHandlerBuilder struct {
@@ -384,7 +412,7 @@ func JWKThumbprint(key crypto.Signer) (string, error) {
 	return base64.URLEncoding.EncodeToString(thumbprint), nil
 }
 
-func (b *baseBuilder) Create() (*Thing, error) {
+func (b *baseBuilder) Create() (Thing, error) {
 	if b.u == nil {
 		return nil, ErrNoConnection
 	}
@@ -437,14 +465,11 @@ func (b *baseBuilder) Create() (*Thing, error) {
 			})
 		}
 	}
-	thing := &Thing{
+	thing := &defaultThing{
 		connection: client,
 		handlers:   b.handlers,
 	}
 	err = thing.authenticate()
-	if err != nil {
-		return thing, err
-	}
 	return thing, err
 }
 

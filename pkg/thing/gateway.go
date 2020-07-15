@@ -48,7 +48,7 @@ var ErrCOAPServerAlreadyStarted = errors.New("CoAP server has already been start
 
 // ThingGateway represents the Thing Gateway
 type ThingGateway struct {
-	Thing     Thing
+	Thing     defaultThing
 	authCache *tokencache.Cache
 	// coap server
 	coapServer *coap.Server
@@ -59,7 +59,7 @@ type ThingGateway struct {
 // NewThingGateway creates a new Thing Gateway
 func NewThingGateway(baseURL string, realm string, authTree string, handlers []callback.Handler) *ThingGateway {
 	return &ThingGateway{
-		Thing: Thing{
+		Thing: defaultThing{
 			connection: &amConnection{baseURL: baseURL, realm: realm, authTree: authTree},
 			handlers:   handlers,
 		},

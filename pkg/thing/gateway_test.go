@@ -47,6 +47,10 @@ func (m *mockClient) validateSession(tokenID string) (ok bool, err error) {
 	return true, nil
 }
 
+func (m *mockClient) logoutSession(tokenID string) (err error) {
+	return nil
+}
+
 func (m *mockClient) initialise() error {
 	m.amInfoSet = amInfoSet{
 		AccessTokenURL: "/things",
@@ -86,7 +90,7 @@ func (m *mockClient) attributes(tokenID string, _ contentType, payload string, n
 
 func testGateway(client *mockClient) *ThingGateway {
 	return &ThingGateway{
-		Thing:     Thing{connection: client},
+		Thing:     defaultThing{connection: client},
 		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 
