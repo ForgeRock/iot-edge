@@ -83,10 +83,10 @@ type Thing struct {
 
 // Session holds session data
 type Session struct {
-	connection connection
-	token      string
-	nonce      int
-	key        crypto.Signer
+	thing *Thing
+	token string
+	nonce int
+	key   crypto.Signer
 }
 
 // Token returns the session token
@@ -116,26 +116,33 @@ func (s *Session) IncrementNonce() {
 
 // Valid returns true if the session is valid
 func (s *Session) Valid() (bool, error) {
-	if s.connection == nil {
+	if s.thing == nil || s.thing.connection == nil {
 		return false, ErrNoConnection
 	}
-	return s.connection.validateSession(s.token)
+	return s.thing.connection.validateSession(s.token)
+}
+
+// Reauthenticate the thing to create a new session
+func (s *Session) Reauthenticate() (session *Session, err error) {
+	err = s.thing.authenticate()
+	return s.thing.session, err
 }
 
 // authenticate the Thing
-func (t *Thing) authenticate() (session *Session, err error) {
+func (t *Thing) authenticate() (err error) {
 	auth := authenticatePayload{}
 	var key crypto.Signer
 	for {
 		if auth, err = t.connection.authenticate(auth); err != nil {
-			return session, err
+			return err
 		}
 
 		if auth.HasSessionToken() {
-			return &Session{connection: t.connection, token: auth.TokenID, key: key}, nil
+			t.session = &Session{thing: t, token: auth.TokenID, key: key}
+			return nil
 		}
 		if key, err = processCallbacks(t.handlers, auth.Callbacks); err != nil {
-			return session, err
+			return err
 		}
 	}
 }
@@ -143,11 +150,10 @@ func (t *Thing) authenticate() (session *Session, err error) {
 // Session returns a session for the Thing
 func (t *Thing) Session() (session *Session, err error) {
 	if t.session == nil {
-		session, err = t.authenticate()
+		err = t.authenticate()
 		if err != nil {
-			return session, err
+			return nil, err
 		}
-		t.session = session
 	}
 	return t.session, nil
 }
@@ -434,7 +440,7 @@ func (b *baseBuilder) Create() (*Thing, error) {
 		connection: client,
 		handlers:   b.handlers,
 	}
-	_, err = thing.authenticate()
+	err = thing.authenticate()
 	if err != nil {
 		return thing, err
 	}

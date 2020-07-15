@@ -115,3 +115,72 @@ func (t *SessionInvalid) Run(state anvil.TestState, data anvil.ThingData) bool {
 
 	return true
 }
+
+// SessionReauthenticate checks that the Reauthenticate method creates a valid session and that the thing session is
+// updated
+type SessionReauthenticate struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *SessionReauthenticate) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *SessionReauthenticate) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := thing.New().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithTree(userPwdAuthTree).
+		HandleCallbacksWith(
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
+
+	thing, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	session, err := thing.Session()
+	if err != nil {
+		anvil.DebugLogger.Println("session request failed", err)
+		return false
+	}
+
+	firstToken := session.Token()
+	err = am.LogoutSession(firstToken)
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed", err)
+		return false
+	}
+
+	session, err = session.Reauthenticate()
+	if err != nil {
+		anvil.DebugLogger.Println("session re-authenticate failed", err)
+		return false
+	}
+
+	// check that re-authenticated session is valid
+	valid, err := session.Valid()
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed", err)
+		return false
+	} else if !valid {
+		anvil.DebugLogger.Println("session is invalid")
+		return false
+	}
+
+	// check that the session on the thing has been updated
+	session, err = thing.Session()
+	if err != nil {
+		anvil.DebugLogger.Println("session request failed", err)
+		return false
+	}
+	if firstToken == session.Token() {
+		anvil.DebugLogger.Println("thing hasn't updated the session")
+		return false
+	}
+
+	return true
+}

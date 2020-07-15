@@ -31,6 +31,7 @@ const (
 	serverInfoEndpointVersion = "resource=1.1"
 	authNEndpointVersion      = "protocol=1.0,resource=2.1"
 	thingsEndpointVersion     = "protocol=2.0,resource=1.0"
+	sessionEndpointVersion    = "resource=4.0"
 	httpContentType           = "Content-Type"
 	// Query keys
 	fieldQueryKey         = "_fields"
@@ -60,7 +61,7 @@ func (c *amConnection) validateSession(tokenID string) (ok bool, err error) {
 		return false, err
 	}
 
-	request.Header.Add(acceptAPIVersion, "resource=4.0")
+	request.Header.Add(acceptAPIVersion, sessionEndpointVersion)
 	request.Header.Add(httpContentType, string(applicationJSON))
 	response, err := c.Do(request)
 	if err != nil {
