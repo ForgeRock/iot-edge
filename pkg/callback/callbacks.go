@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -266,3 +267,28 @@ const (
 	TypeService ThingType = "service"
 	TypeGateway ThingType = "gateway"
 )
+
+// ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
+func ProcessCallbacks(handlers []Handler, callbacks []Callback) (key crypto.Signer, err error) {
+	for _, cb := range callbacks {
+	handlerLoop:
+		for _, h := range handlers {
+			switch err = h.Handle(cb); err {
+			case ErrNotHandled:
+				continue
+			case nil:
+				if r, ok := h.(ProofOfPossessionHandler); ok {
+					key = r.SigningKey()
+				}
+				break handlerLoop
+			default:
+				debug.Logger.Println(err)
+				continue
+			}
+		}
+		if err != nil {
+			return key, err
+		}
+	}
+	return key, nil
+}

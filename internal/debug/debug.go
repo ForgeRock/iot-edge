@@ -19,9 +19,15 @@ package debug
 import (
 	"fmt"
 	"github.com/go-ocf/go-coap"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httputil"
 )
+
+// All SDK debug information is written to this Logger. The logger is muted by default. To see the debug output assign
+// your own logger (or a new one) to this variable.
+var Logger = log.New(ioutil.Discard, "", 0)
 
 // DumpHTTPRoundTrip will dump the given HTTP request and response
 func DumpHTTPRoundTrip(req *http.Request, res *http.Response) (message string) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thing
+package client
 
 import (
 	"crypto/tls"
@@ -76,7 +76,7 @@ func testAMClientInitialise(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.initialise()
+	err = c.Initialise()
 	if err != nil {
 		return err
 	}
@@ -144,12 +144,12 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.initialise()
+	err = c.Initialise()
 	if err != nil {
 		return err
 	}
 
-	reply, err := c.authenticate(authenticatePayload{})
+	reply, err := c.Authenticate(AuthenticatePayload{})
 	if err != nil {
 		return err
 	}
@@ -160,8 +160,8 @@ func testAMClientAuthenticate(mux *http.ServeMux) (err error) {
 }
 
 func TestAMClient_Authenticate(t *testing.T) {
-	info := authenticatePayload{
-		sessionToken: sessionToken{TokenID: "12345"},
+	info := AuthenticatePayload{
+		SessionToken: SessionToken{TokenID: "12345"},
 	}
 	b, err := json.Marshal(info)
 	if err != nil {
@@ -197,7 +197,7 @@ func TestAMClient_AMInfo(t *testing.T) {
 		realm:    testRealm,
 		authTree: testTree,
 	}
-	info, err := client.amInfo()
+	info, err := client.AMInfo()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,12 +239,12 @@ func testAMClientAccessToken(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.initialise()
+	err = c.Initialise()
 	if err != nil {
 		return err
 	}
 
-	_, err = c.accessToken("aToken", applicationJOSE, "aSignedWT")
+	_, err = c.AccessToken("aToken", ApplicationJOSE, "aSignedWT")
 	return err
 }
 
@@ -294,12 +294,12 @@ func testAMClientAttributes(mux *http.ServeMux) (err error) {
 	}
 	testSetRootCAs(c, server)
 
-	err = c.initialise()
+	err = c.Initialise()
 	if err != nil {
 		return err
 	}
 
-	_, err = c.attributes("aToken", applicationJOSE, "aSignedWT", []string{})
+	_, err = c.Attributes("aToken", ApplicationJOSE, "aSignedWT", []string{})
 	return err
 }
 

@@ -18,7 +18,8 @@ package main
 
 import (
 	"crypto/x509"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
+	"github.com/ForgeRock/iot-edge/internal/client"
+	"github.com/ForgeRock/iot-edge/pkg/builder"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 	"strings"
@@ -53,7 +54,7 @@ func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData,
 
 func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
@@ -88,7 +89,7 @@ func (t *RegisterDeviceWithoutCert) Setup(state anvil.TestState) (data anvil.Thi
 
 func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
@@ -96,7 +97,7 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 		RegisterThing(nil, nil)
 
 	_, err := builder.Create()
-	if err != thing.ErrUnauthorised {
+	if err != client.ErrUnauthorised {
 		anvil.DebugLogger.Printf("Expected Not Authorised; got %v", err)
 		return false
 	}
@@ -138,7 +139,7 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 		EmployeeNumber []string `json:"employeeNumber"`
 	}{}
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
@@ -190,7 +191,7 @@ func (t *RegisterServiceCert) Setup(state anvil.TestState) (data anvil.ThingData
 
 func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
@@ -245,7 +246,7 @@ func (t *RegisterDeviceNoKeyID) Setup(state anvil.TestState) (data anvil.ThingDa
 
 func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
@@ -270,7 +271,7 @@ func (t *RegisterDeviceNoKey) Setup(state anvil.TestState) (data anvil.ThingData
 
 func (t *RegisterDeviceNoKey) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).

@@ -22,6 +22,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/pkg/builder"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"io/ioutil"
 	"log"
@@ -113,7 +114,7 @@ func certRegThing() (err error) {
 		return err
 	}
 
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
@@ -156,7 +157,7 @@ func main() {
 	flag.Parse()
 
 	// pipe debug to standard out
-	thing.DebugLogger.SetOutput(os.Stdout)
+	thing.DebugLogger().SetOutput(os.Stdout)
 
 	if err := certRegThing(); err != nil {
 		log.Fatal(err)

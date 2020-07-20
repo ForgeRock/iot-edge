@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thing
+package client
 
 import (
 	"context"
@@ -22,14 +22,25 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/json"
+	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
 	"golang.org/x/sync/errgroup"
 	"testing"
+	"time"
 )
+
+func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
+	return &dtls.Config{
+		Certificates:         cert,
+		ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+		ClientAuth:           dtls.RequireAnyClientCert,
+	}
+}
 
 func testGenerateSigner() crypto.Signer {
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -72,7 +83,7 @@ type testCOAPServer struct {
 }
 
 func (s testCOAPServer) Start() (address string, cancel func(), err error) {
-	l, err := net.NewDTLSListener("udp", ":0", s.config, heartBeat)
+	l, err := net.NewDTLSListener("udp", ":0", s.config, time.Millisecond*100)
 	if err != nil {
 		return "", func() {}, err
 	}
@@ -101,11 +112,11 @@ func testGatewayClientInitialise(client *gatewayConnection, server *testCOAPServ
 		defer cancel()
 	}
 
-	return client.initialise()
+	return client.Initialise()
 }
 
 func TestGatewayClient_Initialise(t *testing.T) {
-	cert, _ := publicKeyCertificate(testGenerateSigner())
+	cert, _ := frcrypto.PublicKeyCertificate(testGenerateSigner())
 
 	tests := []struct {
 		name       string
@@ -113,10 +124,12 @@ func TestGatewayClient_Initialise(t *testing.T) {
 		client     *gatewayConnection
 		server     *testCOAPServer
 	}{
-		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()}, server: &testCOAPServer{config: dtlsServerConfig(cert), mux: coap.DefaultServeMux}},
+		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()},
+			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: coap.DefaultServeMux}},
 		{name: "client-no-signer", client: &gatewayConnection{key: nil}, server: nil},
 		// starting a DTLS server without a certificate or PSK is an error.
-		{name: "server-wrong-tls-signer", client: &gatewayConnection{key: testGenerateSigner()}, server: &testCOAPServer{config: dtlsServerConfig(testWrongTLSSigner()), mux: coap.DefaultServeMux}},
+		{name: "server-wrong-tls-signer", client: &gatewayConnection{key: testGenerateSigner()},
+			server: &testCOAPServer{config: dtlsServerConfig(testWrongTLSSigner()), mux: coap.DefaultServeMux}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
@@ -135,7 +148,7 @@ func TestGatewayClient_Initialise(t *testing.T) {
 func TestGatewayClient_Initialise_Concurrent(t *testing.T) {
 	t.Skip("Concurrent DTLS handshakes fail")
 
-	cert, _ := publicKeyCertificate(testGenerateSigner())
+	cert, _ := frcrypto.PublicKeyCertificate(testGenerateSigner())
 	addr, cancel, err := testCOAPServer{config: dtlsServerConfig(cert), mux: coap.DefaultServeMux}.Start()
 	defer cancel()
 	if err != nil {
@@ -151,7 +164,7 @@ func TestGatewayClient_Initialise_Concurrent(t *testing.T) {
 			key:     key,
 		}
 		errGroup.Go(func() error {
-			return client.initialise()
+			return client.Initialise()
 		})
 	}
 	err = errGroup.Wait()
@@ -170,24 +183,24 @@ func testGatewayClientAuthenticate(client *gatewayConnection, server *testCOAPSe
 		defer cancel()
 	}
 
-	err = client.initialise()
+	err = client.Initialise()
 	if err != nil {
 		return err
 	}
-	_, err = client.authenticate(authenticatePayload{})
+	_, err = client.Authenticate(AuthenticatePayload{})
 	return err
 }
 
 func TestGatewayClient_Authenticate(t *testing.T) {
-	info := authenticatePayload{
-		sessionToken: sessionToken{TokenID: "12345"},
+	info := AuthenticatePayload{
+		SessionToken: SessionToken{TokenID: "12345"},
 	}
 	b, err := json.Marshal(info)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cert, _ := publicKeyCertificate(testGenerateSigner())
+	cert, _ := frcrypto.PublicKeyCertificate(testGenerateSigner())
 
 	tests := []struct {
 		name       string
@@ -225,16 +238,16 @@ func testGatewayClientAMInfo(client *gatewayConnection, server *testCOAPServer) 
 		defer cancel()
 	}
 
-	err = client.initialise()
+	err = client.Initialise()
 	if err != nil {
 		return err
 	}
-	_, err = client.amInfo()
+	_, err = client.AMInfo()
 	return err
 }
 
 func TestGatewayClient_AMInfo(t *testing.T) {
-	info := amInfoSet{
+	info := AMInfoResponse{
 		AccessTokenURL: "/things",
 		ThingsVersion:  "1",
 	}
@@ -243,7 +256,7 @@ func TestGatewayClient_AMInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cert, _ := publicKeyCertificate(testGenerateSigner())
+	cert, _ := frcrypto.PublicKeyCertificate(testGenerateSigner())
 
 	tests := []struct {
 		name       string
@@ -281,16 +294,16 @@ func testGatewayClientAccessToken(client *gatewayConnection, server *testCOAPSer
 		defer cancel()
 	}
 
-	err = client.initialise()
+	err = client.Initialise()
 	if err != nil {
 		return err
 	}
-	_, err = client.accessToken("token", applicationJOSE, "signedWT")
+	_, err = client.AccessToken("token", ApplicationJOSE, "signedWT")
 	return err
 }
 
 func TestGatewayClient_AccessToken(t *testing.T) {
-	cert, _ := publicKeyCertificate(testGenerateSigner())
+	cert, _ := frcrypto.PublicKeyCertificate(testGenerateSigner())
 
 	tests := []struct {
 		name       string
@@ -314,4 +327,17 @@ func TestGatewayClient_AccessToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+func testWrongTLSSigner() tls.Certificate {
+	right, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	wrong, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+	cert, err := frcrypto.PublicKeyCertificate(right)
+	if err != nil {
+		panic(err)
+	}
+
+	cert.PrivateKey = wrong
+	return cert
 }

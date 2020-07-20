@@ -17,60 +17,9 @@
 package thing
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
 )
-
-// amInfoSet contains the information required to construct valid signed JWTs
-type amInfoSet struct {
-	Realm          string
-	AccessTokenURL string
-	AttributesURL  string
-	ThingsVersion  string
-}
-
-// authenticatePayload represents the outbound and inbound data during an authentication request
-type authenticatePayload struct {
-	sessionToken
-	AuthId    string              `json:"authId,omitempty"`
-	AuthIDKey string              `json:"auth_id_digest,omitempty"`
-	Callbacks []callback.Callback `json:"callbacks,omitempty"`
-}
-
-// HasSessionToken returns true if the payload contains a session token
-// Indicates that the authentication workflow has completed successfully
-func (p authenticatePayload) HasSessionToken() bool {
-	return p.TokenID != ""
-}
-
-type getAccessTokenPayload struct {
-	Scope []string `json:"scope,omitempty"`
-}
-
-func (p authenticatePayload) String() string {
-	return payloadToString(p)
-}
-
-func (p getAccessTokenPayload) String() string {
-	return payloadToString(p)
-}
-
-func payloadToString(p interface{}) string {
-	b, err := json.Marshal(p)
-	if err != nil {
-		return ""
-	}
-
-	var out bytes.Buffer
-	err = json.Indent(&out, b, "", "\t")
-	if err != nil {
-		return ""
-	}
-	return out.String()
-}
 
 // AccessTokenResponse contains the response received from AM after a successful access token request
 type AccessTokenResponse struct {
@@ -136,9 +85,4 @@ func (a AttributesResponse) Get(key string) ([]string, error) {
 		valuesAsStrings[i] = v.(string)
 	}
 	return valuesAsStrings, nil
-}
-
-// sessionToken holds a session token
-type sessionToken struct {
-	TokenID string `json:"tokenId,omitempty"`
 }

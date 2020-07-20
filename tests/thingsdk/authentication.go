@@ -17,6 +17,8 @@
 package main
 
 import (
+	"github.com/ForgeRock/iot-edge/internal/client"
+	"github.com/ForgeRock/iot-edge/pkg/builder"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
@@ -25,7 +27,7 @@ import (
 
 func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
 	state.SetGatewayTree(jwtPopAuthTree)
-	return thing.New().
+	return builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopAuthTree).
@@ -104,7 +106,7 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 		return false
 	}
 	_, err = thingJWTAuth(state, data).Create()
-	if err != thing.ErrUnauthorised {
+	if err != client.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -130,7 +132,7 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopAuthTreeCustomClaims).
@@ -166,7 +168,7 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopAuthTreeCustomClaims).
@@ -176,7 +178,7 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 			}{"0"}
 		})
 	_, err := builder.Create()
-	if err != thing.ErrUnauthorised {
+	if err != client.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -195,7 +197,7 @@ func (a AuthenticateWithUserPwd) Setup(state anvil.TestState) (data anvil.ThingD
 
 func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
@@ -222,7 +224,7 @@ func (a AuthenticateWithIncorrectPwd) Setup(state anvil.TestState) (data anvil.T
 
 func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
@@ -230,7 +232,7 @@ func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.Thin
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: "wrong"})
 	_, err := builder.Create()
-	if err != thing.ErrUnauthorised {
+	if err != client.ErrUnauthorised {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -255,7 +257,7 @@ func (t *AuthenticateThingThroughGateway) Setup(state anvil.TestState) (data anv
 
 func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTree)
-	_, err := thing.New().
+	_, err := builder.Thing().
 		ConnectTo(state.URL()).
 		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
 		Create()
