@@ -21,7 +21,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
+	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
@@ -87,7 +87,6 @@ var tests = []anvil.SDKTest{
 	&AttributesExpiredSession{},
 	&SessionValid{},
 	&SessionInvalid{},
-	&SessionReauthenticate{},
 	&SessionLogout{},
 }
 
@@ -99,7 +98,7 @@ func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 	result = true
 	var logfile *os.File
 	for _, test := range tests {
-		thing.DebugLogger, logfile = anvil.NewFileDebugger(subDir, anvil.TestName(test))
+		debug.Logger, logfile = anvil.NewFileDebugger(subDir, anvil.TestName(test))
 		if !anvil.RunTest(testCtx, test) {
 			result = false
 		}
@@ -158,7 +157,7 @@ func runTests() (err error) {
 		return err
 	}
 	thingsdkLogger, logfile := anvil.NewFileDebugger(debugDir, "thingsdk")
-	am.DebugLogger, thing.DebugLogger = thingsdkLogger, thingsdkLogger
+	am.DebugLogger, debug.Logger = thingsdkLogger, thingsdkLogger
 	defer func() {
 		_ = logfile.Close()
 	}()

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thing
+package client
 
 import (
 	"bytes"
@@ -23,6 +23,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/pion/dtls/v2"
@@ -32,7 +33,7 @@ import (
 )
 
 // CoAP Content-Formats registry does not contain a JOSE value, using an unassigned value
-const appJOSE coap.MediaType = 11650
+const AppJOSE coap.MediaType = 11650
 
 type errCoAPStatusCode struct {
 	code    codes.Code
@@ -84,9 +85,9 @@ func dtlsClientConfig(cert ...tls.Certificate) *dtls.Config {
 }
 
 // Initialise checks that the server can be reached and prepares the client for further communication
-func (c *gatewayConnection) initialise() (err error) {
+func (c *gatewayConnection) Initialise() (err error) {
 	// create certificate
-	cert, err := publicKeyCertificate(c.key)
+	cert, err := frcrypto.PublicKeyCertificate(c.key)
 	if err != nil {
 		return err
 	}
@@ -112,8 +113,8 @@ func (c *gatewayConnection) initialise() (err error) {
 	return err
 }
 
-// authenticate with the AM authTree using the given payload
-func (c *gatewayConnection) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
+// Authenticate with the AM authTree using the given payload
+func (c *gatewayConnection) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return reply, err
@@ -145,8 +146,8 @@ func (c *gatewayConnection) authenticate(payload authenticatePayload) (reply aut
 	return reply, nil
 }
 
-// amInfo makes a request to the Thing Gateway for AM related information
-func (c *gatewayConnection) amInfo() (info amInfoSet, err error) {
+// AMInfo makes a request to the Thing Gateway for AM related information
+func (c *gatewayConnection) AMInfo() (info AMInfoResponse, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return info, err
@@ -168,15 +169,9 @@ func (c *gatewayConnection) amInfo() (info amInfoSet, err error) {
 	return info, nil
 }
 
-// thingEndpointPayload wraps the payload destined for the Thing endpoint with the session token
-type thingEndpointPayload struct {
-	Token   string `json:"token"`
-	Payload string `json:"payload,omitempty"`
-}
-
-// accessToken makes an access token request with the given session token and payload
+// AccessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by Thing Gateway
-func (c *gatewayConnection) accessToken(tokenID string, content contentType, payload string) (reply []byte, err error) {
+func (c *gatewayConnection) AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -187,10 +182,10 @@ func (c *gatewayConnection) accessToken(tokenID string, content contentType, pay
 
 	var coapFormat coap.MediaType
 	switch content {
-	case applicationJOSE:
-		coapFormat = appJOSE
-	case applicationJSON:
-		wrappedPayload := thingEndpointPayload{
+	case ApplicationJOSE:
+		coapFormat = AppJOSE
+	case ApplicationJSON:
+		wrappedPayload := ThingEndpointPayload{
 			Token:   tokenID,
 			Payload: payload,
 		}
@@ -217,9 +212,9 @@ func (c *gatewayConnection) accessToken(tokenID string, content contentType, pay
 	}
 }
 
-// attributes makes a thing attributes request with the given payload
+// Attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by Thing Gateway
-func (c *gatewayConnection) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
+func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -229,11 +224,11 @@ func (c *gatewayConnection) attributes(tokenID string, content contentType, payl
 
 	var coapFormat coap.MediaType
 	switch content {
-	case applicationJOSE:
-		coapFormat = appJOSE
-	case applicationJSON:
+	case ApplicationJOSE:
+		coapFormat = AppJOSE
+	case ApplicationJSON:
 		coapFormat = coap.AppJSON
-		wrappedPayload := thingEndpointPayload{
+		wrappedPayload := ThingEndpointPayload{
 			Token:   tokenID,
 			Payload: payload,
 		}
@@ -273,7 +268,7 @@ func (c *gatewayConnection) makeSessionRequest(tokenID string, action string) (r
 	ctx, cancel := c.context()
 	defer cancel()
 
-	b, err := json.Marshal(sessionToken{TokenID: tokenID})
+	b, err := json.Marshal(SessionToken{TokenID: tokenID})
 	if err != nil {
 		return response, err
 	}
@@ -287,8 +282,8 @@ func (c *gatewayConnection) makeSessionRequest(tokenID string, action string) (r
 	return conn.ExchangeWithContext(ctx, message)
 }
 
-// validateSession represented by the given token
-func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error) {
+// ValidateSession represented by the given token
+func (c *gatewayConnection) ValidateSession(tokenID string) (ok bool, err error) {
 	response, err := c.makeSessionRequest(tokenID, "validate")
 	if err != nil {
 		return false, err
@@ -304,8 +299,8 @@ func (c *gatewayConnection) validateSession(tokenID string) (ok bool, err error)
 	}
 }
 
-// logoutSession represented by the given token
-func (c *gatewayConnection) logoutSession(tokenID string) (err error) {
+// LogoutSession represented by the given token
+func (c *gatewayConnection) LogoutSession(tokenID string) (err error) {
 	response, err := c.makeSessionRequest(tokenID, "logout")
 	if err != nil {
 		return err

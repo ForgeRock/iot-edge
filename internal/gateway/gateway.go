@@ -14,27 +14,30 @@
  * limitations under the License.
  */
 
-package thing
+package gateway
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/sha256"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/client"
+	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
+	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/internal/jws"
+	ithing "github.com/ForgeRock/iot-edge/internal/thing"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	coapnet "github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
-	"math/big"
 	"net"
+	"net/url"
 	"time"
 )
 
@@ -48,48 +51,69 @@ var ErrCOAPServerAlreadyStarted = errors.New("CoAP server has already been start
 
 // ThingGateway represents the Thing Gateway
 type ThingGateway struct {
-	Thing     defaultThing
-	authCache *tokencache.Cache
+	gatewayThing     thing.Thing
+	authCache        *tokencache.Cache
+	callbackHandlers []callback.Handler
 	// coap server
 	coapServer *coap.Server
 	coapChan   chan error
 	address    net.Addr
+	// AM connection
+	amConnection client.Connection
+	amURL        string
+	realm        string
+	authTree     string
 }
 
 // NewThingGateway creates a new Thing Gateway
 func NewThingGateway(baseURL string, realm string, authTree string, handlers []callback.Handler) *ThingGateway {
 	return &ThingGateway{
-		Thing: defaultThing{
-			connection: &amConnection{baseURL: baseURL, realm: realm, authTree: authTree},
-			handlers:   handlers,
-		},
-		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
+		authCache:        tokencache.New(5*time.Minute, 10*time.Minute),
+		amURL:            baseURL,
+		realm:            realm,
+		authTree:         authTree,
+		callbackHandlers: handlers,
 	}
 }
 
 // Initialise the Thing Gateway
 func (c *ThingGateway) Initialise() error {
-	err := c.Thing.connection.initialise()
+	amURL, err := url.Parse(c.amURL)
 	if err != nil {
 		return err
 	}
-	return c.Thing.authenticate()
+	// create a connection to AM for forwarding thing requests
+	c.amConnection, err = client.NewConnection().
+		ConnectTo(amURL).
+		InRealm(c.realm).
+		WithTree(c.authTree).
+		Create()
+	if err != nil {
+		return err
+	}
+	// create (register/authenticate) a thing representing the gateway
+	gatewayBuilder := &ithing.BaseBuilder{}
+	c.gatewayThing, err = gatewayBuilder.
+		WithConnection(c.amConnection).
+		HandleCallbacksWith(c.callbackHandlers...).
+		Create()
+	return err
 }
 
-// AuthenticateWith the given authentication tree
-func (c *ThingGateway) AuthenticateWith(tree string) *ThingGateway {
-	c.Thing.connection.(*amConnection).authTree = tree
-	return c
+// SetAuthenticationTree changes the authentication tree that the gateway was created with.
+// This is a convenience function for functional testing.
+func SetAuthenticationTree(c *ThingGateway, tree string) {
+	client.SetAuthenticationTree(c.amConnection, tree)
 }
 
 // authenticate a Thing with AM using the given payload
-func (c *ThingGateway) authenticate(auth authenticatePayload) (reply authenticatePayload, err error) {
+func (c *ThingGateway) authenticate(auth client.AuthenticatePayload) (reply client.AuthenticatePayload, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
 	auth.AuthIDKey = ""
 
-	reply, err = c.Thing.connection.authenticate(auth)
+	reply, err = c.amConnection.Authenticate(auth)
 	if err != nil {
 		return
 	}
@@ -118,10 +142,10 @@ var heartBeat time.Duration = time.Millisecond * 100
 
 // authenticateHandler handles authentication requests
 func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("authenticateHandler")
-	var auth authenticatePayload
+	debug.Logger.Println("authenticateHandler")
+	var auth client.AuthenticatePayload
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
-		DebugLogger.Printf("Unable to unmarshall payload; %s", err)
+		debug.Logger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte("Unable to unmarshall payload"))
 		return
@@ -129,7 +153,7 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 
 	reply, err := c.authenticate(auth)
 	if err != nil {
-		DebugLogger.Printf("Error connecting to AM; %s", err)
+		debug.Logger.Printf("Error connecting to AM; %s", err)
 		w.SetCode(codes.Unauthorized)
 		w.Write([]byte(err.Error()))
 		return
@@ -137,20 +161,20 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 
 	b, err := json.Marshal(reply)
 	if err != nil {
-		DebugLogger.Printf("Error marshalling Auth Payload; %s", err)
+		debug.Logger.Printf("Error marshalling Auth Payload; %s", err)
 		w.SetCode(codes.BadGateway)
 		w.Write([]byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Valid)
 	w.Write(b)
-	DebugLogger.Println("authenticateHandler: success")
+	debug.Logger.Println("authenticateHandler: success")
 }
 
 // amInfoHandler handles AM Info requests
 func (c *ThingGateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("amInfoHandler")
-	info, err := c.Thing.connection.amInfo()
+	debug.Logger.Println("amInfoHandler")
+	info, err := c.amConnection.AMInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
 		w.Write([]byte(""))
@@ -158,17 +182,17 @@ func (c *ThingGateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 	b, err := json.Marshal(info)
 	if err != nil {
-		DebugLogger.Printf("Error marshalling amInfo; %s", err)
+		debug.Logger.Printf("Error marshalling amInfo; %s", err)
 		w.SetCode(codes.BadGateway)
 		w.Write([]byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Content)
 	w.Write(b)
-	DebugLogger.Println("amInfoHandler: success")
+	debug.Logger.Println("amInfoHandler: success")
 }
 
-func decodeThingEndpointRequest(msg coap.Message) (token string, content contentType, payload string, err error) {
+func decodeThingEndpointRequest(msg coap.Message) (token string, content client.ContentType, payload string, err error) {
 	coapFormat, ok := msg.Option(coap.ContentFormat).(coap.MediaType)
 	if !ok {
 		return token, content, payload, fmt.Errorf("missing content format")
@@ -176,29 +200,31 @@ func decodeThingEndpointRequest(msg coap.Message) (token string, content content
 
 	switch coapFormat {
 	case coap.AppJSON:
-		var request thingEndpointPayload
+		var request client.ThingEndpointPayload
 		if err := json.Unmarshal(msg.Payload(), &request); err != nil {
 			return token, content, payload, err
 		}
 		token = request.Token
-		content = applicationJSON
+		content = client.ApplicationJSON
 		payload = request.Payload
-	case appJOSE:
+	case client.AppJOSE:
 		payload = string(msg.Payload())
 		// get SSO token from the CSRF claim in the JWT
-		var claims signedRequestClaims
+		var claims struct {
+			CSRF string `json:"csrf"`
+		}
 		if err := jws.ExtractClaims(payload, &claims); err != nil {
 			return token, content, payload, err
 		}
 		token = claims.CSRF
-		content = applicationJOSE
+		content = client.ApplicationJOSE
 	}
 	return token, content, payload, nil
 }
 
 // accessTokenHandler handles access token requests
 func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("accessTokenHandler")
+	debug.Logger.Println("accessTokenHandler")
 
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
@@ -207,9 +233,9 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 		return
 	}
 
-	b, err := c.Thing.connection.accessToken(token, content, payload)
+	b, err := c.amConnection.AccessToken(token, content, payload)
 	if err != nil {
-		if errors.Is(err, ErrUnauthorised) {
+		if errors.Is(err, client.ErrUnauthorised) {
 			w.SetCode(codes.Unauthorized)
 		} else {
 			w.SetCode(codes.GatewayTimeout)
@@ -219,12 +245,12 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 	}
 	w.SetCode(codes.Changed)
 	w.Write(b)
-	DebugLogger.Println("accessTokenHandler: success")
+	debug.Logger.Println("accessTokenHandler: success")
 }
 
 // attributesHandler handles a thing attributes requests
 func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("attributesHandler")
+	debug.Logger.Println("attributesHandler")
 	names := r.Msg.Query()
 
 	token, format, payload, err := decodeThingEndpointRequest(r.Msg)
@@ -233,9 +259,9 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	b, err := c.Thing.connection.attributes(token, format, payload, names)
+	b, err := c.amConnection.Attributes(token, format, payload, names)
 	if err != nil {
-		if errors.Is(err, ErrUnauthorised) {
+		if errors.Is(err, client.ErrUnauthorised) {
 			w.SetCode(codes.Unauthorized)
 		} else {
 			w.SetCode(codes.GatewayTimeout)
@@ -245,14 +271,14 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 	}
 	w.SetCode(codes.Changed)
 	w.Write(b)
-	DebugLogger.Println("attributesHandler: success")
+	debug.Logger.Println("attributesHandler: success")
 }
 
 // sessionHandler handles a session validation request
 func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
-	DebugLogger.Println("sessionHandler")
+	debug.Logger.Println("sessionHandler")
 
-	var token sessionToken
+	var token client.SessionToken
 	if err := json.Unmarshal(r.Msg.Payload(), &token); err != nil {
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte(err.Error()))
@@ -260,7 +286,7 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 	switch r.Msg.QueryString() {
 	case "_action=validate":
-		valid, err := c.Thing.connection.validateSession(token.TokenID)
+		valid, err := c.amConnection.ValidateSession(token.TokenID)
 		if err != nil {
 			w.SetCode(codes.GatewayTimeout)
 			w.Write([]byte(err.Error()))
@@ -272,9 +298,9 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 			w.SetCode(codes.Unauthorized)
 		}
 		w.Write(nil)
-		DebugLogger.Printf("sessionHandler: success. validate %v", valid)
+		debug.Logger.Printf("sessionHandler: success. validate %v", valid)
 	case "_action=logout":
-		err := c.Thing.connection.logoutSession(token.TokenID)
+		err := c.amConnection.LogoutSession(token.TokenID)
 		if err != nil {
 			w.SetCode(codes.GatewayTimeout)
 			w.Write([]byte(err.Error()))
@@ -282,7 +308,7 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 		}
 		w.SetCode(codes.Changed)
 		w.Write(nil)
-		DebugLogger.Printf("sessionHandler: success. log out")
+		debug.Logger.Printf("sessionHandler: success. log out")
 	default:
 		w.SetCode(codes.BadRequest)
 		w.Write([]byte("unknown/missing query"))
@@ -314,7 +340,7 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 	mux.HandleFunc("/attributes", c.attributesHandler)
 	mux.HandleFunc("/session", c.sessionHandler)
 
-	cert, err := publicKeyCertificate(key)
+	cert, err := frcrypto.PublicKeyCertificate(key)
 	if err != nil {
 		return err
 	}
@@ -361,25 +387,4 @@ func (c *ThingGateway) Address() string {
 		return ""
 	}
 	return c.address.String()
-}
-
-// publicKeyCertificate returns a stripped down tls certificate containing the public key
-func publicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
-	if key == nil {
-		return cert, jws.ErrMissingSigner
-	}
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-	}
-
-	raw, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
-	if err != nil {
-		return cert, err
-	}
-	return tls.Certificate{
-
-		Certificate: [][]byte{raw},
-		PrivateKey:  key,
-		Leaf:        &template,
-	}, nil
 }

@@ -17,10 +17,10 @@
 package main
 
 import (
+	"github.com/ForgeRock/iot-edge/pkg/builder"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"reflect"
@@ -279,7 +279,7 @@ func (a AccessTokenWithExactScopesNonRestricted) Setup(state anvil.TestState) (d
 
 func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
@@ -311,7 +311,7 @@ func (a AccessTokenWithNoScopesNonRestricted) Setup(state anvil.TestState) (data
 
 func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
@@ -343,7 +343,7 @@ func (t *AccessTokenExpiredSession) Setup(state anvil.TestState) (data anvil.Thi
 
 func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Thing().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
@@ -356,7 +356,7 @@ func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingD
 		return false
 	}
 
-	err = am.LogoutSession(thing.Session().Token())
+	err = thing.Logout()
 	if err != nil {
 		anvil.DebugLogger.Println("session logout failed", err)
 		return false

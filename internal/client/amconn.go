@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thing
+package client
 
 import (
 	"bytes"
@@ -60,43 +60,43 @@ func (c *amConnection) newSessionRequest(tokenID string, action string) (request
 	}
 
 	request.Header.Add(acceptAPIVersion, sessionEndpointVersion)
-	request.Header.Add(httpContentType, string(applicationJSON))
+	request.Header.Add(httpContentType, string(ApplicationJSON))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	return request, nil
 }
 
 // logoutSession represented by the given token
-func (c *amConnection) logoutSession(tokenID string) (err error) {
+func (c *amConnection) LogoutSession(tokenID string) (err error) {
 	request, err := c.newSessionRequest(tokenID, "logout")
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return err
 	}
 
 	response, err := c.Do(request)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return err
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return fmt.Errorf("session logout failed")
 	}
 	return nil
 }
 
 // validateSession represented by the given token
-func (c *amConnection) validateSession(tokenID string) (ok bool, err error) {
+func (c *amConnection) ValidateSession(tokenID string) (ok bool, err error) {
 	request, err := c.newSessionRequest(tokenID, "validate")
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return false, err
 	}
 
 	response, err := c.Do(request)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return false, err
 	}
 	defer response.Body.Close()
@@ -106,13 +106,13 @@ func (c *amConnection) validateSession(tokenID string) (ok bool, err error) {
 	case http.StatusUnauthorized:
 		return false, nil
 	default:
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return false, fmt.Errorf("session validation failed")
 	}
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return false, err
 	}
 	info := struct {
@@ -148,7 +148,7 @@ func parseAMError(response []byte, status int) error {
 }
 
 // initialise checks that the server can be reached and prepares the client for further communication
-func (c *amConnection) initialise() error {
+func (c *amConnection) Initialise() error {
 	info, err := c.getServerInfo()
 	if err != nil {
 		return err
@@ -159,14 +159,14 @@ func (c *amConnection) initialise() error {
 
 // authenticate with the AM authTree using the given payload
 // This is a single round trip
-func (c *amConnection) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
+func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return reply, err
 	}
 	request, err := http.NewRequest(http.MethodPost, c.baseURL+"/json/authenticate", bytes.NewBuffer(requestBody))
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return reply, err
 	}
 
@@ -178,24 +178,24 @@ func (c *amConnection) authenticate(payload authenticatePayload) (reply authenti
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add(acceptAPIVersion, authNEndpointVersion)
-	request.Header.Add(httpContentType, string(applicationJSON))
+	request.Header.Add(httpContentType, string(ApplicationJSON))
 	response, err := c.Do(request)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, err
 	}
 	if response.StatusCode != http.StatusOK {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, ErrUnauthorised
 	}
 	if err = json.Unmarshal(responseBody, &reply); err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, err
 	}
 	return reply, err
@@ -210,7 +210,7 @@ type serverInfo struct {
 func (c *amConnection) getServerInfo() (info serverInfo, err error) {
 	request, err := http.NewRequest(http.MethodGet, c.baseURL+"/json/serverinfo/*", nil)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return info, err
 	}
 
@@ -219,24 +219,24 @@ func (c *amConnection) getServerInfo() (info serverInfo, err error) {
 	request.URL.RawQuery = q.Encode()
 
 	request.Header.Add(acceptAPIVersion, serverInfoEndpointVersion)
-	request.Header.Add(httpContentType, string(applicationJSON))
+	request.Header.Add(httpContentType, string(ApplicationJSON))
 	response, err := c.Do(request)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return info, err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return info, err
 	}
 	if response.StatusCode != http.StatusOK {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return info, fmt.Errorf("server info request failed")
 	}
 	if err = json.Unmarshal(responseBody, &info); err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return info, err
 	}
 	return info, err
@@ -250,7 +250,7 @@ func (c *amConnection) attributesURL() string {
 	return c.baseURL + "/json/things/*?realm=" + c.realm
 }
 
-func fieldsQuery(fields []string) string {
+func FieldsQuery(fields []string) string {
 	if len(fields) > 0 {
 		return "&_fields=" + strings.Join(fields, ",")
 	}
@@ -258,8 +258,8 @@ func fieldsQuery(fields []string) string {
 }
 
 // amInfo returns AM related information to the client
-func (c *amConnection) amInfo() (info amInfoSet, err error) {
-	return amInfoSet{
+func (c *amConnection) AMInfo() (info AMInfoResponse, err error) {
+	return AMInfoResponse{
 		Realm:          c.realm,
 		AccessTokenURL: c.accessTokenURL(),
 		AttributesURL:  c.attributesURL(),
@@ -268,43 +268,49 @@ func (c *amConnection) amInfo() (info amInfoSet, err error) {
 }
 
 // accessToken makes an access token request with the given session token and payload
-func (c *amConnection) accessToken(tokenID string, content contentType, payload string) ([]byte, error) {
+func (c *amConnection) AccessToken(tokenID string, content ContentType, payload string) ([]byte, error) {
 	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(payload))
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
 	return c.makeCommandRequest(tokenID, content, request)
 }
 
 // attributes makes a thing attributes request with the given session token and payload
-func (c *amConnection) attributes(tokenID string, content contentType, payload string, names []string) (reply []byte, err error) {
-	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+fieldsQuery(names), strings.NewReader(payload))
+func (c *amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
+	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+FieldsQuery(names), strings.NewReader(payload))
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
 	return c.makeCommandRequest(tokenID, content, request)
 }
 
-func (c *amConnection) makeCommandRequest(tokenID string, content contentType, request *http.Request) (reply []byte, err error) {
+func (c *amConnection) makeCommandRequest(tokenID string, content ContentType, request *http.Request) (reply []byte, err error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
 	request.Header.Set(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	response, err := c.Do(request)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return nil, err
 	}
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return nil, err
 	}
 	if response.StatusCode != http.StatusOK {
-		DebugLogger.Println(debug.DumpHTTPRoundTrip(request, response))
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
+}
+
+// SetAuthenticationTree changes the authentication tree that the connection was created with.
+// This is a convenience function for functional testing.
+func SetAuthenticationTree(connection Connection, tree string) {
+	connection.(*amConnection).authTree = tree
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thing
+package gateway
 
 import (
 	"crypto"
@@ -24,42 +24,45 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/client"
+	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/dchest/uniuri"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
 	"io"
+	"net/url"
 	"testing"
 	"time"
 )
 
 // mockClient mocks a thing.mockClient
 type mockClient struct {
-	AuthenticateFunc func(authenticatePayload) (authenticatePayload, error)
-	amInfoFunc       func() (amInfoSet, error)
-	amInfoSet        amInfoSet
+	AuthenticateFunc func(client.AuthenticatePayload) (client.AuthenticatePayload, error)
+	amInfoFunc       func() (client.AMInfoResponse, error)
+	amInfoSet        client.AMInfoResponse
 	accessTokenFunc  func(string, string) ([]byte, error)
 	attributesFunc   func(string, string, []string) ([]byte, error)
 }
 
-func (m *mockClient) validateSession(tokenID string) (ok bool, err error) {
+func (m *mockClient) ValidateSession(tokenID string) (ok bool, err error) {
 	return true, nil
 }
 
-func (m *mockClient) logoutSession(tokenID string) (err error) {
+func (m *mockClient) LogoutSession(tokenID string) (err error) {
 	return nil
 }
 
-func (m *mockClient) initialise() error {
-	m.amInfoSet = amInfoSet{
+func (m *mockClient) Initialise() error {
+	m.amInfoSet = client.AMInfoResponse{
 		AccessTokenURL: "/things",
 		ThingsVersion:  "1",
 	}
 	return nil
 }
 
-func (m *mockClient) authenticate(payload authenticatePayload) (reply authenticatePayload, err error) {
+func (m *mockClient) Authenticate(payload client.AuthenticatePayload) (reply client.AuthenticatePayload, err error) {
 	if m.AuthenticateFunc != nil {
 		return m.AuthenticateFunc(payload)
 	}
@@ -67,21 +70,21 @@ func (m *mockClient) authenticate(payload authenticatePayload) (reply authentica
 	return reply, nil
 }
 
-func (m *mockClient) amInfo() (info amInfoSet, err error) {
+func (m *mockClient) AMInfo() (info client.AMInfoResponse, err error) {
 	if m.amInfoFunc != nil {
 		return m.amInfoFunc()
 	}
 	return m.amInfoSet, nil
 }
 
-func (m *mockClient) accessToken(tokenID string, _ contentType, payload string) (reply []byte, err error) {
+func (m *mockClient) AccessToken(tokenID string, _ client.ContentType, payload string) (reply []byte, err error) {
 	if m.accessTokenFunc != nil {
 		return m.accessTokenFunc(tokenID, payload)
 	}
 	return []byte("{}"), nil
 }
 
-func (m *mockClient) attributes(tokenID string, _ contentType, payload string, names []string) (reply []byte, err error) {
+func (m *mockClient) Attributes(tokenID string, _ client.ContentType, payload string, names []string) (reply []byte, err error) {
 	if m.attributesFunc != nil {
 		return m.attributesFunc(tokenID, payload, names)
 	}
@@ -90,8 +93,8 @@ func (m *mockClient) attributes(tokenID string, _ contentType, payload string, n
 
 func testGateway(client *mockClient) *ThingGateway {
 	return &ThingGateway{
-		Thing:     defaultThing{connection: client},
-		authCache: tokencache.New(5*time.Minute, 10*time.Minute),
+		amConnection: client,
+		authCache:    tokencache.New(5*time.Minute, 10*time.Minute),
 	}
 
 }
@@ -100,7 +103,7 @@ func testGateway(client *mockClient) *ThingGateway {
 func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(payload authenticatePayload) (reply authenticatePayload, err error) {
+		AuthenticateFunc: func(payload client.AuthenticatePayload) (reply client.AuthenticatePayload, err error) {
 			if payload.AuthIDKey != "" {
 				return reply, fmt.Errorf("don't send auth id digest")
 			}
@@ -109,7 +112,7 @@ func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 
 		}}
 	gateway := testGateway(mockClient)
-	reply, err := gateway.authenticate(authenticatePayload{})
+	reply, err := gateway.authenticate(client.AuthenticatePayload{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,13 +126,13 @@ func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ authenticatePayload) (reply authenticatePayload, _ error) {
+		AuthenticateFunc: func(_ client.AuthenticatePayload) (reply client.AuthenticatePayload, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
 		}}
 	gateway := testGateway(mockClient)
-	reply, _ := gateway.authenticate(authenticatePayload{})
+	reply, _ := gateway.authenticate(client.AuthenticatePayload{})
 	if reply.AuthId != "" {
 		t.Fatal("AuthId has been returned")
 	}
@@ -139,13 +142,13 @@ func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 func TestGateway_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	authId := "12345"
 	mockClient := &mockClient{
-		AuthenticateFunc: func(_ authenticatePayload) (reply authenticatePayload, _ error) {
+		AuthenticateFunc: func(_ client.AuthenticatePayload) (reply client.AuthenticatePayload, _ error) {
 			reply.AuthId = authId
 			return reply, nil
 
 		}}
 	gateway := testGateway(mockClient)
-	reply, _ := gateway.authenticate(authenticatePayload{})
+	reply, _ := gateway.authenticate(client.AuthenticatePayload{})
 	id, ok := gateway.authCache.Get(reply.AuthIDKey)
 	if !ok {
 		t.Fatal("The authId has not been stored")
@@ -155,7 +158,7 @@ func TestGateway_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	}
 }
 
-func testDial(client *coap.Client) error {
+func testDial(coapClient *coap.Client) error {
 	gateway := testGateway(&mockClient{})
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
@@ -163,7 +166,7 @@ func testDial(client *coap.Client) error {
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	conn, err := client.Dial(gateway.Address())
+	conn, err := coapClient.Dial(gateway.Address())
 	if err != nil {
 		return err
 	}
@@ -171,11 +174,19 @@ func testDial(client *coap.Client) error {
 	return nil
 }
 
+func dtlsClientConfig(cert ...tls.Certificate) *dtls.Config {
+	return &dtls.Config{
+		Certificates:         cert,
+		ExtendedMasterSecret: dtls.RequireExtendedMasterSecret,
+		InsecureSkipVerify:   true,
+	}
+}
+
 func TestGatewayServer_Dial(t *testing.T) {
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	cert, _ := publicKeyCertificate(key)
-	client := &coap.Client{Net: "udp-dtls", DTLSConfig: dtlsClientConfig(cert)}
-	if err := testDial(client); err != nil {
+	cert, _ := frcrypto.PublicKeyCertificate(key)
+	coapClient := &coap.Client{Net: "udp-dtls", DTLSConfig: dtlsClientConfig(cert)}
+	if err := testDial(coapClient); err != nil {
 		t.Error(err)
 	}
 }
@@ -184,7 +195,7 @@ func testWrongTLSSigner() tls.Certificate {
 	right, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	wrong, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
-	cert, err := publicKeyCertificate(right)
+	cert, err := frcrypto.PublicKeyCertificate(right)
 	if err != nil {
 		panic(err)
 	}
@@ -211,7 +222,7 @@ func TestGatewayServer_Dial_BadClientAuth(t *testing.T) {
 	}
 }
 
-func testGatewayServerAuthenticate(m *mockClient) (err error) {
+func testGatewayServerAuthenticate(t *testing.T, m *mockClient) (err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	gateway := testGateway(m)
 	if err = gateway.StartCOAPServer(":0", serverKey); err != nil {
@@ -219,13 +230,7 @@ func testGatewayServerAuthenticate(m *mockClient) (err error) {
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &gatewayConnection{address: gateway.Address(), key: clientKey}
-	err = client.initialise()
-	if err != nil {
-		panic(err)
-	}
-	_, err = client.authenticate(authenticatePayload{})
+	_, err = gatewayConnection(t, gateway).Authenticate(client.AuthenticatePayload{})
 	return err
 }
 
@@ -236,13 +241,13 @@ func TestGatewayServer_Authenticate(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(authenticatePayload) (authenticate authenticatePayload, err error) {
-			return authenticatePayload{}, errors.New("AM auth error")
+		{name: "auth-error", client: &mockClient{AuthenticateFunc: func(client.AuthenticatePayload) (authenticate client.AuthenticatePayload, err error) {
+			return client.AuthenticatePayload{}, errors.New("AM auth error")
 		}}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			err := testGatewayServerAuthenticate(subtest.client)
+			err := testGatewayServerAuthenticate(t, subtest.client)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}
@@ -253,7 +258,7 @@ func TestGatewayServer_Authenticate(t *testing.T) {
 	}
 }
 
-func testGatewayServerAMInfo(m *mockClient) (info amInfoSet, err error) {
+func testGatewayServerAMInfo(t *testing.T, m *mockClient) (info client.AMInfoResponse, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	gateway := testGateway(m)
 	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
@@ -261,13 +266,7 @@ func testGatewayServerAMInfo(m *mockClient) (info amInfoSet, err error) {
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &gatewayConnection{address: gateway.Address(), key: clientKey}
-	err = client.initialise()
-	if err != nil {
-		panic(err)
-	}
-	return client.amInfo()
+	return gatewayConnection(t, gateway).AMInfo()
 }
 
 func TestGatewayServer_AMInfo(t *testing.T) {
@@ -277,13 +276,13 @@ func TestGatewayServer_AMInfo(t *testing.T) {
 		client     *mockClient
 	}{
 		{name: "success", successful: true, client: &mockClient{}},
-		{name: "endpoint-error", client: &mockClient{amInfoFunc: func() (endpoint amInfoSet, err error) {
+		{name: "endpoint-error", client: &mockClient{amInfoFunc: func() (endpoint client.AMInfoResponse, err error) {
 			return endpoint, errors.New("AM endpoint info error")
 		}}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			info, err := testGatewayServerAMInfo(subtest.client)
+			info, err := testGatewayServerAMInfo(t, subtest.client)
 			if subtest.successful {
 				if err != nil {
 					t.Error(err)
@@ -299,7 +298,7 @@ func TestGatewayServer_AMInfo(t *testing.T) {
 	}
 }
 
-func testGatewayServerAccessToken(m *mockClient, jws string) (reply []byte, err error) {
+func testGatewayServerAccessToken(t *testing.T, m *mockClient, jws string) (reply []byte, err error) {
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	gateway := testGateway(m)
 	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
@@ -307,31 +306,25 @@ func testGatewayServerAccessToken(m *mockClient, jws string) (reply []byte, err 
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &gatewayConnection{address: gateway.Address(), key: clientKey}
-	err = client.initialise()
-	if err != nil {
-		panic(err)
-	}
-	return client.accessToken("", applicationJOSE, jws)
+	return gatewayConnection(t, gateway).AccessToken("", client.ApplicationJOSE, jws)
 }
 
 func TestGatewayServer_AccessToken(t *testing.T) {
 	tests := []struct {
 		name       string
 		successful bool
-		client     *mockClient
+		connection *mockClient
 		jws        string
 	}{
-		{name: "success", successful: true, client: &mockClient{}, jws: ".eyJjc3JmIjoiMTIzNDUifQ."},
-		{name: "not-a-valid-jwt", client: &mockClient{}, jws: "eyJjc3JmIjoiMTIzNDUifQ"},
-		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", client: &mockClient{accessTokenFunc: func(string, string) (bytes []byte, err error) {
+		{name: "success", successful: true, connection: &mockClient{}, jws: ".eyJjc3JmIjoiMTIzNDUifQ."},
+		{name: "not-a-valid-jwt", connection: &mockClient{}, jws: "eyJjc3JmIjoiMTIzNDUifQ"},
+		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", connection: &mockClient{accessTokenFunc: func(string, string) (bytes []byte, err error) {
 			return nil, errors.New("AM access token error")
 		}}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			_, err := testGatewayServerAccessToken(subtest.client, subtest.jws)
+			_, err := testGatewayServerAccessToken(t, subtest.connection, subtest.jws)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}
@@ -404,12 +397,7 @@ func TestGateway_StartCOAPServer(t *testing.T) {
 	defer gateway.ShutdownCOAPServer()
 
 	// create client to ensure that the connection is up
-	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client := &gatewayConnection{address: gateway.Address(), key: clientKey}
-	err = client.initialise()
-	if err != nil {
-		t.Fatal(err)
-	}
+	gatewayConnection(t, gateway)
 
 	// try to start the server again
 	err = gateway.StartCOAPServer(gateway.Address(), serverKey)
@@ -418,11 +406,12 @@ func TestGateway_StartCOAPServer(t *testing.T) {
 	}
 }
 
-func testTimeout(timeout time.Duration, f func() error) error {
+func testTimeout(timeout time.Duration, f func() (client.Connection, error)) error {
 	timer := time.After(timeout)
 	done := make(chan error)
 	go func() {
-		done <- f()
+		_, err := f()
+		done <- err
 	}()
 
 	select {
@@ -446,20 +435,33 @@ func TestGateway_ShutdownCOAPServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	// create client to ensure that the connection is up
-	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	client1 := &gatewayConnection{address: gateway.Address(), key: clientKey}
-	err = client1.initialise()
+	gatewayConnection(t, gateway)
 	// shutdown server
 	gateway.ShutdownCOAPServer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	client1.conn.Close()
 
-	client2 := &gatewayConnection{address: gateway.Address(), key: clientKey}
-	err = testTimeout(10*time.Millisecond, client2.initialise)
+	gwURL, _ := url.Parse("coap://" + gateway.Address())
+	connBuilder := client.NewConnection().
+		ConnectTo(gwURL).
+		WithKey(clientKey)
+	err = testTimeout(10*time.Millisecond, connBuilder.Create)
 	if err == nil {
 		t.Error("Expected an error")
 	}
-	err = client1.initialise()
+}
+
+var clientKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+func gatewayConnection(t *testing.T, gateway *ThingGateway) client.Connection {
+	gwURL, _ := url.Parse("coap://" + gateway.Address())
+	connection, err := client.NewConnection().
+		ConnectTo(gwURL).
+		WithKey(clientKey).
+		Create()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return connection
 }

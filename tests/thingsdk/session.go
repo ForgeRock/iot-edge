@@ -17,8 +17,8 @@
 package main
 
 import (
+	"github.com/ForgeRock/iot-edge/pkg/builder"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 )
@@ -35,23 +35,23 @@ func (t *SessionValid) Setup(state anvil.TestState) (data anvil.ThingData, ok bo
 
 func (t *SessionValid) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Session().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
-		HandleCallbacksWith(
+		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: data.Id.Password})
 
-	thing, err := builder.Create()
+	sesh, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
 
-	valid, err := thing.Session().Valid()
+	valid, err := sesh.Valid()
 	if err != nil {
-		anvil.DebugLogger.Println("session logout failed", err)
+		anvil.DebugLogger.Println("session validation failed", err)
 		return false
 	} else if !valid {
 		anvil.DebugLogger.Println("session is invalid")
@@ -73,94 +73,33 @@ func (t *SessionInvalid) Setup(state anvil.TestState) (data anvil.ThingData, ok 
 
 func (t *SessionInvalid) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Session().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
-		HandleCallbacksWith(
+		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: data.Id.Password})
 
-	thing, err := builder.Create()
+	sesh, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
 
-	session := thing.Session()
-	err = am.LogoutSession(session.Token())
+	err = am.LogoutSession(sesh.Token())
 	if err != nil {
 		anvil.DebugLogger.Println("session logout failed", err)
 		return false
 	}
 
 	// check that session has been invalidated
-	valid, err := session.Valid()
+	valid, err := sesh.Valid()
 	if err != nil {
-		anvil.DebugLogger.Println("session logout failed", err)
+		anvil.DebugLogger.Println("session validation failed", err)
 		return false
 	} else if valid {
 		anvil.DebugLogger.Println("invalidated session is shown as valid")
-		return false
-	}
-
-	return true
-}
-
-// SessionReauthenticate checks that the Reauthenticate method creates a valid session and that the thing session is
-// updated
-type SessionReauthenticate struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *SessionReauthenticate) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
-}
-
-func (t *SessionReauthenticate) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
-		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
-		WithTree(userPwdAuthTree).
-		HandleCallbacksWith(
-			callback.NameHandler{Name: data.Id.Name},
-			callback.PasswordHandler{Password: data.Id.Password})
-
-	thing, err := builder.Create()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-
-	session := thing.Session()
-	firstToken := session.Token()
-	err = am.LogoutSession(firstToken)
-	if err != nil {
-		anvil.DebugLogger.Println("session logout failed", err)
-		return false
-	}
-
-	session, err = session.Reauthenticate()
-	if err != nil {
-		anvil.DebugLogger.Println("session re-authenticate failed", err)
-		return false
-	}
-
-	// check that re-authenticated session is valid
-	valid, err := session.Valid()
-	if err != nil {
-		anvil.DebugLogger.Println("session logout failed", err)
-		return false
-	} else if !valid {
-		anvil.DebugLogger.Println("session is invalid")
-		return false
-	}
-
-	// check that the session on the thing has been updated
-	if firstToken == thing.Session().Token() {
-		anvil.DebugLogger.Println("thing hasn't updated the session")
 		return false
 	}
 
@@ -179,31 +118,30 @@ func (t *SessionLogout) Setup(state anvil.TestState) (data anvil.ThingData, ok b
 
 func (t *SessionLogout) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
-	builder := thing.New().
+	builder := builder.Session().
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
-		HandleCallbacksWith(
+		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: data.Id.Password})
 
-	thing, err := builder.Create()
+	sesh, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
 
-	session := thing.Session()
-	err = session.Logout()
+	err = sesh.Logout()
 	if err != nil {
 		anvil.DebugLogger.Println("session logout failed", err)
 		return false
 	}
 
 	// check that session has been invalidated
-	valid, err := session.Valid()
+	valid, err := sesh.Valid()
 	if err != nil {
-		anvil.DebugLogger.Println("session logout failed", err)
+		anvil.DebugLogger.Println("session validation failed", err)
 		return false
 	} else if valid {
 		anvil.DebugLogger.Println("invalidated session is shown as valid")

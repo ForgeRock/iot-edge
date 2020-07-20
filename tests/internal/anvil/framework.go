@@ -24,8 +24,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/internal/gateway"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"github.com/dchest/uniuri"
 	"gopkg.in/square/go-jose.v2"
@@ -301,7 +301,7 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 }
 
 // TestThingGateway creates a test Thing Gateway
-func TestThingGateway(realm string, authTree string) (*thing.ThingGateway, error) {
+func TestThingGateway(realm string, authTree string) (*gateway.ThingGateway, error) {
 	jwk, signer, err := ConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
@@ -316,7 +316,7 @@ func TestThingGateway(realm string, authTree string) (*thing.ThingGateway, error
 	if err != nil {
 		return nil, err
 	}
-	return thing.NewThingGateway(am.AMURL, realm, authTree, []callback.Handler{
+	return gateway.NewThingGateway(am.AMURL, realm, authTree, []callback.Handler{
 		callback.AuthenticateHandler{
 			Realm:   realm,
 			ThingID: attributes.Name,
@@ -368,12 +368,12 @@ func (a *AMTestState) Realm() string {
 
 // ThingGatewayTestState contains data and methods for testing the Thing Gateway client
 type ThingGatewayTestState struct {
-	ThingGateway *thing.ThingGateway
+	ThingGateway *gateway.ThingGateway
 	TestRealm    string
 }
 
 func (i *ThingGatewayTestState) SetGatewayTree(tree string) {
-	i.ThingGateway.AuthenticateWith(tree)
+	gateway.SetAuthenticationTree(i.ThingGateway, tree)
 }
 
 func (i *ThingGatewayTestState) URL() *url.URL {
