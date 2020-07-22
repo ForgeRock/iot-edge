@@ -63,16 +63,18 @@ type ThingGateway struct {
 	amURL        string
 	realm        string
 	authTree     string
+	timeout      time.Duration
 }
 
 // NewThingGateway creates a new Thing Gateway
-func NewThingGateway(baseURL string, realm string, authTree string, handlers []callback.Handler) *ThingGateway {
+func NewThingGateway(baseURL string, realm string, authTree string, timeout time.Duration, handlers []callback.Handler) *ThingGateway {
 	return &ThingGateway{
 		authCache:        tokencache.New(5*time.Minute, 10*time.Minute),
 		amURL:            baseURL,
 		realm:            realm,
 		authTree:         authTree,
 		callbackHandlers: handlers,
+		timeout:          timeout,
 	}
 }
 
@@ -87,6 +89,7 @@ func (c *ThingGateway) Initialise() error {
 		ConnectTo(amURL).
 		InRealm(c.realm).
 		WithTree(c.authTree).
+		TimeoutRequestAfter(c.timeout).
 		Create()
 	if err != nil {
 		return err

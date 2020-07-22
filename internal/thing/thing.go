@@ -243,6 +243,7 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 			ConnectTo(b.u).
 			InRealm(b.realm).
 			WithTree(b.tree).
+			TimeoutRequestAfter(b.timeout).
 			Create()
 		if err != nil {
 			return nil, err

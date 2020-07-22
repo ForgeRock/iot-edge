@@ -316,7 +316,7 @@ func TestThingGateway(realm string, authTree string) (*gateway.ThingGateway, err
 	if err != nil {
 		return nil, err
 	}
-	return gateway.NewThingGateway(am.AMURL, realm, authTree, []callback.Handler{
+	return gateway.NewThingGateway(am.AMURL, realm, authTree, StdTimeOut, []callback.Handler{
 		callback.AuthenticateHandler{
 			Realm:   realm,
 			ThingID: attributes.Name,

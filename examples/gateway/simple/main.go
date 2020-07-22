@@ -32,6 +32,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 )
 
 var (
@@ -82,7 +83,7 @@ func simpleThingGateway() error {
 	if err != nil {
 		return err
 	}
-	gateway := gateway.NewThingGateway(*amURL, *amRealm, *authTree, []callback.Handler{
+	gateway := gateway.NewThingGateway(*amURL, *amRealm, *authTree, 5*time.Second, []callback.Handler{
 		callback.AuthenticateHandler{
 			Realm:   *amRealm,
 			ThingID: *gatewayName,
