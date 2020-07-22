@@ -23,41 +23,53 @@ import (
 	"time"
 )
 
-// Session holds session data
+// Session represents an authenticated session with AM.
 type Session interface {
 
-	// Token returns the session token
+	// Token returns the session token.
 	Token() string
 
-	// HasRestrictedToken returns true if the session has a restricted token
+	// HasRestrictedToken returns true if the session has a Proof of Possession restriction.
 	HasRestrictedToken() bool
 
-	// SigningKey returns the signing key associated with a restricted SSO token
+	// SigningKey returns the signing key associated with a Proof of Possession restricted session.
 	SigningKey() crypto.Signer
 
-	// Nonce returns the session nonce
+	// Nonce returns the session nonce used with a Proof of Possession restricted session.
 	Nonce() int
 
-	// IncrementNonce increments the session nonce
+	// IncrementNonce increments the Proof of Possession restricted session nonce.
 	IncrementNonce()
 
-	// Valid returns true if the session is valid
+	// Valid returns true if the session is valid.
 	Valid() (bool, error)
 
-	// Logout the session
+	// Logout the session.
 	Logout() error
 }
 
 type Builder interface {
+
+	// ConnectTo the server at the given URL.
+	// Supports http(s) for connecting to AM and coap(s) for connecting to the Thing Gateway.
 	ConnectTo(url *url.URL) Builder
 
+	// InRealm specifies the path to the AM realm in which to authenticate.
+	// The realm is not required if connecting to the Thing Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
 
+	// WithTree sets the name of the AM authentication tree that will be used for authentication.
+	// The tree is not required if connecting to the Thing Gateway. If provided it will be ignored.
 	WithTree(tree string) Builder
 
+	// AuthenticateWith the supplied callback handlers when creating the session. The provided handlers must
+	// match those configured in the AM authentication tree.
 	AuthenticateWith(handlers ...callback.Handler) Builder
 
+	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the Thing Gateway.
 	TimeoutRequestAfter(d time.Duration) Builder
 
+	// Create a Session instance and make an authentication request to AM. The callback handlers provided
+	// will be used to satisfy the callbacks received from the AM authentication process.
 	Create() (Session, error)
 }

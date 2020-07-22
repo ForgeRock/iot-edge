@@ -71,22 +71,22 @@ func TestCallbackHandler_HandleResult(t *testing.T) {
 		name    string
 		cb      Callback
 		handler Handler
-		err     error
+		handled bool
 	}{
 		// NameHandler
-		{name: "Name/ok", cb: dummyCB(TypeNameCallback), handler: NameHandler{Name: "Odysseus"}, err: nil},
-		{name: "Name/notHandled", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, err: ErrNotHandled},
+		{name: "Name/ok", cb: dummyCB(TypeNameCallback), handler: NameHandler{Name: "Odysseus"}, handled: true},
+		{name: "Name/notHandled", cb: dummyCB(TypeTextInputCallback), handler: NameHandler{Name: "Odysseus"}, handled: false},
 		// PasswordHandler
-		{name: "Password/ok", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, err: nil},
-		{name: "Password/notHandled", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, err: ErrNotHandled},
+		{name: "Password/ok", cb: dummyCB(TypePasswordCallback), handler: PasswordHandler{Password: "password"}, handled: true},
+		{name: "Password/notHandled", cb: dummyCB(TypeTextInputCallback), handler: PasswordHandler{Password: "password"}, handled: false},
 		// AuthenticateHandler
-		{name: "Authenticate/notHandled", cb: dummyCB(TypeNameCallback), handler: AuthenticateHandler{ThingID: "Odysseus"}, err: ErrNotHandled},
-		{name: "Register/notHandled", cb: dummyCB(TypeNameCallback), handler: RegisterHandler{ThingID: "Odysseus"}, err: ErrNotHandled},
+		{name: "Authenticate/notHandled", cb: dummyCB(TypeNameCallback), handler: AuthenticateHandler{ThingID: "Odysseus"}, handled: false},
+		{name: "Register/notHandled", cb: dummyCB(TypeNameCallback), handler: RegisterHandler{ThingID: "Odysseus"}, handled: false},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
-			if got := subtest.handler.Handle(subtest.cb); got != subtest.err {
-				t.Errorf("Handle() = %v, want %v", got, subtest.err)
+			if handled, _ := subtest.handler.Handle(subtest.cb); handled != subtest.handled {
+				t.Errorf("Handle() = %v, want %v", handled, subtest.handled)
 			}
 		})
 	}
@@ -96,14 +96,14 @@ func TestCallbackHandler_Respond_NoInput(t *testing.T) {
 	tests := []struct {
 		name    string
 		handler Handler
+		cb      Callback
 	}{
-		{name: "Name", handler: NameHandler{Name: "Odysseus"}},
-		{name: "Password", handler: PasswordHandler{Password: "password"}},
+		{name: "Name", handler: NameHandler{Name: "Odysseus"}, cb: Callback{Type: TypeNameCallback}},
+		{name: "Password", handler: PasswordHandler{Password: "password"}, cb: Callback{Type: TypePasswordCallback}},
 	}
 	for _, subtest := range tests {
-		cb := Callback{}
 		t.Run(subtest.name, func(t *testing.T) {
-			if err := subtest.handler.Handle(cb); err == nil {
+			if _, err := subtest.handler.Handle(subtest.cb); err == nil {
 				t.Errorf("Expected an error")
 			}
 		})
@@ -114,7 +114,7 @@ func TestNameCallbackHandler_Respond(t *testing.T) {
 	name := "Odysseus"
 	handler := NameHandler{Name: name}
 	cb := dummyCB(TypeNameCallback)
-	if err := handler.Handle(cb); err != nil {
+	if _, err := handler.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != name {
@@ -126,7 +126,7 @@ func TestPasswordCallbackHandler_Respond(t *testing.T) {
 	p := "password"
 	handler := PasswordHandler{Password: p}
 	cb := dummyCB(TypePasswordCallback)
-	if err := handler.Handle(cb); err != nil {
+	if _, err := handler.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	if cb.Input[0].Value != p {
@@ -148,7 +148,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 			}{LifeUniverseEverything: lue}
 		}}
 	cb := jwtVerifyCB(false)
-	if err := h.Handle(cb); err != nil {
+	if _, err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
@@ -227,7 +227,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 			}{SerialNumber: serialNumber}
 		}}
 	cb := jwtVerifyCB(true)
-	if err := h.Handle(cb); err != nil {
+	if _, err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
 	response := cb.Input[0].Value
