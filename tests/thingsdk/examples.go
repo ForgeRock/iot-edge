@@ -60,7 +60,7 @@ func pipeToDebugger(reader io.Reader) {
 }
 
 func testContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), 6*time.Second)
+	return context.WithTimeout(context.Background(), 10*time.Second)
 }
 
 func encodeKeyToPEM(signer crypto.Signer) ([]byte, error) {

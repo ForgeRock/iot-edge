@@ -161,8 +161,7 @@ func runGateway() error {
 	defer thingGateway.ShutdownCOAPServer()
 
 	fmt.Println("Thing Gateway server started.")
-	sig := <-signals
-	fmt.Println(sig)
+	<-signals
 	fmt.Println("Thing Gateway server shutting down.")
 	return nil
 }
