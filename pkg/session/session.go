@@ -29,23 +29,16 @@ type Session interface {
 	// Token returns the session token.
 	Token() string
 
-	// HasRestrictedToken returns true if the session has a Proof of Possession restriction.
-	HasRestrictedToken() bool
-
-	// SigningKey returns the signing key associated with a Proof of Possession restricted session.
-	SigningKey() crypto.Signer
-
-	// Nonce returns the session nonce used with a Proof of Possession restricted session.
-	Nonce() int
-
-	// IncrementNonce increments the Proof of Possession restricted session nonce.
-	IncrementNonce()
-
 	// Valid returns true if the session is valid.
 	Valid() (bool, error)
 
 	// Logout the session.
 	Logout() error
+
+	// RequestBody prepares the request payload based on the information available about the session. For example, if
+	// the session has a Proof of Possession restriction then this method will prepare a signed JWT containing the
+	// provided request properties.
+	RequestBody(url, version string, payload interface{}) (body []byte, contentType string, err error)
 }
 
 type Builder interface {
@@ -68,6 +61,10 @@ type Builder interface {
 
 	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the Thing Gateway.
 	TimeoutRequestAfter(d time.Duration) Builder
+
+	// SignRequestsWith the provided signer. This signer is used when session.RequestBody() is used to prepare the
+	// request that will be accompanied by this session token.
+	SignRequestsWith(signer crypto.Signer) Builder
 
 	// Create a Session instance and make an authentication request to AM. The callback handlers provided
 	// will be used to satisfy the callbacks received from the AM authentication process.

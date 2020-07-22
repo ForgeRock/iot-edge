@@ -87,12 +87,6 @@ type Handler interface {
 	Handle(cb Callback) (bool, error)
 }
 
-// ProofOfPossessionHandler responds to an AM proof of possession callback.
-type ProofOfPossessionHandler interface {
-	Handler
-	SigningKey() crypto.Signer
-}
-
 // NameHandler handles an AM Username Collector callback.
 type NameHandler struct {
 	// Name\Username\ID for the identity
@@ -134,10 +128,6 @@ type AuthenticateHandler struct {
 	KeyID   string
 	Key     crypto.Signer
 	Claims  func() interface{}
-}
-
-func (h AuthenticateHandler) SigningKey() crypto.Signer {
-	return h.Key
 }
 
 type jwtVerifyClaims struct {
@@ -216,10 +206,6 @@ type RegisterHandler struct {
 	Key          crypto.Signer
 	Certificates []*x509.Certificate
 	Claims       func() interface{}
-}
-
-func (h RegisterHandler) SigningKey() crypto.Signer {
-	return h.Key
 }
 
 func (h RegisterHandler) Handle(cb Callback) (bool, error) {
