@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -29,18 +28,26 @@ import (
 )
 
 var (
-	ErrNoInput    = errors.New("no input Entry to put response")
-	ErrNoOutput   = errors.New("no output Entry for response")
-	ErrNotHandled = errors.New("callback not handled")
+	errNoInput  = errors.New("no input Entry to put response")
+	errNoOutput = errors.New("no output Entry for response")
 )
 
 const (
-	TypeNameCallback      = "NameCallback"
-	TypePasswordCallback  = "PasswordCallback"
-	TypeTextInputCallback = "TextInputCallback"
+	// Authentication callback names
+	TypeNameCallback        = "NameCallback"
+	TypePasswordCallback    = "PasswordCallback"
+	TypeTextInputCallback   = "TextInputCallback"
+	TypeHiddenValueCallback = "HiddenValueCallback"
+	// Thing types used with registration callback
+	TypeDevice  ThingType = "device"
+	TypeService ThingType = "service"
+	TypeGateway ThingType = "gateway"
 )
 
-// Entry represents an Input or Output Entry in a Callback
+// ThingType describes the type of thing and is stored with the digital identity during registration.
+type ThingType string
+
+// Entry represents an Input or Output Entry in a Callback.
 type Entry struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -50,7 +57,7 @@ func (e Entry) String() string {
 	return fmt.Sprintf("{Name:%v Value:%v}", e.Name, e.Value)
 }
 
-// Callback describes an AM callback request and response structure
+// Callback describes an AM callback request and response structure.
 type Callback struct {
 	Type   string  `json:"type,omitempty"`
 	Output []Entry `json:"output,omitempty"`
@@ -61,9 +68,9 @@ func (c Callback) String() string {
 	return fmt.Sprintf("{Callback Type:%v Output:%v Input:%v}", c.Type, c.Output, c.Input)
 }
 
-// ID returns the ID value of the callback if one exists
+// ID will verify that the callback is a HiddenValueCallback and return the ID value if one exists.
 func (c Callback) ID() string {
-	if c.Type != "HiddenValueCallback" {
+	if c.Type != TypeHiddenValueCallback {
 		return ""
 	}
 	for _, e := range c.Output {
@@ -74,52 +81,53 @@ func (c Callback) ID() string {
 	return ""
 }
 
-// CallbackHandler is an interface for an AM callback handler
+// Handler is an interface for an AM callback handler.
 type Handler interface {
-	// Handle the callback by modifying it
-	Handle(cb Callback) error
+	// Handle the callback by modifying it. Return true if the callback was handled.
+	Handle(cb Callback) (bool, error)
 }
 
-// ProofOfPossessionHandler responds to an AM proof of possession callback
+// ProofOfPossessionHandler responds to an AM proof of possession callback.
 type ProofOfPossessionHandler interface {
 	Handler
 	SigningKey() crypto.Signer
 }
 
-// NameHandler handles an AM Username Collector callback
+// NameHandler handles an AM Username Collector callback.
 type NameHandler struct {
 	// Name\Username\ID for the identity
 	Name string
 }
 
-func (h NameHandler) Handle(cb Callback) error {
+func (h NameHandler) Handle(cb Callback) (bool, error) {
 	if cb.Type != TypeNameCallback {
-		return ErrNotHandled
+		return false, nil
 	}
 	if len(cb.Input) == 0 {
-		return ErrNoInput
+		return true, errNoInput
 	}
 	cb.Input[0].Value = h.Name
-	return nil
+	return true, nil
 }
 
-// PasswordHandler handles an AM Password Collector callback
+// PasswordHandler handles an AM Password Collector callback.
 type PasswordHandler struct {
 	// Password for the identity
 	Password string
 }
 
-func (h PasswordHandler) Handle(cb Callback) error {
+func (h PasswordHandler) Handle(cb Callback) (bool, error) {
 	if cb.Type != TypePasswordCallback {
-		return ErrNotHandled
+		return false, nil
 	}
 	if len(cb.Input) == 0 {
-		return ErrNoInput
+		return true, errNoInput
 	}
 	cb.Input[0].Value = h.Password
-	return nil
+	return true, nil
 }
 
+// AuthenticateHandler handles the callback received from the Authenticate Thing tree node.
 type AuthenticateHandler struct {
 	Realm   string
 	ThingID string
@@ -159,12 +167,12 @@ func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
 	}
 }
 
-func (h AuthenticateHandler) Handle(cb Callback) error {
+func (h AuthenticateHandler) Handle(cb Callback) (bool, error) {
 	if cb.ID() != "jwt-pop-authentication" {
-		return ErrNotHandled
+		return false, nil
 	}
 	if len(cb.Input) == 0 {
-		return ErrNoInput
+		return true, errNoInput
 	}
 	var challenge string
 	for _, e := range cb.Output {
@@ -174,7 +182,7 @@ func (h AuthenticateHandler) Handle(cb Callback) error {
 		}
 	}
 	if challenge == "" {
-		return ErrNoOutput
+		return true, errNoOutput
 	}
 
 	opts := &jose.SignerOptions{}
@@ -182,7 +190,7 @@ func (h AuthenticateHandler) Handle(cb Callback) error {
 
 	sig, err := jws.NewSigner(h.Key, opts)
 	if err != nil {
-		return err
+		return true, err
 	}
 	claims := baseJWTClaims(h.ThingID, h.Realm, challenge)
 	claims.CNF.KID = h.KeyID
@@ -192,13 +200,14 @@ func (h AuthenticateHandler) Handle(cb Callback) error {
 	}
 	response, err := builder.CompactSerialize()
 	if err != nil {
-		return err
+		return true, err
 	}
 
 	cb.Input[0].Value = response
-	return nil
+	return true, nil
 }
 
+// RegisterHandler handles the callback received from the Register Thing tree node.
 type RegisterHandler struct {
 	Realm        string
 	ThingID      string
@@ -213,12 +222,12 @@ func (h RegisterHandler) SigningKey() crypto.Signer {
 	return h.Key
 }
 
-func (h RegisterHandler) Handle(cb Callback) error {
+func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	if cb.ID() != "jwt-pop-registration" {
-		return ErrNotHandled
+		return false, nil
 	}
 	if len(cb.Input) == 0 {
-		return ErrNoInput
+		return true, errNoInput
 	}
 	var challenge string
 	for _, e := range cb.Output {
@@ -228,7 +237,7 @@ func (h RegisterHandler) Handle(cb Callback) error {
 		}
 	}
 	if challenge == "" {
-		return ErrNoOutput
+		return true, errNoOutput
 	}
 
 	opts := &jose.SignerOptions{}
@@ -236,7 +245,7 @@ func (h RegisterHandler) Handle(cb Callback) error {
 
 	sig, err := jws.NewSigner(h.Key, opts)
 	if err != nil {
-		return err
+		return true, err
 	}
 	claims := baseJWTClaims(h.ThingID, h.Realm, challenge)
 	claims.ThingType = h.ThingType
@@ -252,43 +261,9 @@ func (h RegisterHandler) Handle(cb Callback) error {
 	}
 	response, err := builder.CompactSerialize()
 	if err != nil {
-		return err
+		return true, err
 	}
 
 	cb.Input[0].Value = response
-	return nil
-}
-
-// ThingType describes the Thing type
-type ThingType string
-
-const (
-	TypeDevice  ThingType = "device"
-	TypeService ThingType = "service"
-	TypeGateway ThingType = "gateway"
-)
-
-// ProcessCallbacks attempts to respond to the callbacks with the given callback handlers
-func ProcessCallbacks(handlers []Handler, callbacks []Callback) (key crypto.Signer, err error) {
-	for _, cb := range callbacks {
-	handlerLoop:
-		for _, h := range handlers {
-			switch err = h.Handle(cb); err {
-			case ErrNotHandled:
-				continue
-			case nil:
-				if r, ok := h.(ProofOfPossessionHandler); ok {
-					key = r.SigningKey()
-				}
-				break handlerLoop
-			default:
-				debug.Logger.Println(err)
-				continue
-			}
-		}
-		if err != nil {
-			return key, err
-		}
-	}
-	return key, nil
+	return true, nil
 }

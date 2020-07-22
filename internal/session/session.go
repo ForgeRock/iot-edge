@@ -129,8 +129,28 @@ func (b *Builder) Create() (session.Session, error) {
 				key:        key,
 			}, nil
 		}
-		if key, err = callback.ProcessCallbacks(b.handlers, auth.Callbacks); err != nil {
+		if key, err = processCallbacks(b.handlers, auth.Callbacks); err != nil {
 			return nil, err
 		}
 	}
+}
+
+// processCallbacks attempts to respond to the callbacks with the given callback handlers
+func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback) (key crypto.Signer, err error) {
+	for _, cb := range callbacks {
+		for _, h := range handlers {
+			handled, err := h.Handle(cb)
+			if !handled {
+				continue
+			}
+			if err == nil {
+				if r, ok := h.(callback.ProofOfPossessionHandler); ok {
+					key = r.SigningKey()
+				}
+				break
+			}
+			return key, err
+		}
+	}
+	return key, nil
 }

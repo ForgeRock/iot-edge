@@ -62,35 +62,57 @@ type Thing interface {
 	Logout() error
 }
 
-// Builder interface provides methods to setup and initialise a Thing
+// Builder interface provides methods to setup and initialise a Thing.
 type Builder interface {
-	// ConnectTo to the server at the given URL
+
+	// ConnectTo the server at the given URL.
+	// Supports http(s) for connecting to AM and coap(s) for connecting to the Thing Gateway.
 	ConnectTo(url *url.URL) Builder
-	// InRealm sets which realm the thing belongs to
-	// Note that the realm must be the fully-qualified name including the parent path e.g.
-	// root realm; "/"
-	// a sub-realm of root called "alfheim"; "/alfheim"
-	// a sub-realm of alfheim called "svartalfheim"; "/alfheim/svartalfheim"
+
+	// InRealm specifies the path to the AM realm in which the thing should authenticate and operate in, for example:
+	//  - root realm: "/"
+	//  - a sub-realm of root called "alfheim": "/alfheim"
+	//  - a sub-realm of alfheim called "svartalfheim": "/alfheim/svartalfheim"
+	//
+	// The realm is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
-	// WithTree sets the tree that the thing authenticates with
+
+	// WithTree sets the name of the AM authentication tree that will be used to register and authenticate the thing.
+	// The tree is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
 	WithTree(tree string) Builder
-	// AsService registers the thing as a service. By default, a thing is registered as a device
+
+	// AsService registers the thing as a service. By default, a thing is registered as a device.
 	AsService() Builder
-	// AuthenticateThing with the ForgeRock Authenticate Thing tree node
+
+	// AuthenticateThing with the ForgeRock Authenticate Thing tree node. This node uses JWT PoP and requires a JWT
+	// signed with the key that was registered for the thing. The JWT must contain the key ID provided for the
+	// registered key. In addition, the JWT may include custom claims about the thing. The claims will be available for
+	// processing by the proceeding nodes in the tree.
 	AuthenticateThing(thingID string, keyID string, key crypto.Signer, claims func() interface{}) Builder
-	// RegisterThing with the ForgeRock Register Thing tree node
+
+	// RegisterThing with the ForgeRock Register Thing tree node. This node uses JWT PoP and requires a signed JWT
+	// containing the thing's public key and key ID, along with a CA signed certificate that contains the same public
+	// key. This method must be used along with the AuthenticateThing method as they share the same thing ID,
+	// key and key ID. They do not share claims however. The JWT may include custom claims about the thing, which will
+	// be added to the thing's identity on successful registration.
 	RegisterThing(certificates []*x509.Certificate, claims func() interface{}) Builder
-	// HandleCallbacksWith the supplied handlers
+
+	// HandleCallbacksWith the supplied callback handlers when the thing is authenticated. The provided handlers must
+	// match those configured in the AM authentication tree.
 	HandleCallbacksWith(handlers ...callback.Handler) Builder
-	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM\Thing Gateway
+
+	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the Thing Gateway.
 	TimeoutRequestAfter(time.Duration) Builder
-	// Create a Thing instance and authenticates\registers it with AM
+
+	// Create a Thing instance and make an authentication request to AM. The callback handlers and information provided
+	// in the AuthenticateThing and RegisterThing methods will be used to satisfy the callbacks received from the AM
+	// authentication process.
 	Create() (Thing, error)
 }
 
 // JWKThumbprint calculates the base64url-encoded JWK Thumbprint value for the given key.
 // The thumbprint can be used for identifying or selecting the key.
-// See https://tools.ietf.org/html/rfc7638
+// See https://tools.ietf.org/html/rfc7638.
 func JWKThumbprint(key crypto.Signer) (string, error) {
 	if key == nil {
 		return "", jws.ErrMissingSigner
