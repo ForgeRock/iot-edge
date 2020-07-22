@@ -189,11 +189,6 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	if claims.LifeUniverseEverything != lue {
 		t.Fatal("incorrect custom claim")
 	}
-
-	// check that the handler returns a confirmation key
-	if h.SigningKey() == nil {
-		t.Fatal("metadata is missing confirmation key")
-	}
 }
 
 func TestRegisterHandler_Handle(t *testing.T) {
@@ -279,10 +274,5 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	}
 	if claims.SerialNumber != serialNumber {
 		t.Fatal("incorrect serial number")
-	}
-
-	// check that the handler returns a confirmation key
-	if h.SigningKey() == nil {
-		t.Fatal("metadata is missing confirmation key")
 	}
 }

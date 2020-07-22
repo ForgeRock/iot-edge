@@ -24,21 +24,19 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/client"
 	"github.com/ForgeRock/iot-edge/internal/debug"
-	"github.com/ForgeRock/iot-edge/internal/jws"
 	isession "github.com/ForgeRock/iot-edge/internal/session"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/session"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"net/url"
 	"time"
 )
 
 type DefaultThing struct {
-	connection client.Connection
-	handlers   []callback.Handler
-	session    session.Session
+	connection    client.Connection
+	handlers      []callback.Handler
+	session       session.Session
+	requestSigner crypto.Signer
 }
 
 func (t *DefaultThing) Logout() error {
@@ -61,6 +59,7 @@ func (t *DefaultThing) makeAuthorisedRequest(f func(session session.Session) err
 		t.session, err = builder.
 			WithConnection(t.connection).
 			AuthenticateWith(t.handlers...).
+			SignRequestsWith(t.requestSigner).
 			Create()
 		if err != nil {
 			return err
@@ -69,55 +68,19 @@ func (t *DefaultThing) makeAuthorisedRequest(f func(session session.Session) err
 	return err
 }
 
-// signedRequestClaims defines the claims expected in the signed JWT provided with a signed request
-type signedRequestClaims struct {
-	CSRF string `json:"csrf"`
-}
-
-func signedJWTBody(session session.Session, url string, version string, body interface{}) (string, error) {
-	opts := &jose.SignerOptions{}
-	opts.WithHeader("aud", url)
-	opts.WithHeader("api", version)
-	opts.WithHeader("nonce", session.Nonce())
-	// increment the nonce so that the token can be used in a subsequent request
-	session.IncrementNonce()
-
-	sig, err := jws.NewSigner(session.SigningKey(), opts)
-	if err != nil {
-		return "", err
-	}
-	builder := jwt.Signed(sig).Claims(signedRequestClaims{CSRF: session.Token()})
-	if body != nil {
-		builder = builder.Claims(body)
-	}
-	return builder.CompactSerialize()
-}
-
 func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.AccessTokenResponse, err error) {
 	payload := client.GetAccessTokenPayload{Scope: scopes}
-	var requestBody string
-	var content client.ContentType
 
 	err = t.makeAuthorisedRequest(func(session session.Session) error {
-		if session.HasRestrictedToken() {
-			info, err := t.connection.AMInfo()
-			if err != nil {
-				return err
-			}
-			requestBody, err = signedJWTBody(session, info.AccessTokenURL, info.ThingsVersion, payload)
-			if err != nil {
-				return err
-			}
-			content = client.ApplicationJOSE
-		} else {
-			b, err := json.Marshal(payload)
-			if err != nil {
-				return err
-			}
-			requestBody = string(b)
-			content = client.ApplicationJSON
+		info, err := t.connection.AMInfo()
+		if err != nil {
+			return err
 		}
-		reply, err := t.connection.AccessToken(session.Token(), content, requestBody)
+		body, content, err := session.RequestBody(info.AccessTokenURL, info.ThingsVersion, payload)
+		if err != nil {
+			return err
+		}
+		reply, err := t.connection.AccessToken(session.Token(), client.ContentType(content), string(body))
 		if reply != nil {
 			debug.Logger.Println("RequestAccessToken response: ", string(reply))
 		}
@@ -131,22 +94,15 @@ func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.Acce
 
 func (t *DefaultThing) RequestAttributes(names ...string) (response thing.AttributesResponse, err error) {
 	err = t.makeAuthorisedRequest(func(session session.Session) error {
-		var requestBody string
-		var content client.ContentType
-		if session.HasRestrictedToken() {
-			info, err := t.connection.AMInfo()
-			if err != nil {
-				return err
-			}
-			requestBody, err = signedJWTBody(session, info.AttributesURL+client.FieldsQuery(names), info.ThingsVersion, nil)
-			if err != nil {
-				return err
-			}
-			content = client.ApplicationJOSE
-		} else {
-			content = client.ApplicationJSON
+		info, err := t.connection.AMInfo()
+		if err != nil {
+			return err
 		}
-		reply, err := t.connection.Attributes(session.Token(), content, requestBody, names)
+		body, content, err := session.RequestBody(info.AttributesURL+client.FieldsQuery(names), info.ThingsVersion, nil)
+		if err != nil {
+			return err
+		}
+		reply, err := t.connection.Attributes(session.Token(), client.ContentType(content), string(body), names)
 		if err != nil {
 			debug.Logger.Println("RequestAttributes response: ", string(reply))
 			return err
@@ -249,6 +205,7 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 			return nil, err
 		}
 	}
+	var requestSigner crypto.Signer
 	if b.authHandler != nil {
 		// check we have a signer and key ID
 		if b.authHandler.key == nil {
@@ -257,6 +214,7 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 		if b.authHandler.keyID == "" {
 			return nil, fmt.Errorf("authenticate thing requires Key ID")
 		}
+		requestSigner = b.authHandler.key
 		// get AM info to obtain the realm from the gateway
 		info, err := b.connection.AMInfo()
 		if err != nil {
@@ -288,11 +246,13 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 	thingSession, err := builder.
 		WithConnection(b.connection).
 		AuthenticateWith(b.handlers...).
+		SignRequestsWith(requestSigner).
 		Create()
 	thing := &DefaultThing{
-		connection: b.connection,
-		handlers:   b.handlers,
-		session:    thingSession,
+		connection:    b.connection,
+		handlers:      b.handlers,
+		session:       thingSession,
+		requestSigner: requestSigner,
 	}
 	return thing, err
 }
