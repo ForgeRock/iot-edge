@@ -23,7 +23,9 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"time"
 )
 
 type ContentType string
@@ -60,10 +62,11 @@ type Connection interface {
 }
 
 type ConnectionBuilder struct {
-	url   *url.URL
-	realm string
-	tree  string
-	key   crypto.Signer
+	url     *url.URL
+	realm   string
+	tree    string
+	key     crypto.Signer
+	timeout time.Duration
 }
 
 func NewConnection() *ConnectionBuilder {
@@ -90,11 +93,18 @@ func (b *ConnectionBuilder) WithKey(key crypto.Signer) *ConnectionBuilder {
 	return b
 }
 
+func (b *ConnectionBuilder) TimeoutRequestAfter(timeout time.Duration) *ConnectionBuilder {
+	b.timeout = timeout
+	return b
+}
+
 func (b *ConnectionBuilder) Create() (Connection, error) {
 	var connection Connection
 	switch b.url.Scheme {
 	case "http", "https":
-		connection = &amConnection{baseURL: b.url.String(), realm: b.realm, authTree: b.tree}
+		connection = &amConnection{baseURL: b.url.String(), realm: b.realm, authTree: b.tree, Client: http.Client{
+			Timeout: b.timeout,
+		}}
 	case "coap", "coaps":
 		var err error
 		if b.key == nil {
@@ -103,7 +113,7 @@ func (b *ConnectionBuilder) Create() (Connection, error) {
 		if err != nil {
 			return nil, err
 		}
-		connection = &gatewayConnection{address: b.url.Host, key: b.key}
+		connection = &gatewayConnection{address: b.url.Host, key: b.key, timeout: b.timeout}
 	default:
 		return nil, fmt.Errorf("unsupported scheme `%s`, must be one of http(s) or coap(s)", b.url.Scheme)
 	}
