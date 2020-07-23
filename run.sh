@@ -37,6 +37,10 @@ example)
   # Run the example program
   go run github.com/ForgeRock/iot-edge/examples/"$2" "${@:3}"
 	;;
+gateway)
+  # Run the Gateway application
+  go run github.com/ForgeRock/iot-edge/cmd/gateway "${@:2}"
+	;;
 coverage)
   go tool cover -html=coverage.out
   ;;
