@@ -7,6 +7,8 @@ github.com/go-ocf/go-coap v0.0.0-20200325133359-298a26e4e9c8 h1:GnSy/G5ybcEwpouX
 github.com/go-ocf/go-coap v0.0.0-20200325133359-298a26e4e9c8/go.mod h1:51jqgNxk+XXTQs/yI5V8SxMbOhRfyNY7IwNFJ4Es6mU=
 github.com/gorilla/mux v1.7.4 h1:VuZ8uybHlWmqV03+zRzdwKL4tUnIp1MAQtp1mIFE1bc=
 github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
+github.com/jessevdk/go-flags v1.4.0 h1:4IU2WS7AumrZ/40jfhf4QVDMsQwqA7VEHozFRrGARJA=
+github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/pion/dtls/v2 v2.0.0-rc.7 h1:LDAIQDt1pcuAIJs7Q2EZ3PSl8MseCFA2nCW0YYSYCx0=

@@ -18,6 +18,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
@@ -26,11 +27,19 @@ import (
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 	"io"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"regexp"
 	"time"
 )
 
-func pipeToDebugger(reader io.Reader) {
+const (
+	nextAvailablePort     = ":0"
+	gatewayStartupMessage = "Thing Gateway server started"
+)
+
+func read(reader io.Reader, f func(string)) {
 	go func() {
 		in := bufio.NewReader(reader)
 		for {
@@ -38,17 +47,42 @@ func pipeToDebugger(reader io.Reader) {
 			if err != nil {
 				return
 			}
-			anvil.DebugLogger.Print(s)
+			f(s)
 		}
 	}()
 }
 
-func encodeKeyToPEM(signer crypto.Signer) (string, error) {
+func pipeToDebugger(reader io.Reader) {
+	read(reader, func(s string) {
+		anvil.DebugLogger.Print(s)
+	})
+
+}
+
+func testContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 10*time.Second)
+}
+
+func encodeKeyToPEM(signer crypto.Signer) ([]byte, error) {
 	keyBytes, err := x509.MarshalPKCS8PrivateKey(signer)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes})), nil
+	return pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}), nil
+}
+
+func saveToTempFile(pattern string, content []byte) (*os.File, error) {
+	file, err := ioutil.TempFile("", pattern)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := file.Write(content); err != nil {
+		return file, err
+	}
+	if err := file.Close(); err != nil {
+		return file, err
+	}
+	return file, nil
 }
 
 // SimpleThingExample tests the simple thing example
@@ -77,12 +111,15 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		return false
 	}
 
-	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
 		"-url", state.URL().String(),
 		"-realm", state.Realm(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
-		"-key", key,
+		"-key", string(key),
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
 
 	// send standard out and error to debugger
@@ -91,81 +128,8 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	stderr, _ := cmd.StderrPipe()
 	pipeToDebugger(stderr)
 
-	if err := cmd.Start(); err != nil {
-		anvil.DebugLogger.Println("cmd failed to start\n", err)
-		return false
-	}
-
-	timer := time.AfterFunc(5*time.Second, func() {
-		anvil.DebugLogger.Println("Timeout fired")
-		cmd.Process.Kill()
-	})
-	defer timer.Stop()
-
-	if err := cmd.Wait(); err != nil {
-		anvil.DebugLogger.Println("cmd failed during wait\n", err)
-		return false
-	}
-	return true
-}
-
-// SimpleThingGatewayExample tests the simple Thing Gateway example
-type SimpleThingGatewayExample struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *SimpleThingGatewayExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeGateway
-	return anvil.CreateIdentity(state.Realm(), data)
-}
-
-func (t *SimpleThingGatewayExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == "gateway" {
-		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
-		return true
-	}
-
-	// encode the key to PEM
-	key, err := encodeKeyToPEM(data.Signer.Signer)
-	if err != nil {
-		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
-		return false
-	}
-
-	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/gateway/simple",
-		"-url", am.AMURL,
-		"-realm", state.Realm(),
-		"-tree", jwtPopAuthTree,
-		"-name", data.Id.Name,
-		"-address", ":0",
-		"-key", key,
-		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
-
-	// send standard out and error to debugger
-	stdout, _ := cmd.StdoutPipe()
-	pipeToDebugger(stdout)
-	stderr, _ := cmd.StderrPipe()
-	pipeToDebugger(stderr)
-
-	if err := cmd.Start(); err != nil {
-		anvil.DebugLogger.Println("cmd failed to start\n", err)
-		return false
-	}
-
-	timer := time.AfterFunc(5*time.Second, func() {
-		anvil.DebugLogger.Println("Timeout fired")
-		cmd.Process.Kill()
-	})
-	defer timer.Stop()
-
-	if err := cmd.Wait(); err != nil {
-		anvil.DebugLogger.Println("cmd failed during wait\n", err)
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
 		return false
 	}
 	return true
@@ -213,12 +177,15 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 	// encode the certificate to PEM
 	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data.Certificates[0].Raw})
 
-	cmd := exec.Command("go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
 		"-url", state.URL().String(),
 		"-realm", state.Realm(),
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
-		"-key", key,
+		"-key", string(key),
 		"-cert", string(cert))
 
 	// send standard out and error to debugger
@@ -227,20 +194,250 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 	stderr, _ := cmd.StderrPipe()
 	pipeToDebugger(stderr)
 
-	if err := cmd.Start(); err != nil {
-		anvil.DebugLogger.Println("cmd failed to start\n", err)
-		return false
-	}
-
-	timer := time.AfterFunc(5*time.Second, func() {
-		anvil.DebugLogger.Println("Timeout fired")
-		cmd.Process.Kill()
-	})
-	defer timer.Stop()
-
-	if err := cmd.Wait(); err != nil {
-		anvil.DebugLogger.Println("cmd failed during wait\n", err)
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
 		return false
 	}
 	return true
+}
+
+// GatewayAppAuth tests the Gateway application with authentication only
+type GatewayAppAuth struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *GatewayAppAuth) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeGateway
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
+	if state.ClientType() == "gateway" {
+		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
+		return true
+	}
+
+	// encode the key to PEM
+	key, err := encodeKeyToPEM(data.Signer.Signer)
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		return false
+	}
+
+	keyFile, err := saveToTempFile("key*.pem", key)
+	defer func() {
+		if keyFile != nil {
+			os.Remove(keyFile.Name())
+		}
+	}()
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to save key to file; %v", err)
+		return false
+	}
+
+	ctx, cancel := testContext()
+	defer cancel()
+	result := new(bool)
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
+		"-d",
+		"--timeout", "4s",
+		"--url", am.AMURL,
+		"--realm", state.Realm(),
+		"--tree", jwtPopAuthTree,
+		"--name", data.Id.Name,
+		"--address", nextAvailablePort,
+		"--key", keyFile.Name())
+
+	// watch stdout to see if the gateway as started up successfully
+	stdout, _ := cmd.StdoutPipe()
+	read(stdout, func(s string) {
+		anvil.DebugLogger.Print(s)
+		if match, _ := regexp.MatchString(gatewayStartupMessage, s); match {
+			*result = true
+			cancel()
+		}
+	})
+
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	_ = cmd.Run()
+	return *result
+}
+
+// GatewayAppAuthNonDefaultKID tests the Gateway application with authentication using a non-default key ID
+type GatewayAppAuthNonDefaultKID struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *GatewayAppAuthNonDefaultKID) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeGateway
+	// change KID
+	data.Signer.KID = "keyOne"
+	data.Id.ThingKeys.Keys[0].KeyID = data.Signer.KID
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
+	if state.ClientType() == "gateway" {
+		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
+		return true
+	}
+
+	// encode the key to PEM
+	key, err := encodeKeyToPEM(data.Signer.Signer)
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		return false
+	}
+
+	keyFile, err := saveToTempFile("key*.pem", key)
+	defer func() {
+		if keyFile != nil {
+			os.Remove(keyFile.Name())
+		}
+	}()
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to save key to file; %v", err)
+		return false
+	}
+
+	ctx, cancel := testContext()
+	defer cancel()
+	result := new(bool)
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
+		"--debug",
+		"--url", am.AMURL,
+		"--realm", state.Realm(),
+		"--tree", jwtPopAuthTree,
+		"--name", data.Id.Name,
+		"--address", nextAvailablePort,
+		"--key", keyFile.Name(),
+		"--kid", data.Signer.KID)
+
+	// watch stdout to see if the gateway as started up successfully
+	stdout, _ := cmd.StdoutPipe()
+	read(stdout, func(s string) {
+		anvil.DebugLogger.Print(s)
+		if match, _ := regexp.MatchString(gatewayStartupMessage, s); match {
+			*result = true
+			cancel()
+		}
+	})
+
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	_ = cmd.Run()
+	return *result
+}
+
+// GatewayAppReg tests the Gateway application with dynamic registration
+type GatewayAppReg struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *GatewayAppReg) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.Name = anvil.RandomName()
+
+	serverWebKey, err := anvil.CertVerificationKey()
+	if err != nil {
+		return data, false
+	}
+
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+
+	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	if err != nil {
+		return data, false
+	}
+	data.Certificates = []*x509.Certificate{certificate}
+	data.Id.ThingType = callback.TypeDevice
+	return data, true
+}
+
+func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
+	if state.ClientType() == "gateway" {
+		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
+		return true
+	}
+
+	// encode the key to PEM
+	key, err := encodeKeyToPEM(data.Signer.Signer)
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		return false
+	}
+
+	keyFile, err := saveToTempFile("key*.pem", key)
+	defer func() {
+		if keyFile != nil {
+			os.Remove(keyFile.Name())
+		}
+	}()
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to save key to file; %v", err)
+		return false
+	}
+
+	certFile, err := saveToTempFile("cert*.pem",
+		pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data.Certificates[0].Raw}))
+	defer func() {
+		if certFile != nil {
+			os.Remove(certFile.Name())
+		}
+	}()
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to save cert to file; %v", err)
+		return false
+	}
+
+	ctx, cancel := testContext()
+	defer cancel()
+	result := new(bool)
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
+		"--debug",
+		"--url", am.AMURL,
+		"--realm", state.Realm(),
+		"--tree", jwtPopRegCertTree,
+		"--name", data.Id.Name,
+		"--address", nextAvailablePort,
+		"--key", keyFile.Name(),
+		"--cert", certFile.Name())
+
+	// watch stdout to see if the gateway as started up successfully
+	stdout, _ := cmd.StdoutPipe()
+	read(stdout, func(s string) {
+		anvil.DebugLogger.Print(s)
+		if match, _ := regexp.MatchString(gatewayStartupMessage, s); match {
+			*result = true
+			cancel()
+		}
+	})
+
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	_ = cmd.Run()
+	return *result
 }
