@@ -56,7 +56,8 @@ and add the mapping: _Secret ID_: `am.services.iot.cert.verification`, _Alias_: 
 this example is one of the test certificates (es256test) that AM includes by default. This mapping tells the
 _Register Thing_ node what key to use when verifying the registration certificate.
 
-Use curl and AM's REST endpoints to preregistered two identities that can be used in the authentication only examples. Get an admin SSO token:
+Use curl and AM's REST endpoints to preregistered two identities that can be used in the authentication only examples.
+Get an admin SSO token:
 
 ```bash
 curl --request POST 'http://am.localtest.me:8080/am/json/authenticate' \
@@ -150,8 +151,11 @@ Run the [registration example](https://github.com/ForgeRock/iot-edge/blob/master
 
 ## Run the SDK examples connecting to AM via the Thing Gateway
 
-The [Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM, which similar to a Thing, can be preregistered or dynamically created on its first authenication. In *authentication* mode, the gateway requires an asymmetric key pair for signing and to have a preregistered identity in AM. In *registration* mode, the gateway can registered itself if its in possession of an asymmetric key pair for signing and a CA signed X.509 certificate containing the
-key pair's public key. 
+The [Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM, which
+similar to a Thing, can be preregistered or dynamically created on its first authentication. In *authentication* mode,
+the gateway requires an asymmetric key pair for signing and to have a preregistered identity in AM. In *registration*
+mode, the gateway can register itself if it is in possession of an asymmetric key pair for signing and a CA signed
+X.509 certificate containing the key pair's public key. 
 
 ### Simple Example via the Gateway
 
@@ -169,9 +173,11 @@ Run the Gateway in *authentication* mode:
     -d
 ```
 
-The message `Thing Gateway server started` will appear if the `simple-gateway` has started up and authenticated itself successfully.
+The message `Thing Gateway server started` will appear if the `simple-gateway` has started up and authenticated itself
+successfully.
 
-In a different terminal window, run the SDK [simple example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go) to connect a thing to AM via the `simple-gateway`:
+In a different terminal window, run the SDK [simple example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go)
+to connect a thing to AM via the `simple-gateway`:
 
 ```bash
 ./run.sh example "thing/simple" \
@@ -196,9 +202,11 @@ Run the Gateway in *registration* mode::
     -d
 ```
 
-The message `Thing Gateway server started` will appear if the Gateway has started up, registered and authenticated itself successfully.
+The message `Thing Gateway server started` will appear if the Gateway has started up, registered and authenticated
+itself successfully.
 
-In a different terminal window, run the SDK [registration example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/cert-registration/main.go) to connect a Thing to AM via the `dynamic-gateway`:
+In a different terminal window, run the SDK [registration example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/cert-registration/main.go)
+to connect a Thing to AM via the `dynamic-gateway`:
 
 ```bash
 ./run.sh example "thing/cert-registration" \
