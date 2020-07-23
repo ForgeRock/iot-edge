@@ -23,7 +23,6 @@ import (
 	"crypto/x509"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"math/big"
-	"strings"
 	"testing"
 )
 
@@ -82,24 +81,13 @@ func Test_processCallbacks(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			isPop, err := processCallbacks(test.handlers, callbacks)
+			signer, err := processCallbacks(test.handlers, callbacks)
 			if err != nil {
 				t.Errorf("processCallbacks() - unexpected error: %s", err)
 			}
-			if test.pop != isPop {
-				t.Errorf("processCallbacks() PoP restricted = %v, wanted %v", isPop, test.pop)
+			if test.pop && signer == nil {
+				t.Errorf("processCallbacks() should have returned a signing key")
 			}
 		})
-	}
-}
-
-func TestDefaultSession_RequestBody(t *testing.T) {
-	sesh := &DefaultSession{
-		key:           nil,
-		popRestricted: true,
-	}
-	_, _, err := sesh.RequestBody("", "", nil)
-	if err == nil || !strings.Contains(err.Error(), "no signing key was configured") {
-		t.Error("Expected RequestBody() to fail: err = ", err)
 	}
 }

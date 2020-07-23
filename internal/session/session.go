@@ -18,24 +18,17 @@ package session
 
 import (
 	"crypto"
-	"encoding/json"
 	"errors"
 	"github.com/ForgeRock/iot-edge/internal/client"
-	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/session"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"net/url"
 	"time"
 )
 
 type DefaultSession struct {
-	connection    client.Connection
-	token         string
-	nonce         int
-	key           crypto.Signer
-	popRestricted bool
+	connection client.Connection
+	token      string
 }
 
 func (s *DefaultSession) Token() string {
@@ -50,53 +43,23 @@ func (s *DefaultSession) Logout() error {
 	return s.connection.LogoutSession(s.token)
 }
 
-func (s *DefaultSession) RequestBody(url, version string, payload interface{}) ([]byte, string, error) {
-	if s.popRestricted {
-		if s.key == nil {
-			return nil, "", errors.New("request requires a signed body, but no signing key was configured")
-		}
-		requestBody, err := signedJWTBody(s, url, version, payload)
-		if err != nil {
-			return nil, "", err
-		}
-		return requestBody, string(client.ApplicationJOSE), nil
-	} else if payload == nil {
-		return []byte(""), string(client.ApplicationJSON), nil
-	} else {
-		b, err := json.Marshal(payload)
-		if err != nil {
-			return nil, "", err
-		}
-		return b, string(client.ApplicationJSON), nil
-	}
+type PoPSession struct {
+	DefaultSession
+	nonce         int
+	key           crypto.Signer
+	popRestricted bool
 }
 
-// signedRequestClaims defines the claims expected in the signed JWT provided with a signed request
-type signedRequestClaims struct {
-	CSRF string `json:"csrf"`
+func (s *PoPSession) SigningKey() crypto.Signer {
+	return s.key
 }
 
-func signedJWTBody(session *DefaultSession, url string, version string, body interface{}) ([]byte, error) {
-	opts := &jose.SignerOptions{}
-	opts.WithHeader("aud", url)
-	opts.WithHeader("api", version)
-	opts.WithHeader("nonce", session.nonce)
-	// increment the nonce so that the token can be used in a subsequent request
-	session.nonce++
+func (s *PoPSession) Nonce() int {
+	return s.nonce
+}
 
-	sig, err := jws.NewSigner(session.key, opts)
-	if err != nil {
-		return nil, err
-	}
-	builder := jwt.Signed(sig).Claims(signedRequestClaims{CSRF: session.Token()})
-	if body != nil {
-		builder = builder.Claims(body)
-	}
-	signed, err := builder.CompactSerialize()
-	if err != nil {
-
-	}
-	return []byte(signed), nil
+func (s *PoPSession) IncrementNonce() {
+	s.nonce++
 }
 
 type Builder struct {
@@ -139,11 +102,6 @@ func (b *Builder) TimeoutRequestAfter(d time.Duration) session.Builder {
 	return b
 }
 
-func (b *Builder) SignRequestsWith(signer crypto.Signer) session.Builder {
-	b.signer = signer
-	return b
-}
-
 func (b *Builder) Create() (session.Session, error) {
 	var err error
 	if b.connection == nil {
@@ -160,51 +118,57 @@ func (b *Builder) Create() (session.Session, error) {
 		}
 	}
 	auth := client.AuthenticatePayload{}
-	popRestricted := false
+	var signer crypto.Signer
 	for {
 		if auth, err = b.connection.Authenticate(auth); err != nil {
 			return nil, err
 		}
 
 		if auth.HasSessionToken() {
-			return &DefaultSession{
-				connection:    b.connection,
-				token:         auth.TokenID,
-				key:           b.signer,
-				popRestricted: popRestricted,
-			}, nil
+			defaultSession := DefaultSession{
+				connection: b.connection,
+				token:      auth.TokenID,
+			}
+			if signer != nil {
+				return &PoPSession{
+					DefaultSession: defaultSession,
+					key:            signer,
+				}, nil
+			}
+			return &defaultSession, nil
 		}
-		if popRestricted, err = processCallbacks(b.handlers, auth.Callbacks); err != nil {
+		if signer, err = processCallbacks(b.handlers, auth.Callbacks); err != nil {
 			return nil, err
 		}
 	}
 }
 
 // processCallbacks attempts to respond to the callbacks with the given callback handlers
-func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback) (bool, error) {
-	popRestricted := false
+func processCallbacks(handlers []callback.Handler, callbacks []callback.Callback) (signer crypto.Signer, err error) {
 	for _, cb := range callbacks {
 		for _, h := range handlers {
 			handled, err := h.Handle(cb)
 			if err != nil {
-				return popRestricted, err
+				return nil, err
 			}
 			if !handled {
 				continue
 			}
-			popRestricted = popRestricted || isSessionPoPRestricted(h)
+			if signer == nil {
+				signer = handlerSigningKey(h)
+			}
 			break
 		}
 	}
-	return popRestricted, nil
+	return signer, nil
 }
 
-func isSessionPoPRestricted(handler callback.Handler) bool {
-	if _, ok := handler.(callback.AuthenticateHandler); ok {
-		return true
+func handlerSigningKey(handler callback.Handler) crypto.Signer {
+	if handler, ok := handler.(callback.AuthenticateHandler); ok {
+		return handler.Key
 	}
-	if _, ok := handler.(callback.RegisterHandler); ok {
-		return true
+	if handler, ok := handler.(callback.RegisterHandler); ok {
+		return handler.Key
 	}
-	return false
+	return nil
 }
