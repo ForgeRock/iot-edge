@@ -13,7 +13,7 @@ The _Thing SDK_ enables a _thing_, which can be either a physical _device_ or a 
 authenticate without human interaction. Once registered, the _thing_ will be represented by a digital identity in the
 ForgeRock Identity Platform and can authenticate itself in order to interact with the platform tier.
 
-See the [getting started](docs/getting-started.md) for information about how to use the SDK.
+See the [getting started guide](docs/getting-started.md) for information about how to use the SDK.
 
 ## Thing Gateway
 [Work in progress]

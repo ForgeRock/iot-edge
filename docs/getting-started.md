@@ -66,14 +66,20 @@ curl --request POST 'http://am.localtest.me:8080/am/json/authenticate' \
 --header 'Accept-API-Version: resource=2.0, protocol=1.0'
 ```
 
-Replace `{tokenId}` in the following request with the `tokenId` received from the previous request and create the
+Save the `tokenId` received from this request to a variable:
+
+```bash
+tokenId="5oXAB6....lMxAAA.*"
+```
+
+Create the
 `simple-thing` identity:
 
 ```bash
 curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/simple-thing' \
 --header 'Content-Type: application/json' \
 --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
---cookie 'iPlanetDirectoryPro={tokenId}' \
+--cookie "iPlanetDirectoryPro=${tokenId}" \
 --data '{
     "userPassword": "generated-password",
     "thingType": "device",
@@ -87,7 +93,7 @@ Create the `simple-gateway` identity:
 curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/simple-gateway' \
 --header 'Content-Type: application/json' \
 --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
---cookie 'iPlanetDirectoryPro={tokenId}' \
+--cookie "iPlanetDirectoryPro=${tokenId}" \
 --data '{
     "userPassword": "generated-password",
     "thingType": "gateway",
