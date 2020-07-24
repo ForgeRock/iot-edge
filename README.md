@@ -16,4 +16,7 @@ ForgeRock Identity Platform and can authenticate itself in order to interact wit
 See the [getting started guide](docs/getting-started.md) for information about how to use the SDK.
 
 ## Thing Gateway
-[Work in progress]
+The _Thing Gateway_ is an application that enables more constrained devices to interact with the ForgeRock Identity
+Platform by acting as a proxy between a _thing_ and the Platform.
+
+See the [build the Gateway guide](docs/building-the-gateway.md) for information about building the Gateway.
