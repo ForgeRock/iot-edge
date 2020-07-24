@@ -13,3 +13,6 @@
 
 # Dependency directories
 vendor/
+
+# Binary directory
+bin/
