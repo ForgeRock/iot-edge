@@ -1,3 +1,5 @@
+// +build coap !coap,!http
+
 /*
  * Copyright 2020 ForgeRock AS
  *
@@ -19,7 +21,6 @@ package client
 import (
 	"bytes"
 	"context"
-	"crypto"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -46,15 +47,6 @@ func (e errCoAPStatusCode) Error() string {
 		msg += fmt.Sprintf(", payload: %s", string(e.payload))
 	}
 	return msg
-}
-
-// gatewayConnection contains information for connecting to the Thing Gateway via COAP
-type gatewayConnection struct {
-	address string
-	timeout time.Duration
-	key     crypto.Signer
-	client  *coap.Client
-	conn    *coap.ClientConn
 }
 
 // dial returns an existing connection or creates a new one
