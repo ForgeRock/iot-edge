@@ -53,6 +53,12 @@ type ThingEndpointPayload struct {
 	Payload string `json:"payload,omitempty"`
 }
 
+// IntrospectPayload contains an introspection request as defined by rfc7662
+type IntrospectPayload struct {
+	Token         string `json:"token"`
+	TokenTypeHint string `json:"token_type_hint,omitempty"`
+}
+
 func (p GetAccessTokenPayload) String() string {
 	return payloadToString(p)
 }

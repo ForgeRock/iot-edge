@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/client"
 	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
+	"github.com/ForgeRock/iot-edge/internal/introspect"
 	"github.com/ForgeRock/iot-edge/internal/tokencache"
 	"github.com/dchest/uniuri"
 	"github.com/go-ocf/go-coap"
@@ -82,6 +83,10 @@ func (m *mockClient) AccessToken(tokenID string, _ client.ContentType, payload s
 		return m.accessTokenFunc(tokenID, payload)
 	}
 	return []byte("{}"), nil
+}
+
+func (m *mockClient) IntrospectAccessToken(token string) (introspection []byte, err error) {
+	return introspect.InactiveIntrospectionBytes, nil
 }
 
 func (m *mockClient) Attributes(tokenID string, _ client.ContentType, payload string, names []string) (reply []byte, err error) {

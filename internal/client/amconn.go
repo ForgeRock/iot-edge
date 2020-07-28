@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/internal/debug"
+	"github.com/ForgeRock/iot-edge/internal/introspect"
+	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -43,10 +45,12 @@ const (
 // amConnection contains information for connecting directly to AM
 type amConnection struct {
 	http.Client
-	baseURL    string
-	realm      string
-	authTree   string
-	cookieName string
+	baseURL         string
+	realm           string
+	authTree        string
+	cookieName      string
+	jwksURI         string
+	accessTokenJWKS jose.JSONWebKeySet
 }
 
 // newSessionRequest returns a new session request
@@ -154,6 +158,7 @@ func (c *amConnection) Initialise() error {
 		return err
 	}
 	c.cookieName = info.CookieName
+	c.getJWKS()
 	return nil
 }
 
@@ -242,6 +247,80 @@ func (c *amConnection) getServerInfo() (info serverInfo, err error) {
 	return info, err
 }
 
+// getJWKSURI gets the OAuth 2.0 JSON Web Key set URI from AM
+func (c *amConnection) getJWKSURI() (uri string, err error) {
+	request, err := http.NewRequest(
+		http.MethodGet,
+		c.baseURL+"/oauth2/.well-known/openid-configuration?realm="+c.realm,
+		nil)
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return uri, err
+	}
+
+	request.Header.Add(httpContentType, string(ApplicationJSON))
+	response, err := c.Do(request)
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return uri, err
+	}
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return uri, err
+	}
+	if response.StatusCode != http.StatusOK {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return uri, fmt.Errorf("server config request failed")
+	}
+	var config struct {
+		URI string `json:"jwks_uri"`
+	}
+	if err = json.Unmarshal(responseBody, &config); err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return uri, err
+	}
+	return config.URI, err
+}
+
+// getJWKS gets the OAuth 2.0 JSON Web Key set from AM
+func (c *amConnection) getJWKS() (err error) {
+	if c.jwksURI == "" {
+		c.jwksURI, err = c.getJWKSURI()
+		if err != nil {
+			return err
+		}
+	}
+	request, err := http.NewRequest(http.MethodGet, c.jwksURI, nil)
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return err
+	}
+
+	request.Header.Add(httpContentType, string(ApplicationJSON))
+	response, err := c.Do(request)
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return err
+	}
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return err
+	}
+	if response.StatusCode != http.StatusOK {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return fmt.Errorf("server config request failed")
+	}
+	if err = json.Unmarshal(responseBody, &c.accessTokenJWKS); err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return err
+	}
+	return nil
+}
+
 func (c *amConnection) accessTokenURL() string {
 	return c.baseURL + "/json/things/*?_action=get_access_token&realm=" + c.realm
 }
@@ -267,7 +346,7 @@ func (c *amConnection) AMInfo() (info AMInfoResponse, err error) {
 	}, nil
 }
 
-// accessToken makes an access token request with the given session token and payload
+// AccessToken makes an access token request with the given session token and payload
 func (c *amConnection) AccessToken(tokenID string, content ContentType, payload string) ([]byte, error) {
 	request, err := http.NewRequest(http.MethodPost, c.accessTokenURL(), strings.NewReader(payload))
 	if err != nil {
@@ -275,6 +354,41 @@ func (c *amConnection) AccessToken(tokenID string, content ContentType, payload 
 		return nil, err
 	}
 	return c.makeCommandRequest(tokenID, content, request)
+}
+
+// IntrospectAccessToken introspects an access token locally
+func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte, err error) {
+	object, err := jose.ParseSigned(token)
+	if err != nil {
+		return introspection, err
+	}
+	if len(object.Signatures) == 0 {
+		return introspection, fmt.Errorf("expected at least one signature header")
+	}
+	kid := object.Signatures[0].Header.KeyID
+	if kid == "" {
+		return introspection, fmt.Errorf("no kid")
+	}
+	if c.accessTokenJWKS.Keys == nil {
+		err = c.getJWKS()
+		if err != nil {
+			return introspection, err
+		}
+	}
+	keys := c.accessTokenJWKS.Key(kid)
+	for _, key := range keys {
+		introspection, err = object.Verify(key)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		return introspection, err
+	}
+	if !introspect.ValidNow(introspection) {
+		return introspect.InactiveIntrospectionBytes, nil
+	}
+	return introspect.AddActive(introspection)
 }
 
 // attributes makes a thing attributes request with the given session token and payload

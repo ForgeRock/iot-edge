@@ -212,6 +212,31 @@ func (c *gatewayConnection) AccessToken(tokenID string, content ContentType, pay
 	}
 }
 
+// IntrospectAccessToken makes a request to the gateway to introspect an access token
+func (c *gatewayConnection) IntrospectAccessToken(token string) (introspection []byte, err error) {
+	conn, err := c.dial()
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := c.context()
+	defer cancel()
+
+	payload, err := json.Marshal(IntrospectPayload{Token: token})
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := conn.PostWithContext(ctx, "/introspect", coap.AppJSON, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	if response.Code() != codes.Changed {
+		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
+	return response.Payload(), nil
+}
+
 // Attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by Thing Gateway
 func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
