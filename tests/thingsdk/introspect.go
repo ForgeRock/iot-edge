@@ -20,18 +20,33 @@ import (
 	"github.com/ForgeRock/iot-edge/internal/clock"
 	"github.com/ForgeRock/iot-edge/internal/introspect"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 	"time"
 )
 
-// IntrospectAsymmetricJWT checks that a valid asymmetric client-based access token can be introspected locally
-type IntrospectAsymmetricJWT struct {
-	anvil.NopSetupCleanup
+func getAccessToken(thing thing.Thing) (string, error) {
+	response, err := thing.RequestAccessToken("publish", "subscribe")
+	if err != nil {
+		return "", err
+	}
+	return response.AccessToken()
 }
 
-func (t *IntrospectAsymmetricJWT) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+// IntrospectClientBasedToken checks that a valid client-based access token can be introspected
+type IntrospectClientBasedToken struct {
+	alg                 jose.SignatureAlgorithm
+	originalOAuthConfig []byte
+}
+
+func (t *IntrospectClientBasedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
+	t.originalOAuthConfig, err = anvil.ModifyOAuth2TokenSigningAlgorithm(state.Realm(), t.alg)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to modify signing algorithm", err)
+		return data, false
+	}
 	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
@@ -41,26 +56,20 @@ func (t *IntrospectAsymmetricJWT) Setup(state anvil.TestState) (data anvil.Thing
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *IntrospectAsymmetricJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (t *IntrospectClientBasedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Create()
+	device, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	response, err := thing.RequestAccessToken("publish", "subscribe")
-	if err != nil {
-		anvil.DebugLogger.Println("access token request failed", err)
-		return false
-	}
-
-	accessToken, err := response.AccessToken()
+	accessToken, err := getAccessToken(device)
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
 
-	introspection, err := thing.IntrospectAccessToken(accessToken)
+	introspection, err := device.IntrospectAccessToken(accessToken)
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -73,36 +82,52 @@ func (t *IntrospectAsymmetricJWT) Run(state anvil.TestState, data anvil.ThingDat
 	return true
 }
 
-// IntrospectAsymmetricJWTExpired tests that local introspection returns inactive if the token has expired
-type IntrospectAsymmetricJWTExpired struct {
-	anvil.NopSetupCleanup
+func (t IntrospectClientBasedToken) Cleanup(state anvil.TestState, data anvil.ThingData) error {
+	return anvil.RestoreOAuth2Service(state.Realm(), t.originalOAuthConfig)
 }
 
-func (t *IntrospectAsymmetricJWTExpired) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+func (t *IntrospectClientBasedToken) NameSuffix() string {
+	return string(t.alg)
 }
 
-func (t *IntrospectAsymmetricJWTExpired) Run(state anvil.TestState, data anvil.ThingData) bool {
+type IntrospectClientBasedTokenFailure struct {
+	IntrospectClientBasedToken
+}
+
+func (t *IntrospectClientBasedTokenFailure) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
-	thing, err := builder.Create()
+	device, err := builder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	response, err := thing.RequestAccessToken("publish", "subscribe")
+	accessToken, err := getAccessToken(device)
 	if err != nil {
-		anvil.DebugLogger.Println("access token request failed", err)
+		anvil.DebugLogger.Println(err)
 		return false
 	}
 
-	accessToken, err := response.AccessToken()
+	_, err = device.IntrospectAccessToken(accessToken)
+	if err == nil {
+		anvil.DebugLogger.Println("expected failure")
+		return false
+	}
+	return true
+}
+
+// IntrospectClientBasedTokenExpired tests that local introspection returns inactive if the token has expired
+type IntrospectClientBasedTokenExpired struct {
+	IntrospectClientBasedToken
+}
+
+func (t *IntrospectClientBasedTokenExpired) Run(state anvil.TestState, data anvil.ThingData) bool {
+	builder := thingJWTAuth(state, data)
+	device, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	accessToken, err := getAccessToken(device)
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -115,7 +140,7 @@ func (t *IntrospectAsymmetricJWTExpired) Run(state anvil.TestState, data anvil.T
 		clock.Clock = clock.DefaultClock()
 	}()
 
-	introspection, err := thing.IntrospectAccessToken(accessToken)
+	introspection, err := device.IntrospectAccessToken(accessToken)
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -127,24 +152,13 @@ func (t *IntrospectAsymmetricJWTExpired) Run(state anvil.TestState, data anvil.T
 	return true
 }
 
-// IntrospectAsymmetricJWTPremature tests that local introspection returns inactive if the token has not reached its
+// IntrospectClientBasedTokenPremature tests that local introspection returns inactive if the token has not reached its
 // not before time yet
-type IntrospectAsymmetricJWTPremature struct {
-	anvil.NopSetupCleanup
+type IntrospectClientBasedTokenPremature struct {
+	IntrospectClientBasedToken
 }
 
-func (t *IntrospectAsymmetricJWTPremature) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
-}
-
-func (t *IntrospectAsymmetricJWTPremature) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (t *IntrospectClientBasedTokenPremature) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
 	thing, err := builder.Create()
 	if err != nil {

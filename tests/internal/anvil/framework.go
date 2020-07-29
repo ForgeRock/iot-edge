@@ -18,6 +18,7 @@
 package anvil
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
@@ -235,6 +236,46 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	return nil
 }
 
+const oauth2Service = "oauth-oidc"
+
+// ModifyOAuth2TokenSigningAlgorithm changes the algorithm used to sign OAuth 2.0 tokens
+// Returns the original configuration
+func ModifyOAuth2TokenSigningAlgorithm(realm string, alg jose.SignatureAlgorithm) (original []byte, err error) {
+	const key = "advancedOAuth2Config"
+	original, err = am.GetService(realm, oauth2Service)
+	var config, advancedConfig map[string]json.RawMessage
+	err = json.Unmarshal(original, &config)
+	if err != nil {
+		return original, err
+	}
+	advancedOriginal, ok := config[key]
+	if !ok {
+		return original, fmt.Errorf("missing key %s", key)
+	}
+	err = json.Unmarshal(advancedOriginal, &advancedConfig)
+	if err != nil {
+		return original, err
+	}
+	advancedConfig["tokenSigningAlgorithm"] = json.RawMessage(fmt.Sprintf("\"%s\"", alg))
+	newAdvanced, err := json.Marshal(advancedConfig)
+	if err != nil {
+		return original, err
+	}
+	config[key] = newAdvanced
+	newConfig, err := json.Marshal(config)
+	if err != nil {
+		return original, err
+	}
+	_, err = am.UpdateService(realm, oauth2Service, bytes.NewReader(newConfig))
+	return original, err
+}
+
+// RestoreOAuth2Service restores the OAut 2.0 service using the supplied config
+func RestoreOAuth2Service(realm string, config []byte) error {
+	_, err := am.UpdateService(realm, oauth2Service, bytes.NewReader(config))
+	return err
+}
+
 // DeleteRealms deletes all the realms in the id slice from the AM instance
 // Assumes that the ids are in an order that can be safely deleted e.g. children before parents
 func DeleteRealms(ids []string) (err error) {
@@ -391,10 +432,10 @@ func (i *ThingGatewayTestState) Realm() string {
 
 // SDKTest defines the interface required by a SDK API test
 type SDKTest interface {
-	Setup(state TestState) (data ThingData, ok bool) // setup actions before the test starts
-	Run(state TestState, data ThingData) bool        // function that runs and validates the test
-	Cleanup(state TestState, data ThingData)         // cleanup actions after the test has finished
-	NameSuffix() string                              // optional suffix to add to struct name to create the test name
+	Setup(state TestState) (data ThingData, ok bool)     // setup actions before the test starts
+	Run(state TestState, data ThingData) bool            // function that runs and validates the test
+	Cleanup(state TestState, data ThingData) (err error) // cleanup actions after the test has finished
+	NameSuffix() string                                  // optional suffix to add to struct name to create the test name
 }
 
 // NopSetupCleanup defines a struct with no-op Setup and Cleanup methods
@@ -407,7 +448,8 @@ func (t NopSetupCleanup) Setup() bool {
 }
 
 // Cleanup is a no op function
-func (t NopSetupCleanup) Cleanup(TestState, ThingData) {
+func (t NopSetupCleanup) Cleanup(TestState, ThingData) error {
+	return nil
 }
 
 // NameSuffix returns the empty string

@@ -45,6 +45,7 @@ const (
 	adminPassword = "password"
 	// endpoint versions
 	realmConfigEndpointVersion = "protocol=2.0,resource=1.0"
+	realmConfigReadVersion     = "protocol=1.0,resource=1.0"
 	userEndpointVersion        = "resource=3.0, protocol=1.0"
 )
 
@@ -428,6 +429,21 @@ func UpdateAgent(realm, agentName, payloadPath string) (err error) {
 		realmConfigEndpointVersion,
 		bytes.NewReader(b))
 	return err
+}
+
+// GetService returns the realm configuration of the given service
+func GetService(realm, name string) (response []byte, err error) {
+	return get(
+		fmt.Sprintf("%s/json/realm-config/services/%s?realm=%s", AMURL, name, realm),
+		realmConfigReadVersion)
+}
+
+// UpdateService updates the realm configuration of the given service
+func UpdateService(realm, name string, payload io.Reader) (response []byte, err error) {
+	return crestUpdate(
+		fmt.Sprintf("%s/json/realm-config/services/%s?realm=%s", AMURL, name, realm),
+		realmConfigReadVersion,
+		payload)
 }
 
 // CreateSecretMapping creates or updates the secret mapping in the default keystore
