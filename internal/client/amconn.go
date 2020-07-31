@@ -272,7 +272,7 @@ func (c *amConnection) getJWKSURI() (uri string, err error) {
 	}
 	if response.StatusCode != http.StatusOK {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return uri, fmt.Errorf("server config request failed")
+		return uri, fmt.Errorf("openid-configuration request failed")
 	}
 	var config struct {
 		URI string `json:"jwks_uri"`
@@ -312,7 +312,7 @@ func (c *amConnection) getJWKS() (err error) {
 	}
 	if response.StatusCode != http.StatusOK {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return fmt.Errorf("server config request failed")
+		return fmt.Errorf("OAuth 2.0 JSON Web Key set request failed")
 	}
 	if err = json.Unmarshal(responseBody, &c.accessTokenJWKS); err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
