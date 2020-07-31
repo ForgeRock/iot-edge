@@ -34,15 +34,16 @@ func getAccessToken(thing thing.Thing) (string, error) {
 	return response.AccessToken()
 }
 
-// IntrospectClientBasedToken checks that a valid client-based access token can be introspected
-type IntrospectClientBasedToken struct {
+// IntrospectAccessToken checks that a valid access token can be introspected
+type IntrospectAccessToken struct {
+	clientBased         bool
 	alg                 jose.SignatureAlgorithm
 	originalOAuthConfig []byte
 }
 
-func (t *IntrospectClientBasedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func (t *IntrospectAccessToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	t.originalOAuthConfig, err = anvil.ModifyOAuth2TokenSigningAlgorithm(state.Realm(), t.alg)
+	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.Realm(), t.clientBased, t.alg)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to modify signing algorithm", err)
 		return data, false
@@ -56,7 +57,7 @@ func (t *IntrospectClientBasedToken) Setup(state anvil.TestState) (data anvil.Th
 	return anvil.CreateIdentity(state.Realm(), data)
 }
 
-func (t *IntrospectClientBasedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -82,19 +83,27 @@ func (t *IntrospectClientBasedToken) Run(state anvil.TestState, data anvil.Thing
 	return true
 }
 
-func (t IntrospectClientBasedToken) Cleanup(state anvil.TestState, data anvil.ThingData) error {
+func (t IntrospectAccessToken) Cleanup(state anvil.TestState, data anvil.ThingData) error {
 	return anvil.RestoreOAuth2Service(state.Realm(), t.originalOAuthConfig)
 }
 
-func (t *IntrospectClientBasedToken) NameSuffix() string {
-	return string(t.alg)
+func (t *IntrospectAccessToken) NameSuffix() string {
+	suffix := "CTS"
+	if t.clientBased {
+		suffix = "ClientBased"
+	}
+	return suffix + string(t.alg)
 }
 
-type IntrospectClientBasedTokenFailure struct {
-	IntrospectClientBasedToken
+// IntrospectAccessTokenFailure checks that introspection fails gracefully for unsupported cases
+// Currently unsupported:
+// * CTS-based tokens
+// * Symmetrically signed tokens
+type IntrospectAccessTokenFailure struct {
+	IntrospectAccessToken
 }
 
-func (t *IntrospectClientBasedTokenFailure) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (t *IntrospectAccessTokenFailure) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -112,15 +121,16 @@ func (t *IntrospectClientBasedTokenFailure) Run(state anvil.TestState, data anvi
 		anvil.DebugLogger.Println("expected failure")
 		return false
 	}
+	anvil.DebugLogger.Println(err)
 	return true
 }
 
-// IntrospectClientBasedTokenExpired tests that local introspection returns inactive if the token has expired
-type IntrospectClientBasedTokenExpired struct {
-	IntrospectClientBasedToken
+// IntrospectAccessTokenExpired tests that local introspection returns inactive if the token has expired
+type IntrospectAccessTokenExpired struct {
+	IntrospectAccessToken
 }
 
-func (t *IntrospectClientBasedTokenExpired) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (t *IntrospectAccessTokenExpired) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -152,13 +162,13 @@ func (t *IntrospectClientBasedTokenExpired) Run(state anvil.TestState, data anvi
 	return true
 }
 
-// IntrospectClientBasedTokenPremature tests that local introspection returns inactive if the token has not reached its
+// IntrospectAccessTokenPremature tests that local introspection returns inactive if the token has not reached its
 // not before time yet
-type IntrospectClientBasedTokenPremature struct {
-	IntrospectClientBasedToken
+type IntrospectAccessTokenPremature struct {
+	IntrospectAccessToken
 }
 
-func (t *IntrospectClientBasedTokenPremature) Run(state anvil.TestState, data anvil.ThingData) bool {
+func (t *IntrospectAccessTokenPremature) Run(state anvil.TestState, data anvil.ThingData) bool {
 	builder := thingJWTAuth(state, data)
 	thing, err := builder.Create()
 	if err != nil {

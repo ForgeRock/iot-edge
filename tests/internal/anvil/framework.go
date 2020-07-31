@@ -238,30 +238,49 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 
 const oauth2Service = "oauth-oidc"
 
-// ModifyOAuth2TokenSigningAlgorithm changes the algorithm used to sign OAuth 2.0 tokens
-// Returns the original configuration
-func ModifyOAuth2TokenSigningAlgorithm(realm string, alg jose.SignatureAlgorithm) (original []byte, err error) {
-	const key = "advancedOAuth2Config"
+func subConfig(config map[string]json.RawMessage, key string) (sub map[string]json.RawMessage, err error) {
+	value, ok := config[key]
+	if !ok {
+		return sub, fmt.Errorf("missing key %s", key)
+	}
+	err = json.Unmarshal(value, &sub)
+	return sub, err
+}
+
+// ModifyOAuth2Provider changes the OAuth 2.0 access tokens issued by AM
+// Returns the original configuration so that the provider can be restored
+func ModifyOAuth2Provider(realm string, clientBased bool, signingAlgorithm jose.SignatureAlgorithm) (original []byte, err error) {
+	const (
+		coreKey     = "coreOAuth2Config"
+		advancedKey = "advancedOAuth2Config"
+	)
 	original, err = am.GetService(realm, oauth2Service)
-	var config, advancedConfig map[string]json.RawMessage
+	var config, coreConfig, advancedConfig map[string]json.RawMessage
 	err = json.Unmarshal(original, &config)
 	if err != nil {
 		return original, err
 	}
-	advancedOriginal, ok := config[key]
-	if !ok {
-		return original, fmt.Errorf("missing key %s", key)
-	}
-	err = json.Unmarshal(advancedOriginal, &advancedConfig)
+	coreConfig, err = subConfig(config, coreKey)
 	if err != nil {
 		return original, err
 	}
-	advancedConfig["tokenSigningAlgorithm"] = json.RawMessage(fmt.Sprintf("\"%s\"", alg))
+	coreConfig["statelessTokensEnabled"], _ = json.Marshal(clientBased)
+	newCore, err := json.Marshal(coreConfig)
+	if err != nil {
+		return original, err
+	}
+	config[coreKey] = newCore
+
+	advancedConfig, err = subConfig(config, advancedKey)
+	if err != nil {
+		return original, err
+	}
+	advancedConfig["tokenSigningAlgorithm"], _ = json.Marshal(signingAlgorithm)
 	newAdvanced, err := json.Marshal(advancedConfig)
 	if err != nil {
 		return original, err
 	}
-	config[key] = newAdvanced
+	config[advancedKey] = newAdvanced
 	newConfig, err := json.Marshal(config)
 	if err != nil {
 		return original, err

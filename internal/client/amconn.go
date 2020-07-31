@@ -365,8 +365,15 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 	if len(object.Signatures) == 0 {
 		return introspection, fmt.Errorf("expected at least one signature header")
 	}
-	kid := object.Signatures[0].Header.KeyID
-	if kid == "" {
+	header := object.Signatures[0].Header
+
+	// can not introspect symmetrically signed tokens locally
+	switch jose.SignatureAlgorithm(header.Algorithm) {
+	case jose.HS256, jose.HS384, jose.HS512:
+		return introspection, fmt.Errorf("symmetrically signed tokens unsupported")
+	}
+
+	if header.KeyID == "" {
 		return introspection, fmt.Errorf("no kid")
 	}
 	if c.accessTokenJWKS.Keys == nil {
@@ -375,7 +382,7 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 			return introspection, err
 		}
 	}
-	keys := c.accessTokenJWKS.Key(kid)
+	keys := c.accessTokenJWKS.Key(header.KeyID)
 	for _, key := range keys {
 		introspection, err = object.Verify(key)
 		if err == nil {
