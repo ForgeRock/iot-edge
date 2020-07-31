@@ -17,12 +17,17 @@
 package main
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"github.com/ForgeRock/iot-edge/internal/clock"
 	"github.com/ForgeRock/iot-edge/internal/introspect"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 	"time"
 )
 
@@ -45,7 +50,7 @@ func (t *IntrospectAccessToken) Setup(state anvil.TestState) (data anvil.ThingDa
 	var err error
 	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.Realm(), t.clientBased, t.alg)
 	if err != nil {
-		anvil.DebugLogger.Println("failed to modify signing algorithm", err)
+		anvil.DebugLogger.Println("failed to modify OAuth 2.0 provider", err)
 		return data, false
 	}
 	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
@@ -194,6 +199,75 @@ func (t *IntrospectAccessTokenPremature) Run(state anvil.TestState, data anvil.T
 	}()
 
 	introspection, err := thing.IntrospectAccessToken(accessToken)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if introspect.IsActive(introspection) {
+		anvil.DebugLogger.Println("expected active = false")
+		return false
+	}
+	return true
+}
+
+// createFakeAccessToken creates a fake client-based token
+func createFakeAccessToken() (token string, err error) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return token, err
+	}
+	webKey := jose.JSONWebKey{Key: key.Public(), Algorithm: string(jose.ES256), Use: "sig"}
+	kid, err := webKey.Thumbprint(crypto.SHA256)
+	if err != nil {
+		return token, err
+	}
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("kid", kid)
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: key}, opts)
+	if err != nil {
+		return "", err
+	}
+	builder := jwt.Signed(sig).Claims(struct {
+		Exp    int64    `json:"exp"`
+		Nbf    int64    `json:"nbf"`
+		Scopes []string `json:"scopes"`
+	}{
+		Exp:    time.Now().Add(time.Hour).Unix(),
+		Nbf:    time.Now().Add(-time.Hour).Unix(),
+		Scopes: []string{"publish"},
+	})
+	return builder.CompactSerialize()
+}
+
+// IntrospectFakeAccessToken checks thhat an inactive introspection is returned for a fake access token
+type IntrospectFakeAccessToken struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *IntrospectFakeAccessToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *IntrospectFakeAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	builder := thingJWTAuth(state, data)
+	device, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	accessToken, err := createFakeAccessToken()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	introspection, err := device.IntrospectAccessToken(accessToken)
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false

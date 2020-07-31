@@ -376,13 +376,22 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 	if header.KeyID == "" {
 		return introspection, fmt.Errorf("no kid")
 	}
-	if c.accessTokenJWKS.Keys == nil {
+	keys := c.accessTokenJWKS.Key(header.KeyID)
+
+	// if keys is empty then we don't have the token key locally, get updated JWK set
+	if len(keys) == 0 {
+		debug.Logger.Println("updating JSON web key set")
 		err = c.getJWKS()
 		if err != nil {
 			return introspection, err
 		}
+		keys = c.accessTokenJWKS.Key(header.KeyID)
+		if len(keys) == 0 {
+			// unknown key, return inactive introspection
+			debug.Logger.Printf("unknown access token key: %s", header.KeyID)
+			return introspect.InactiveIntrospectionBytes, nil
+		}
 	}
-	keys := c.accessTokenJWKS.Key(header.KeyID)
 	for _, key := range keys {
 		introspection, err = object.Verify(key)
 		if err == nil {

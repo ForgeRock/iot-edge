@@ -83,6 +83,7 @@ var tests = []anvil.SDKTest{
 	&IntrospectAccessTokenFailure{IntrospectAccessToken{clientBased: true, alg: jose.HS256}},
 	&IntrospectAccessTokenExpired{IntrospectAccessToken{clientBased: true, alg: jose.ES256}},
 	&IntrospectAccessTokenPremature{IntrospectAccessToken{clientBased: true, alg: jose.ES256}},
+	&IntrospectFakeAccessToken{},
 	&AccessTokenExpiredSession{},
 	&SimpleThingExample{},
 	&CertRegistrationExample{},
