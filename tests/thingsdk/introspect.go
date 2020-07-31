@@ -88,11 +88,10 @@ func (t IntrospectAccessToken) Cleanup(state anvil.TestState, data anvil.ThingDa
 }
 
 func (t *IntrospectAccessToken) NameSuffix() string {
-	suffix := "CTS"
-	if t.clientBased {
-		suffix = "ClientBased"
+	if !t.clientBased {
+		return "CTSBased"
 	}
-	return suffix + string(t.alg)
+	return "ClientBased" + string(t.alg)
 }
 
 // IntrospectAccessTokenFailure checks that introspection fails gracefully for unsupported cases
