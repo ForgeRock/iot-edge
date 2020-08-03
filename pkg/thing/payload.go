@@ -17,40 +17,73 @@
 package thing
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 )
+
+// JSONContent holds dynamic JSON data
+type JSONCContent map[string]interface{}
+
+// GetString returns the string value associated with the key in the JSON object
+func (c JSONCContent) GetString(key string) (string, error) {
+	if value, ok := c[key].(string); ok {
+		return value, nil
+	}
+	return "", readError{key: key}
+}
+
+// GetNumber returns the number value associated with the key in the JSON object
+func (c JSONCContent) GetNumber(key string) (float64, error) {
+	if value, ok := c[key].(float64); ok {
+		return value, nil
+	}
+	return 0, readError{key: key}
+}
+
+// GetBool returns the boolean value associated with the key in the JSON object
+func (c JSONCContent) GetBool(key string) (bool, error) {
+	if value, ok := c[key].(bool); ok {
+		return value, nil
+	}
+	return false, readError{key: key}
+}
+
+// GetStringArray returns all the string values held in the array associated with the key in the JSON object
+func (c JSONCContent) GetStringArray(key string) ([]string, error) {
+	values, ok := c[key].([]interface{})
+	if !ok {
+		return nil, readError{key: key}
+	}
+	valuesAsStrings := make([]string, len(values))
+	for i, v := range values {
+		valuesAsStrings[i] = v.(string)
+	}
+	return valuesAsStrings, nil
+}
 
 // AccessTokenResponse contains the response received from AM after a successful access token request.
 // The response format is specified in https://tools.ietf.org/html/rfc6749#section-4.1.4.
 type AccessTokenResponse struct {
-	Content map[string]interface{}
+	Content JSONCContent
 }
 
 // AccessToken returns the access token contained in an AccessTokenResponse.
 func (a AccessTokenResponse) AccessToken() (string, error) {
-	return a.GetString("access_token")
+	return a.Content.GetString("access_token")
 }
 
 // ExpiresIn returns the lifetime in seconds of the access token contained in an AccessTokenResponse.
 func (a AccessTokenResponse) ExpiresIn() (float64, error) {
-	return a.GetNumber("expires_in")
+	return a.Content.GetNumber("expires_in")
 }
 
-// GetNumber reads a number from the AccessTokenResponse.
-func (a AccessTokenResponse) GetNumber(key string) (float64, error) {
-	if value, ok := a.Content[key].(float64); ok {
-		return value, nil
+// Scopes returns the scopes of the access token contained in an AccessTokenResponse.
+func (a AccessTokenResponse) Scopes() ([]string, error) {
+	scope, err := a.Content.GetString("scope")
+	if err != nil {
+		return nil, err
 	}
-	return 0, errors.New(fmt.Sprintf("failed to read `%s` from response", key))
-}
-
-// GetString reads a string from the AccessTokenResponse.
-func (a AccessTokenResponse) GetString(key string) (string, error) {
-	if value, ok := a.Content[key].(string); ok {
-		return value, nil
-	}
-	return "", errors.New(fmt.Sprintf("failed to read `%s` from response", key))
+	return strings.Split(scope, " "), nil
 }
 
 // AttributesResponse contains the response received from AM after a successful request for thing attributes.
@@ -63,35 +96,39 @@ func (a AccessTokenResponse) GetString(key string) (string, error) {
 //        "bar": ["1"]
 //    }
 type AttributesResponse struct {
-	Content map[string]interface{}
+	Content JSONCContent
 }
 
 // ID returns the thing's ID contained in an AttributesResponse.
 func (a AttributesResponse) ID() (string, error) {
-	if value, ok := a.Content["_id"].(string); ok {
-		return value, nil
-	}
-	return "", errors.New("failed to read `_id` from response")
+	return a.Content.GetString("_id")
 }
 
 // GetFirst reads the first value for the specified attribute from the AttributesResponse.
 func (a AttributesResponse) GetFirst(key string) (string, error) {
-	values, err := a.Get(key)
+	values, err := a.Content.GetStringArray(key)
 	if err != nil || len(values) == 0 {
 		return "", err
 	}
 	return values[0], nil
 }
 
-// Get reads all the values for the specified attribute from the AttributesResponse.
-func (a AttributesResponse) Get(key string) ([]string, error) {
-	values, ok := a.Content[key].([]interface{})
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("failed to read `%s` from response", key))
-	}
-	valuesAsStrings := make([]string, len(values))
-	for i, v := range values {
-		valuesAsStrings[i] = v.(string)
-	}
-	return valuesAsStrings, nil
+// IntrospectionResponse contains the introspection of an OAuth 2.0 token.
+// The response format is specified in https://tools.ietf.org/html/rfc7662#section-2.2.
+type IntrospectionResponse struct {
+	Content JSONCContent
+}
+
+// Active returns true if the introspection indicates that the presented token is currently active.
+func (i IntrospectionResponse) Active() bool {
+	active, _ := i.Content.GetBool("active")
+	return active
+}
+
+type readError struct {
+	key string
+}
+
+func (e readError) Error() string {
+	return fmt.Sprintf("failed to read `%s` from content", e.key)
 }

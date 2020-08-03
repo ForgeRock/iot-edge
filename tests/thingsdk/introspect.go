@@ -22,7 +22,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"github.com/ForgeRock/iot-edge/internal/clock"
-	"github.com/ForgeRock/iot-edge/internal/introspect"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
@@ -80,11 +79,11 @@ func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData)
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if !introspect.IsActive(introspection) {
+	if !introspection.Active() {
 		anvil.DebugLogger.Println("expected active = true")
 		return false
 	}
-	anvil.DebugLogger.Println(string(introspection))
+	anvil.DebugLogger.Println(introspection)
 	return true
 }
 
@@ -159,7 +158,7 @@ func (t *IntrospectAccessTokenExpired) Run(state anvil.TestState, data anvil.Thi
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if introspect.IsActive(introspection) {
+	if introspection.Active() {
 		anvil.DebugLogger.Println("expected active = false")
 		return false
 	}
@@ -203,7 +202,7 @@ func (t *IntrospectAccessTokenPremature) Run(state anvil.TestState, data anvil.T
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if introspect.IsActive(introspection) {
+	if introspection.Active() {
 		anvil.DebugLogger.Println("expected active = false")
 		return false
 	}
@@ -272,7 +271,7 @@ func (t *IntrospectFakeAccessToken) Run(state anvil.TestState, data anvil.ThingD
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if introspect.IsActive(introspection) {
+	if introspection.Active() {
 		anvil.DebugLogger.Println("expected active = false")
 		return false
 	}

@@ -113,7 +113,7 @@ func simpleThing() error {
 		return err
 	}
 	fmt.Println("Expires in:", expiresIn)
-	scopes, err := tokenResponse.GetString("scope")
+	scopes, err := tokenResponse.Scopes()
 	if err != nil {
 		return err
 	}
