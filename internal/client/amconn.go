@@ -149,7 +149,7 @@ func (c *amConnection) Initialise() error {
 		return err
 	}
 	c.cookieName = info.CookieName
-	c.getJWKS()
+	c.updateJSONWebKeySet()
 	return nil
 }
 
@@ -275,15 +275,13 @@ func (c *amConnection) getJWKSURI() (uri string, err error) {
 	return config.URI, err
 }
 
-// getJWKS gets the OAuth 2.0 JSON Web Key set from AM
-func (c *amConnection) getJWKS() (err error) {
-	if c.jwksURI == "" {
-		c.jwksURI, err = c.getJWKSURI()
-		if err != nil {
-			return err
-		}
+// updateJSONWebKeySet updates the local JWK Set by retrieving the current key set from AM
+func (c *amConnection) updateJSONWebKeySet() (err error) {
+	uri, err := c.getJWKSURI()
+	if err != nil {
+		return err
 	}
-	request, err := http.NewRequest(http.MethodGet, c.jwksURI, nil)
+	request, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return err
@@ -365,7 +363,7 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 	// if keys is empty then we don't have the token key locally, get updated JWK set
 	if len(keys) == 0 {
 		debug.Logger.Println("updating JSON web key set")
-		err = c.getJWKS()
+		err = c.updateJSONWebKeySet()
 		if err != nil {
 			return introspection, err
 		}

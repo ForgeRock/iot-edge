@@ -118,7 +118,6 @@ type amConnection struct {
 	realm           string
 	authTree        string
 	cookieName      string
-	jwksURI         string
 	accessTokenJWKS jose.JSONWebKeySet
 }
 
