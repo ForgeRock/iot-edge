@@ -60,7 +60,7 @@ type Connection interface {
 	// accessToken makes an access token request with the given session token and payload
 	AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error)
 
-	// IntrospectAccessToken makes an request to introspect an access token
+	// IntrospectAccessToken makes a request to introspect an access token
 	IntrospectAccessToken(token string) (introspection []byte, err error)
 
 	// attributes makes a thing attributes request with the given session token and payload
