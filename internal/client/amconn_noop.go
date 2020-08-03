@@ -46,6 +46,10 @@ func (c amConnection) AccessToken(tokenID string, content ContentType, payload s
 	return reply, errHTTPNotBuilt
 }
 
+func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte, err error) {
+	return introspection, errHTTPNotBuilt
+}
+
 func (c amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	return reply, errHTTPNotBuilt
 }

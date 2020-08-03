@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-ocf/go-coap"
+	"gopkg.in/square/go-jose.v2"
 	"net/http"
 	"net/url"
 	"strings"
@@ -58,6 +59,9 @@ type Connection interface {
 
 	// accessToken makes an access token request with the given session token and payload
 	AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error)
+
+	// IntrospectAccessToken makes a request to introspect an access token
+	IntrospectAccessToken(token string) (introspection []byte, err error)
 
 	// attributes makes a thing attributes request with the given session token and payload
 	Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error)
@@ -110,10 +114,11 @@ func FieldsQuery(fields []string) string {
 // amConnection contains information for connecting directly to AM
 type amConnection struct {
 	http.Client
-	baseURL    string
-	realm      string
-	authTree   string
-	cookieName string
+	baseURL         string
+	realm           string
+	authTree        string
+	cookieName      string
+	accessTokenJWKS jose.JSONWebKeySet
 }
 
 // gatewayConnection contains information for connecting to the Thing Gateway via COAP

@@ -129,6 +129,10 @@ func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.Acce
 	return response, err
 }
 
+func (t *DefaultThing) IntrospectAccessToken(token string) (introspection []byte, err error) {
+	return t.connection.IntrospectAccessToken(token)
+}
+
 func (t *DefaultThing) RequestAttributes(names ...string) (response thing.AttributesResponse, err error) {
 	err = t.makeAuthorisedRequest(func(session session.Session) error {
 		var requestBody string

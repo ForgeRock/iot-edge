@@ -52,6 +52,10 @@ type Thing interface {
 	// will include the default scopes configured in the OAuth 2.0 Client.
 	RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error)
 
+	// IntrospectAccessToken introspects an OAuth 2.0 access token for a thing as defined by rfc7662.
+	// Supports only client-based OAuth 2.0 tokens signed with an asymmetric key.
+	IntrospectAccessToken(token string) (introspection []byte, err error)
+
 	// RequestAttributes requests the attributes with the specified names associated with the thing's identity.
 	// If no names are specified then all the allowed attributes will be returned.
 	RequestAttributes(names ...string) (response AttributesResponse, err error)

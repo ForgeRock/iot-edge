@@ -319,6 +319,36 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 }
 
+// introspectHandler handles an introspect OAuth2 access token request
+func (c *ThingGateway) introspectHandler(w coap.ResponseWriter, r *coap.Request) {
+	debug.Logger.Println("introspectHandler")
+
+	coapFormat, ok := r.Msg.Option(coap.ContentFormat).(coap.MediaType)
+	if !ok || coapFormat != coap.AppJSON {
+		w.SetCode(codes.BadRequest)
+		w.Write([]byte("missing/incorrect content format"))
+		return
+	}
+
+	var request client.IntrospectPayload
+	err := json.Unmarshal(r.Msg.Payload(), &request)
+	if err != nil {
+		w.SetCode(codes.BadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	introspection, err := c.amConnection.IntrospectAccessToken(request.Token)
+	if err != nil {
+		w.SetCode(codes.GatewayTimeout)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.SetCode(codes.Changed)
+	w.Write(introspection)
+	debug.Logger.Println("introspectHandler: success")
+}
+
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
 	return &dtls.Config{
 		Certificates:         cert,
@@ -340,6 +370,7 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
 	mux.HandleFunc("/aminfo", c.amInfoHandler)
 	mux.HandleFunc("/accesstoken", c.accessTokenHandler)
+	mux.HandleFunc("/introspect", c.introspectHandler)
 	mux.HandleFunc("/attributes", c.attributesHandler)
 	mux.HandleFunc("/session", c.sessionHandler)
 
