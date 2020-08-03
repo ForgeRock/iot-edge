@@ -60,3 +60,7 @@ docker run --rm -it \
     golang:1.13 \
     go build -o ./bin/gateway ./cmd/gateway
 ```
+The `$GOOS` and `$GOARCH` [list](https://golang.org/doc/install/source#environment) gives a complete list of possible
+cross-compilation targets.
+
+See the Go command [environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) for more build options.
