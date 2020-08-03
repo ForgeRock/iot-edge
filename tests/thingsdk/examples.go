@@ -135,6 +135,77 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	return true
 }
 
+// SimpleThingExampleTags tests the simple thing example with SDK build tags
+type SimpleThingExampleTags struct {
+	limitedTags bool
+	anvil.NopSetupCleanup
+}
+
+func (t *SimpleThingExampleTags) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertTree)
+
+	// encode the key to PEM
+	key, err := encodeKeyToPEM(data.Signer.Signer)
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		return false
+	}
+
+	tags := "http coap"
+	if t.limitedTags {
+		switch state.ClientType() {
+		case "am":
+			tags = "http"
+		case "gateway":
+			tags = "coap"
+		default:
+			return false
+		}
+	}
+
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "-tags", tags,
+		"github.com/ForgeRock/iot-edge/examples/thing/simple",
+		"-url", state.URL().String(),
+		"-realm", state.Realm(),
+		"-tree", jwtPopAuthTree,
+		"-name", data.Id.Name,
+		"-key", string(key),
+		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
+
+	// send standard out and error to debugger
+	stdout, _ := cmd.StdoutPipe()
+	pipeToDebugger(stdout)
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
+		return false
+	}
+	return true
+}
+
+func (t *SimpleThingExampleTags) NameSuffix() string {
+	if t.limitedTags {
+		return "Limited"
+	}
+	return "All"
+}
+
 // CertRegistrationExample tests the certificate registration thing example
 type CertRegistrationExample struct {
 	anvil.NopSetupCleanup

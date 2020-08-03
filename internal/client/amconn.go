@@ -1,3 +1,5 @@
+// +build !coap,!http http
+
 /*
  * Copyright 2020 ForgeRock AS
  *
@@ -41,17 +43,6 @@ const (
 	authIndexTypeQueryKey = "authIndexType"
 	authTreeQueryKey      = "authIndexValue"
 )
-
-// amConnection contains information for connecting directly to AM
-type amConnection struct {
-	http.Client
-	baseURL         string
-	realm           string
-	authTree        string
-	cookieName      string
-	jwksURI         string
-	accessTokenJWKS jose.JSONWebKeySet
-}
 
 // newSessionRequest returns a new session request
 func (c *amConnection) newSessionRequest(tokenID string, action string) (request *http.Request, err error) {
@@ -327,13 +318,6 @@ func (c *amConnection) accessTokenURL() string {
 
 func (c *amConnection) attributesURL() string {
 	return c.baseURL + "/json/things/*?realm=" + c.realm
-}
-
-func FieldsQuery(fields []string) string {
-	if len(fields) > 0 {
-		return "&_fields=" + strings.Join(fields, ",")
-	}
-	return ""
 }
 
 // amInfo returns AM related information to the client

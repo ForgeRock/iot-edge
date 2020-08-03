@@ -86,6 +86,8 @@ var tests = []anvil.SDKTest{
 	&IntrospectFakeAccessToken{},
 	&AccessTokenExpiredSession{},
 	&SimpleThingExample{},
+	&SimpleThingExampleTags{limitedTags: false},
+	&SimpleThingExampleTags{limitedTags: true},
 	&CertRegistrationExample{},
 	&GatewayAppAuth{},
 	&GatewayAppAuthNonDefaultKID{},

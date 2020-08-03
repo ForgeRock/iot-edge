@@ -35,9 +35,32 @@ Use the help flag to see the available command line options for the Gateway:
 
 ## Building in Docker
 
-Alternatively, the Golang docker container can be used to build the Gateway for `linux/amd64`:
+Alternatively, a Golang docker container can be used to build the Gateway. Get the `golang` docker image:
 
 ```bash
 docker pull golang:1.13
-docker run --rm -it -v "$PWD":/go/src/iot-edge -w /go/src/iot-edge golang:1.13 go build -o ./bin/gateway ./cmd/gateway
 ```
+
+To build for `linux/amd64`:
+
+```bash
+docker run --rm -it \
+    -v "$PWD":/go/src/iot-edge -w /go/src/iot-edge \
+    golang:1.13 \
+    go build -o ./bin/gateway ./cmd/gateway
+```
+
+To run the Gateway on an arm 32-bit processor (for example, a Raspberry Pi 3 running in 32-bit mode), build for
+`linux/arm`:
+
+```bash
+docker run --rm -it \
+    -v "$PWD":/go/src/iot-edge -w /go/src/iot-edge \
+    -e GOOS=linux -e GOARCH=arm \
+    golang:1.13 \
+    go build -o ./bin/gateway ./cmd/gateway
+```
+The `$GOOS` and `$GOARCH` [list](https://golang.org/doc/install/source#environment) gives a complete list of possible
+cross-compilation targets.
+
+See the Go command [environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) for more build options.

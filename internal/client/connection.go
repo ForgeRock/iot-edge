@@ -23,8 +23,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"github.com/go-ocf/go-coap"
+	"gopkg.in/square/go-jose.v2"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -99,6 +102,33 @@ func (b *ConnectionBuilder) WithKey(key crypto.Signer) *ConnectionBuilder {
 func (b *ConnectionBuilder) TimeoutRequestAfter(timeout time.Duration) *ConnectionBuilder {
 	b.timeout = timeout
 	return b
+}
+
+func FieldsQuery(fields []string) string {
+	if len(fields) > 0 {
+		return "&_fields=" + strings.Join(fields, ",")
+	}
+	return ""
+}
+
+// amConnection contains information for connecting directly to AM
+type amConnection struct {
+	http.Client
+	baseURL         string
+	realm           string
+	authTree        string
+	cookieName      string
+	jwksURI         string
+	accessTokenJWKS jose.JSONWebKeySet
+}
+
+// gatewayConnection contains information for connecting to the Thing Gateway via COAP
+type gatewayConnection struct {
+	address string
+	timeout time.Duration
+	key     crypto.Signer
+	client  *coap.Client
+	conn    *coap.ClientConn
 }
 
 func (b *ConnectionBuilder) Create() (Connection, error) {
