@@ -79,6 +79,8 @@ var tests = []anvil.SDKTest{
 	&AccessTokenWithNoScopesNonRestricted{},
 	&AccessTokenExpiredSession{},
 	&SimpleThingExample{},
+	&SimpleThingExampleTags{limitedTags: false},
+	&SimpleThingExampleTags{limitedTags: true},
 	&CertRegistrationExample{},
 	&GatewayAppAuth{},
 	&GatewayAppAuthNonDefaultKID{},
