@@ -129,8 +129,14 @@ func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.Acce
 	return response, err
 }
 
-func (t *DefaultThing) IntrospectAccessToken(token string) (introspection []byte, err error) {
-	return t.connection.IntrospectAccessToken(token)
+func (t *DefaultThing) IntrospectAccessToken(token string) (introspection thing.IntrospectionResponse, err error) {
+	b, err := t.connection.IntrospectAccessToken(token)
+	if err != nil {
+		debug.Logger.Println("Introspection error", err)
+		return introspection, err
+	}
+	err = json.Unmarshal(b, &introspection.Content)
+	return introspection, err
 }
 
 func (t *DefaultThing) RequestAttributes(names ...string) (response thing.AttributesResponse, err error) {

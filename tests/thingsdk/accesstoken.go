@@ -215,12 +215,11 @@ func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject strin
 		anvil.DebugLogger.Printf("access token subject, %s, not equal to thing ID, %s\n", claims.Subject, subject)
 		return false
 	}
-	scope, err := response.GetString("scope")
+	receivedScopes, err := response.Scope()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	receivedScopes := strings.Split(scope, " ")
 	sort.Strings(receivedScopes)
 	sort.Strings(requestedScopes)
 	if !reflect.DeepEqual(requestedScopes, receivedScopes) {
