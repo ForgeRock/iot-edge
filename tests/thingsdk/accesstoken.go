@@ -215,7 +215,7 @@ func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject strin
 		anvil.DebugLogger.Printf("access token subject, %s, not equal to thing ID, %s\n", claims.Subject, subject)
 		return false
 	}
-	receivedScopes, err := response.Scopes()
+	receivedScopes, err := response.Scope()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false

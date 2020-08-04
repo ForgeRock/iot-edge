@@ -22,10 +22,10 @@ import (
 )
 
 // JSONContent holds dynamic JSON data
-type JSONCContent map[string]interface{}
+type JSONContent map[string]interface{}
 
 // GetString returns the string value associated with the key in the JSON object
-func (c JSONCContent) GetString(key string) (string, error) {
+func (c JSONContent) GetString(key string) (string, error) {
 	if value, ok := c[key].(string); ok {
 		return value, nil
 	}
@@ -33,7 +33,7 @@ func (c JSONCContent) GetString(key string) (string, error) {
 }
 
 // GetNumber returns the number value associated with the key in the JSON object
-func (c JSONCContent) GetNumber(key string) (float64, error) {
+func (c JSONContent) GetNumber(key string) (float64, error) {
 	if value, ok := c[key].(float64); ok {
 		return value, nil
 	}
@@ -41,7 +41,7 @@ func (c JSONCContent) GetNumber(key string) (float64, error) {
 }
 
 // GetBool returns the boolean value associated with the key in the JSON object
-func (c JSONCContent) GetBool(key string) (bool, error) {
+func (c JSONContent) GetBool(key string) (bool, error) {
 	if value, ok := c[key].(bool); ok {
 		return value, nil
 	}
@@ -49,14 +49,16 @@ func (c JSONCContent) GetBool(key string) (bool, error) {
 }
 
 // GetStringArray returns all the string values held in the array associated with the key in the JSON object
-func (c JSONCContent) GetStringArray(key string) ([]string, error) {
+func (c JSONContent) GetStringArray(key string) ([]string, error) {
 	values, ok := c[key].([]interface{})
 	if !ok {
 		return nil, readError{key: key}
 	}
-	valuesAsStrings := make([]string, len(values))
-	for i, v := range values {
-		valuesAsStrings[i] = v.(string)
+	valuesAsStrings := make([]string, 0, len(values))
+	for _, v := range values {
+		if stringValue, ok := v.(string); ok {
+			valuesAsStrings = append(valuesAsStrings, stringValue)
+		}
 	}
 	return valuesAsStrings, nil
 }
@@ -64,7 +66,7 @@ func (c JSONCContent) GetStringArray(key string) ([]string, error) {
 // AccessTokenResponse contains the response received from AM after a successful access token request.
 // The response format is specified in https://tools.ietf.org/html/rfc6749#section-4.1.4.
 type AccessTokenResponse struct {
-	Content JSONCContent
+	Content JSONContent
 }
 
 // AccessToken returns the access token contained in an AccessTokenResponse.
@@ -77,8 +79,8 @@ func (a AccessTokenResponse) ExpiresIn() (float64, error) {
 	return a.Content.GetNumber("expires_in")
 }
 
-// Scopes returns the scopes of the access token contained in an AccessTokenResponse.
-func (a AccessTokenResponse) Scopes() ([]string, error) {
+// Scope returns the scopes of the access token contained in an AccessTokenResponse.
+func (a AccessTokenResponse) Scope() ([]string, error) {
 	scope, err := a.Content.GetString("scope")
 	if err != nil {
 		return nil, err
@@ -96,7 +98,7 @@ func (a AccessTokenResponse) Scopes() ([]string, error) {
 //        "bar": ["1"]
 //    }
 type AttributesResponse struct {
-	Content JSONCContent
+	Content JSONContent
 }
 
 // ID returns the thing's ID contained in an AttributesResponse.
@@ -116,7 +118,7 @@ func (a AttributesResponse) GetFirst(key string) (string, error) {
 // IntrospectionResponse contains the introspection of an OAuth 2.0 token.
 // The response format is specified in https://tools.ietf.org/html/rfc7662#section-2.2.
 type IntrospectionResponse struct {
-	Content JSONCContent
+	Content JSONContent
 }
 
 // Active returns true if the introspection indicates that the presented token is currently active.

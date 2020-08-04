@@ -144,7 +144,7 @@ func certRegThing() (err error) {
 		return err
 	}
 	fmt.Println("Expires in:", expiresIn)
-	scopes, err := tokenResponse.Scopes()
+	scopes, err := tokenResponse.Scope()
 	if err != nil {
 		return err
 	}
