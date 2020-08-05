@@ -71,6 +71,10 @@ func CreateRealmHierarchy(names ...string) (fullName string, ids []string, err e
 	return fullName, ids, nil
 }
 
+func CreateRealmWithAlias(alias string) (id string, err error) {
+	return am.CreateRealm("/", RandomName(), alias)
+}
+
 // nameWithoutExtension returns the name of the file without the file extension
 func nameWithoutExtension(path string) string {
 	_, file := filepath.Split(path)

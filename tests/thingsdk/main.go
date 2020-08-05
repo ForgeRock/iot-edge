@@ -196,6 +196,12 @@ func runTests() (err error) {
 		return err
 	}
 	realmIds = append(realmIds, ids...)
+
+	// create realm with a realm alias
+	realmAlias := "alias-" + anvil.RandomName()
+	id, err := anvil.CreateRealmWithAlias(realmAlias)
+	realmIds = append(realmIds, id)
+
 	defer func() {
 		deferError := anvil.DeleteRealms(realmIds)
 		if deferError != nil {
@@ -204,7 +210,7 @@ func runTests() (err error) {
 	}()
 
 	allPass := true
-	for _, r := range []string{"/", subRealm, subSubRealm} {
+	for _, r := range []string{"/", subRealm, subSubRealm, realmAlias} {
 		pass, err := runAllTestsForRealm(r)
 		allPass = allPass && pass
 		if err != nil {

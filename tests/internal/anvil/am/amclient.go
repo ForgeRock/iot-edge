@@ -26,7 +26,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"strings"
 	"time"
 
 	"gopkg.in/square/go-jose.v2"
@@ -267,11 +266,33 @@ func getSSOToken() (token string, err error) {
 	return responseBody.TokenID, nil
 }
 
+type realmModel struct {
+	Name       string   `json:"name"`
+	Active     bool     `json:"active"`
+	ParentPath string   `json:"parentPath"`
+	Aliases    []string `json:"aliases"`
+}
+
 // CreateRealm creates a realm with the given name
 // Returns the realm Id that is required to modify/delete the realm
-func CreateRealm(parentPath, realmName string) (realmId string, err error) {
-	payload := strings.NewReader(fmt.Sprintf("{\"name\": \"%s\", \"active\": true, \"parentPath\": \"%s\", \"aliases\": []}", realmName, parentPath))
-	b, err := crestCreate(AMURL+"/json/global-config/realms", "resource=1.0, protocol=2.0", payload)
+func CreateRealm(parentPath, realmName string, aliases ...string) (realmId string, err error) {
+	if aliases == nil {
+		aliases = make([]string, 0)
+	}
+	payload, err := json.Marshal(realmModel{
+		Name:       realmName,
+		Active:     true,
+		ParentPath: parentPath,
+		Aliases:    aliases})
+	if err != nil {
+		return realmId, err
+	}
+	fmt.Println(string(payload))
+
+	b, err := crestCreate(
+		AMURL+"/json/global-config/realms",
+		"resource=1.0, protocol=2.0",
+		bytes.NewReader(payload))
 	if err != nil {
 		return realmId, err
 	}
