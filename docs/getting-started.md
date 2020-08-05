@@ -82,7 +82,7 @@ curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/sim
 --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
 --cookie "iPlanetDirectoryPro=${tokenId}" \
 --data '{
-    "userPassword": "generated-password",
+    "userPassword": "5tr0ngG3n3r@ted",
     "thingType": "device",
     "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
 }'
@@ -96,7 +96,7 @@ curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/sim
 --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
 --cookie "iPlanetDirectoryPro=${tokenId}" \
 --data '{
-    "userPassword": "generated-password",
+    "userPassword": "5tr0ngG3n3r@ted",
     "thingType": "gateway",
     "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
 }'
