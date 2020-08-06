@@ -17,9 +17,10 @@
 package session
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"net/url"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 )
 
 // Session represents an authenticated session with AM.

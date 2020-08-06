@@ -22,11 +22,12 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"github.com/ForgeRock/iot-edge/internal/jws"
-	"gopkg.in/square/go-jose.v2"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/internal/jws"
+	"gopkg.in/square/go-jose.v2"
 )
 
 var (

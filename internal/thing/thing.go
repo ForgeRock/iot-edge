@@ -22,6 +22,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/client"
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/internal/jws"
@@ -31,8 +34,6 @@ import (
 	"github.com/ForgeRock/iot-edge/pkg/thing"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
-	"net/url"
-	"time"
 )
 
 type DefaultThing struct {

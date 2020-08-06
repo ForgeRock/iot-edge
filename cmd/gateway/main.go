@@ -24,16 +24,17 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/gateway"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
-	"github.com/jessevdk/go-flags"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/internal/gateway"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/pkg/thing"
+	"github.com/jessevdk/go-flags"
 )
 
 func loadKey(filename string) (crypto.Signer, error) {

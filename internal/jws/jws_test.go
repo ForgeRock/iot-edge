@@ -24,19 +24,20 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
-	"gopkg.in/square/go-jose.v2"
 	"io"
 	"testing"
+
+	"gopkg.in/square/go-jose.v2"
 )
 
 var (
-	es256Key, _      = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	es384Key, _      = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	es512Key, _      = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-	_, eddsaKey, err = ed25519.GenerateKey(rand.Reader)
-	rsa256Key, _     = rsa.GenerateKey(rand.Reader, 2048)
-	rsa384Key, _     = rsa.GenerateKey(rand.Reader, 3072)
-	rsa512Key, _     = rsa.GenerateKey(rand.Reader, 4096)
+	es256Key, _    = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	es384Key, _    = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	es512Key, _    = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	_, eddsaKey, _ = ed25519.GenerateKey(rand.Reader)
+	rsa256Key, _   = rsa.GenerateKey(rand.Reader, 2048)
+	rsa384Key, _   = rsa.GenerateKey(rand.Reader, 3072)
+	rsa512Key, _   = rsa.GenerateKey(rand.Reader, 4096)
 )
 
 type testBadSigner struct {

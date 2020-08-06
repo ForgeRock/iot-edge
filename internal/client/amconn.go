@@ -22,12 +22,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/debug"
-	"github.com/ForgeRock/iot-edge/internal/introspect"
-	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/ForgeRock/iot-edge/internal/debug"
+	"github.com/ForgeRock/iot-edge/internal/introspect"
+	"gopkg.in/square/go-jose.v2"
 )
 
 const (
@@ -149,7 +150,7 @@ func (c *amConnection) Initialise() error {
 		return err
 	}
 	c.cookieName = info.CookieName
-	c.updateJSONWebKeySet()
+	_ = c.updateJSONWebKeySet()
 	return nil
 }
 

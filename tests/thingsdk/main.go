@@ -21,12 +21,13 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
-	"os"
-	"path/filepath"
 )
 
 const (

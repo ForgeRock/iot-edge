@@ -19,6 +19,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 )
 
