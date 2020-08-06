@@ -17,10 +17,11 @@
 package tokencache
 
 import (
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"testing"
 	"time"
+
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 // check that the token is stored only for as long as the expiry time in the header

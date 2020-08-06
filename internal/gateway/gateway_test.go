@@ -24,6 +24,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
+	"net/url"
+	"testing"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/client"
 	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/internal/introspect"
@@ -32,10 +37,6 @@ import (
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
-	"io"
-	"net/url"
-	"testing"
-	"time"
 )
 
 // mockClient mocks a thing.mockClient
@@ -411,22 +412,6 @@ func TestGateway_StartCOAPServer(t *testing.T) {
 	}
 }
 
-func testTimeout(timeout time.Duration, f func() (client.Connection, error)) error {
-	timer := time.After(timeout)
-	done := make(chan error)
-	go func() {
-		_, err := f()
-		done <- err
-	}()
-
-	select {
-	case <-timer:
-		return errors.New("timer")
-	case err := <-done:
-		return err
-	}
-}
-
 func TestGateway_ShutdownCOAPServer(t *testing.T) {
 	t.Skip("Finaliser issue")
 	gateway := testGateway(&mockClient{})
@@ -451,7 +436,19 @@ func TestGateway_ShutdownCOAPServer(t *testing.T) {
 	connBuilder := client.NewConnection().
 		ConnectTo(gwURL).
 		WithKey(clientKey)
-	err = testTimeout(10*time.Millisecond, connBuilder.Create)
+
+	timer := time.After(10 * time.Millisecond)
+	done := make(chan error)
+	go func() {
+		_, err := connBuilder.Create()
+		done <- err
+	}()
+
+	select {
+	case <-timer:
+		err = errors.New("timer")
+	case err = <-done:
+	}
 	if err == nil {
 		t.Error("Expected an error")
 	}

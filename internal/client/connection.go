@@ -23,12 +23,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/go-ocf/go-coap"
-	"gopkg.in/square/go-jose.v2"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/go-ocf/go-coap"
+	"gopkg.in/square/go-jose.v2"
 )
 
 type ContentType string

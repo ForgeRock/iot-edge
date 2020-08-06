@@ -18,11 +18,12 @@ package main
 
 import (
 	"crypto/x509"
+	"strings"
+
 	"github.com/ForgeRock/iot-edge/internal/client"
 	"github.com/ForgeRock/iot-edge/pkg/builder"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
-	"strings"
 )
 
 // RegisterDeviceCert tests the dynamic registration of a device with a valid x509 certificate
@@ -61,10 +62,7 @@ func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bo
 		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (t *RegisterDeviceCert) NameSuffix() string {
@@ -253,10 +251,7 @@ func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData)
 		AuthenticateThing(data.Id.Name, "", data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
-	if err == nil {
-		return false
-	}
-	return true
+	return err != nil
 }
 
 // RegisterDeviceNoKey checks that dynamic registration fails gracefully when no key is provided
@@ -278,8 +273,5 @@ func (t *RegisterDeviceNoKey) Run(state anvil.TestState, data anvil.ThingData) b
 		AuthenticateThing(data.Id.Name, "", nil, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
-	if err == nil {
-		return false
-	}
-	return true
+	return err != nil
 }

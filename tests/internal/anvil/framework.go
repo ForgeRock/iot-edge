@@ -25,11 +25,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/internal/gateway"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
-	"github.com/dchest/uniuri"
-	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -39,6 +34,12 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/internal/gateway"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
+	"github.com/dchest/uniuri"
+	jose "gopkg.in/square/go-jose.v2"
 )
 
 const (
@@ -101,9 +102,9 @@ func forAllJSONFilesInDirectory(dirname string, f func(path string) error) error
 			err = forAllJSONFilesInDirectory(path, f)
 		} else if filepath.Ext(i.Name()) == ".json" {
 			err = f(path)
-			if err != nil {
-				return err
-			}
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -414,7 +415,6 @@ type AMTestState struct {
 }
 
 func (a *AMTestState) SetGatewayTree(tree string) {
-	return
 }
 
 func (a *AMTestState) URL() *url.URL {
@@ -560,6 +560,8 @@ func RunTest(state TestState, t SDKTest) (pass bool) {
 	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", state.Realm())
 	pass = t.Run(state, data)
 	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
-	t.Cleanup(state, data)
+	if err := t.Cleanup(state, data); err != nil {
+		DebugLogger.Printf("clean up error; %v", err)
+	}
 	return
 }

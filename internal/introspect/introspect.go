@@ -18,6 +18,7 @@ package introspect
 
 import (
 	"encoding/json"
+
 	"github.com/ForgeRock/iot-edge/internal/clock"
 )
 

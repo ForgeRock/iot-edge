@@ -24,14 +24,15 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
+	"testing"
+	"time"
+
 	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
 	"golang.org/x/sync/errgroup"
-	"testing"
-	"time"
 )
 
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
@@ -51,8 +52,7 @@ func testAuthCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/authenticate", func(w coap.ResponseWriter, r *coap.Request) {
 		w.SetCode(code)
-		w.Write(response)
-		return
+		_, _ = w.Write(response)
 	})
 	return mux
 }
@@ -61,8 +61,7 @@ func testAMInfoCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/aminfo", func(w coap.ResponseWriter, r *coap.Request) {
 		w.SetCode(code)
-		w.Write(response)
-		return
+		_, _ = w.Write(response)
 	})
 	return mux
 }
@@ -71,8 +70,7 @@ func testAccessTokenCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMu
 	mux = coap.NewServeMux()
 	mux.HandleFunc("/accesstoken", func(w coap.ResponseWriter, r *coap.Request) {
 		w.SetCode(code)
-		w.Write(response)
-		return
+		_, _ = w.Write(response)
 	})
 	return mux
 }
@@ -97,7 +95,9 @@ func (s testCOAPServer) Start() (address string, cancel func(), err error) {
 		l.Close()
 	}()
 	return l.Addr().String(), func() {
-		server.Shutdown()
+		if err := server.Shutdown(); err != nil {
+			return
+		}
 		<-c
 	}, nil
 }
