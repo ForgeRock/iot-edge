@@ -18,11 +18,12 @@ package debug
 
 import (
 	"fmt"
-	"github.com/go-ocf/go-coap"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
+
+	"github.com/go-ocf/go-coap"
 )
 
 // All SDK debug information is written to this Logger. The logger is muted by default. To see the debug output assign

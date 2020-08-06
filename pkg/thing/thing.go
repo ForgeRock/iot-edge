@@ -20,13 +20,14 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/base64"
+	"log"
+	"net/url"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/debug"
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"gopkg.in/square/go-jose.v2"
-	"log"
-	"net/url"
-	"time"
 )
 
 // DebugLogger is the destination of all SDK debug information. The logger is muted by default. Redirect the debug

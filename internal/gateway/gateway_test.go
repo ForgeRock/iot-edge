@@ -24,6 +24,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
+	"net/url"
+	"testing"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/client"
 	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/internal/introspect"
@@ -32,10 +37,6 @@ import (
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
-	"io"
-	"net/url"
-	"testing"
-	"time"
 )
 
 // mockClient mocks a thing.mockClient

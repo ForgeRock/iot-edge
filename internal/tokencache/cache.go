@@ -17,9 +17,10 @@
 package tokencache
 
 import (
+	"time"
+
 	"github.com/patrickmn/go-cache"
 	"gopkg.in/square/go-jose.v2/jwt"
-	"time"
 )
 
 // Cache for signed JSON Web Tokens
@@ -50,7 +51,7 @@ func (c *Cache) Add(key, token string) {
 	// use expiry time in header if we are able to parse it, otherwise use default expiry time.
 	claims, ok := unsafeClaimsOfAuthId(token)
 	if ok && !claims.Expiry.Time().IsZero() {
-		c.store.Add(key, token, time.Until(claims.Expiry.Time()))
+		_ = c.store.Add(key, token, time.Until(claims.Expiry.Time()))
 	} else {
 		c.store.SetDefault(key, token)
 	}

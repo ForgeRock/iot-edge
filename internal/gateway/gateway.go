@@ -24,6 +24,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/client"
 	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/ForgeRock/iot-edge/internal/debug"
@@ -36,9 +40,6 @@ import (
 	"github.com/go-ocf/go-coap/codes"
 	coapnet "github.com/go-ocf/go-coap/net"
 	"github.com/pion/dtls/v2"
-	"net"
-	"net/url"
-	"time"
 )
 
 // CoAP server design
@@ -150,7 +151,7 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
 		debug.Logger.Printf("Unable to unmarshall payload; %s", err)
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte("Unable to unmarshall payload"))
+		writeResponse(w, []byte("Unable to unmarshal payload"))
 		return
 	}
 
@@ -158,7 +159,7 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 	if err != nil {
 		debug.Logger.Printf("Error connecting to AM; %s", err)
 		w.SetCode(codes.Unauthorized)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 
@@ -166,11 +167,11 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 	if err != nil {
 		debug.Logger.Printf("Error marshalling Auth Payload; %s", err)
 		w.SetCode(codes.BadGateway)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Valid)
-	w.Write(b)
+	writeResponse(w, b)
 	debug.Logger.Println("authenticateHandler: success")
 }
 
@@ -180,18 +181,18 @@ func (c *ThingGateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	info, err := c.amConnection.AMInfo()
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
-		w.Write([]byte(""))
+		writeResponse(w, nil)
 		return
 	}
 	b, err := json.Marshal(info)
 	if err != nil {
 		debug.Logger.Printf("Error marshalling amInfo; %s", err)
 		w.SetCode(codes.BadGateway)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Content)
-	w.Write(b)
+	writeResponse(w, b)
 	debug.Logger.Println("amInfoHandler: success")
 }
 
@@ -232,7 +233,7 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 
@@ -243,11 +244,11 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 		} else {
 			w.SetCode(codes.GatewayTimeout)
 		}
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Changed)
-	w.Write(b)
+	writeResponse(w, b)
 	debug.Logger.Println("accessTokenHandler: success")
 }
 
@@ -259,7 +260,7 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 	token, format, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	b, err := c.amConnection.Attributes(token, format, payload, names)
@@ -269,11 +270,11 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 		} else {
 			w.SetCode(codes.GatewayTimeout)
 		}
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Changed)
-	w.Write(b)
+	writeResponse(w, b)
 	debug.Logger.Println("attributesHandler: success")
 }
 
@@ -284,7 +285,7 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 	var token client.SessionToken
 	if err := json.Unmarshal(r.Msg.Payload(), &token); err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	switch r.Msg.QueryString() {
@@ -292,7 +293,7 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 		valid, err := c.amConnection.ValidateSession(token.TokenID)
 		if err != nil {
 			w.SetCode(codes.GatewayTimeout)
-			w.Write([]byte(err.Error()))
+			writeResponse(w, []byte(err.Error()))
 			return
 		}
 		if valid {
@@ -300,21 +301,21 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 		} else {
 			w.SetCode(codes.Unauthorized)
 		}
-		w.Write(nil)
+		writeResponse(w, nil)
 		debug.Logger.Printf("sessionHandler: success. validate %v", valid)
 	case "_action=logout":
 		err := c.amConnection.LogoutSession(token.TokenID)
 		if err != nil {
 			w.SetCode(codes.GatewayTimeout)
-			w.Write([]byte(err.Error()))
+			writeResponse(w, []byte(err.Error()))
 			return
 		}
 		w.SetCode(codes.Changed)
-		w.Write(nil)
+		writeResponse(w, nil)
 		debug.Logger.Printf("sessionHandler: success. log out")
 	default:
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte("unknown/missing query"))
+		writeResponse(w, []byte("unknown/missing query"))
 		return
 	}
 }
@@ -326,7 +327,7 @@ func (c *ThingGateway) introspectHandler(w coap.ResponseWriter, r *coap.Request)
 	coapFormat, ok := r.Msg.Option(coap.ContentFormat).(coap.MediaType)
 	if !ok || coapFormat != coap.AppJSON {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte("missing/incorrect content format"))
+		writeResponse(w, []byte("missing/incorrect content format"))
 		return
 	}
 
@@ -334,18 +335,18 @@ func (c *ThingGateway) introspectHandler(w coap.ResponseWriter, r *coap.Request)
 	err := json.Unmarshal(r.Msg.Payload(), &request)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 
 	introspection, err := c.amConnection.IntrospectAccessToken(request.Token)
 	if err != nil {
 		w.SetCode(codes.GatewayTimeout)
-		w.Write([]byte(err.Error()))
+		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	w.SetCode(codes.Changed)
-	w.Write(introspection)
+	writeResponse(w, introspection)
 	debug.Logger.Println("introspectHandler: success")
 }
 
@@ -409,7 +410,10 @@ func (c *ThingGateway) ShutdownCOAPServer() {
 	if c.coapServer == nil {
 		return
 	}
-	c.coapServer.Shutdown()
+	if err := c.coapServer.Shutdown(); err != nil {
+		debug.Logger.Println(err)
+		return
+	}
 	// wait for shutdown to complete
 	<-c.coapChan
 	c.address = nil
@@ -421,4 +425,10 @@ func (c *ThingGateway) Address() string {
 		return ""
 	}
 	return c.address.String()
+}
+
+func writeResponse(w coap.ResponseWriter, response []byte) {
+	if _, err := w.Write(response); err != nil {
+		debug.Logger.Println(err)
+	}
 }

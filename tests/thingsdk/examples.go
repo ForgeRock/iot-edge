@@ -22,16 +22,17 @@ import (
 	"crypto"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
-	"gopkg.in/square/go-jose.v2"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
+	"gopkg.in/square/go-jose.v2"
 )
 
 const (

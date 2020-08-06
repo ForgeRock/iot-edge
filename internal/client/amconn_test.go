@@ -45,8 +45,7 @@ func testServerInfoHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 			http.Error(writer, string(response), code)
 			return
 		}
-		writer.Write(response)
-		return
+		_, _ = writer.Write(response)
 	})
 	return mux
 }
@@ -127,8 +126,7 @@ func testAuthHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 			http.Error(writer, string(response), code)
 			return
 		}
-		writer.Write(response)
-		return
+		_, _ = writer.Write(response)
 	})
 	return mux
 }
@@ -222,8 +220,7 @@ func testAccessTokenHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 			http.Error(writer, string(response), code)
 			return
 		}
-		writer.Write(response)
-		return
+		_, _ = writer.Write(response)
 	})
 	return mux
 }
@@ -277,8 +274,7 @@ func testAttributesHTTPMux(code int, response []byte) (mux *http.ServeMux) {
 			http.Error(writer, string(response), code)
 			return
 		}
-		writer.Write(response)
-		return
+		_, _ = writer.Write(response)
 	})
 	return mux
 }

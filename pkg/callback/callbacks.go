@@ -21,10 +21,11 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
-	"time"
 )
 
 var (

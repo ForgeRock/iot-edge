@@ -21,9 +21,10 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"math/big"
 	"testing"
+
+	"github.com/ForgeRock/iot-edge/pkg/callback"
 )
 
 func Test_processCallbacks(t *testing.T) {

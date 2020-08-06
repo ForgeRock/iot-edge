@@ -19,11 +19,12 @@ package session
 import (
 	"crypto"
 	"errors"
+	"net/url"
+	"time"
+
 	"github.com/ForgeRock/iot-edge/internal/client"
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/pkg/session"
-	"net/url"
-	"time"
 )
 
 type DefaultSession struct {
@@ -45,9 +46,8 @@ func (s *DefaultSession) Logout() error {
 
 type PoPSession struct {
 	DefaultSession
-	nonce         int
-	key           crypto.Signer
-	popRestricted bool
+	nonce int
+	key   crypto.Signer
 }
 
 func (s *PoPSession) SigningKey() crypto.Signer {
@@ -69,7 +69,6 @@ type Builder struct {
 	timeout    time.Duration
 	connection client.Connection
 	handlers   []callback.Handler
-	signer     crypto.Signer
 }
 
 func (b *Builder) AuthenticateWith(handlers ...callback.Handler) session.Builder {

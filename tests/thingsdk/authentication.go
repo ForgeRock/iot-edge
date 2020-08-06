@@ -52,10 +52,7 @@ func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingDat
 
 func (t *AuthenticateThingJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
 	_, err := thingJWTAuth(state, data).Create()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // AuthenticateThingJWTNonDefaultKID tests the authentication of a pre-registered device with a non-default key id
@@ -80,10 +77,7 @@ func (t *AuthenticateThingJWTNonDefaultKID) Setup(state anvil.TestState) (data a
 
 func (t *AuthenticateThingJWTNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
 	_, err := thingJWTAuth(state, data).Create()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // AuthenticateWithoutConfirmationKey tests the authentication of a pre-registered device that has no confirmation key
@@ -143,10 +137,7 @@ func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.Thi
 		})
 
 	_, err := builder.Create()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // AuthenticateWithCustomClaims tests the authentication of a pre-registered device fails when the value of a checked
@@ -206,10 +197,7 @@ func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData
 			callback.PasswordHandler{Password: data.Id.Password})
 
 	_, err := builder.Create()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // AuthenticateWithIncorrectPwd checks that authentication fails when the thing provides the wrong password

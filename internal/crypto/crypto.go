@@ -21,8 +21,9 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/ForgeRock/iot-edge/internal/jws"
 	"math/big"
+
+	"github.com/ForgeRock/iot-edge/internal/jws"
 )
 
 // PublicKeyCertificate returns a stripped down tls certificate containing the public key

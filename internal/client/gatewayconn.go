@@ -24,13 +24,14 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"runtime"
+	"strings"
+	"time"
+
 	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/pion/dtls/v2"
-	"runtime"
-	"strings"
-	"time"
 )
 
 // CoAP Content-Formats registry does not contain a JOSE value, using an unassigned value
