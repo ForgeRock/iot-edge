@@ -8,7 +8,7 @@ programs. The SDK examples can communicate directly with AM or via the Thing Gat
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/engine/install/)
-- [Go](https://golang.org/doc/install)
+- [Go 1.13 or later](https://golang.org/doc/install)
 
 ## Run and Configure AM
 
@@ -56,7 +56,7 @@ and add the mapping: _Secret ID_: `am.services.iot.cert.verification`, _Alias_: 
 this example is one of the test certificates (es256test) that AM includes by default. This mapping tells the
 _Register Thing_ node what key to use when verifying the registration certificate.
 
-Use curl and AM's REST endpoints to preregistered two identities that can be used in the authentication only examples.
+Use curl and AM's REST endpoints to preregister two identities that can be used in the authentication only examples.
 Get an admin SSO token:
 
 ```bash
@@ -214,4 +214,87 @@ to connect a Thing to AM via the `dynamic-gateway`:
     -url "coap://:5683" \
     -keyfile "./examples/resources/eckey1.key.pem" \
     -certfile "./examples/resources/dynamic-thing.cert.pem"
+```
+
+## Develop a client application with the Thing SDK
+
+This example will show you how to create a client application for a thing called _Gopher_. The thing will be
+preregistered in AM and authenticated with a username/password authentication flow.
+
+Prepare a directory for your Go project:
+```bash
+mkdir -p things/cmd/gopher
+cd things
+touch cmd/gopher/main.go
+```
+
+Open _cmd/gopher/main.go_ in a text editor and add the following code to it:
+```go
+package main
+
+import (
+	"github.com/ForgeRock/iot-edge/pkg/builder"
+	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"log"
+	"net/url"
+)
+
+func main() {
+	amURL, err := url.Parse("http://am.localtest.me:8080/am")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = builder.Thing().
+		ConnectTo(amURL).
+		InRealm("/").
+		WithTree("Example").
+		HandleCallbacksWith(
+			callback.NameHandler{Name: "Gopher"},
+			callback.PasswordHandler{Password: "5tr0ngG3n3r@ted"}).
+		Create()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Gopher successfully authenticated.")
+}
+```
+
+Create a new Go module:
+```bash
+go mod init example.com/things
+```
+This will create a _go.mod_ file that specifies your project dependencies and versions.  
+
+Before we can run the application, we need to create the _Gopher_ identity in AM.
+ 
+Get an admin SSO token:
+```bash
+curl --request POST 'http://am.localtest.me:8080/am/json/authenticate' \
+--header 'Content-Type: application/json' \
+--header 'X-OpenAM-Username: amadmin' \
+--header 'X-OpenAM-Password: password' \
+--header 'Accept-API-Version: resource=2.0, protocol=1.0'
+```
+
+Save the `tokenId` received from this request to a variable:
+```bash
+tokenId="5oXAB6....lMxAAA.*"
+```
+
+Create the `Gopher` identity:
+```bash
+curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/Gopher' \
+--header 'Content-Type: application/json' \
+--header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
+--cookie "iPlanetDirectoryPro=${tokenId}" \
+--data '{
+    "thingType": "device",
+    "userPassword": "5tr0ngG3n3r@ted"
+}'
+```
+
+Build an executable for your client application and run it to authenticate _Gopher_:
+```bash
+go build example.com/things/cmd/gopher
+./gopher
 ```
