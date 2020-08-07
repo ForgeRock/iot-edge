@@ -1,3 +1,4 @@
+name: go-test
 on:
   push:
   pull_request:
@@ -14,4 +15,4 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
-      - run: go test -race ./...
+      - run: go test -v -p 1 -timeout 30s -race ./...
