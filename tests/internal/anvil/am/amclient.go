@@ -343,7 +343,7 @@ func GetRealm(fullName string) (properties RealmProperties, err error) {
 // UpdateRealm updates the realm with the given properties
 func UpdateRealm(properties RealmProperties) (err error) {
 	id := properties.ID
-	// remove the ID since te update will fail if it is in the body of the request
+	// remove the ID since the update will fail if it is in the body of the request
 	properties.ID = ""
 	payload, err := json.Marshal(properties)
 	if err != nil {

@@ -201,6 +201,12 @@ func runTests() (err error) {
 		return err
 	}
 	realmIds = append(realmIds, ids...)
+	defer func() {
+		deferError := anvil.DeleteRealms(realmIds)
+		if deferError != nil {
+			err = deferError
+		}
+	}()
 
 	allPass := true
 	for _, r := range []string{"/", subRealm, subSubRealm} {
