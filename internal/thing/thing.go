@@ -182,6 +182,7 @@ type regHandlerBuilder struct {
 type BaseBuilder struct {
 	u           *url.URL
 	realm       string
+	realmAlias  string
 	tree        string
 	thingType   callback.ThingType
 	timeout     time.Duration
@@ -229,6 +230,11 @@ func (b *BaseBuilder) InRealm(realm string) thing.Builder {
 	return b
 }
 
+func (b *BaseBuilder) WithRealmAlias(alias string) thing.Builder {
+	b.realmAlias = alias
+	return b
+}
+
 func (b *BaseBuilder) WithTree(tree string) thing.Builder {
 	b.tree = tree
 	return b
@@ -253,6 +259,7 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 		b.connection, err = client.NewConnection().
 			ConnectTo(b.u).
 			InRealm(b.realm).
+			WithRealmAlias(b.realmAlias).
 			WithTree(b.tree).
 			TimeoutRequestAfter(b.timeout).
 			Create()

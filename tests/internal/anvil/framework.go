@@ -49,6 +49,11 @@ const (
 
 	// Standard timeout used in SDK calls in tests
 	StdTimeOut = 10 * time.Second
+
+	RootRealm = "/"
+
+	GatewayClientType = "gateway"
+	AMClientType      = "am"
 )
 
 var DebugLogger = log.New(ioutil.Discard, "", 0)
@@ -70,6 +75,10 @@ func CreateRealmHierarchy(names ...string) (fullName string, ids []string, err e
 		parentPath += name + "/"
 	}
 	return fullName, ids, nil
+}
+
+func CreateRealmWithAlias(alias string) (id string, err error) {
+	return am.CreateRealm("/", RandomName(), alias)
 }
 
 // nameWithoutExtension returns the name of the file without the file extension
@@ -235,6 +244,16 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 		return err
 	}
 	return nil
+}
+
+// SetRealmAlias sets the alias of the realm with the given name
+func SetRealmAlias(name string, alias string) error {
+	properties, err := am.GetRealm(name)
+	if err != nil {
+		return err
+	}
+	properties.Aliases = []string{alias}
+	return am.UpdateRealm(properties)
 }
 
 const oauth2Service = "oauth-oidc"
@@ -419,7 +438,7 @@ func (a *AMTestState) URL() *url.URL {
 }
 
 func (a *AMTestState) ClientType() string {
-	return "am"
+	return AMClientType
 }
 
 func (a *AMTestState) Realm() string {
@@ -442,7 +461,7 @@ func (i *ThingGatewayTestState) URL() *url.URL {
 }
 
 func (i *ThingGatewayTestState) ClientType() string {
-	return "gateway"
+	return GatewayClientType
 }
 
 func (i *ThingGatewayTestState) Realm() string {

@@ -169,7 +169,7 @@ func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply Authenti
 
 	// add realm and auth tree to query
 	q := request.URL.Query()
-	q.Set(realmQueryKey, c.realm)
+	q.Set(realmQueryKey, c.realmQuery())
 	q.Set(authIndexTypeQueryKey, "service")
 	q.Set(authTreeQueryKey, c.authTree)
 	request.URL.RawQuery = q.Encode()
@@ -312,11 +312,11 @@ func (c *amConnection) updateJSONWebKeySet() (err error) {
 }
 
 func (c *amConnection) accessTokenURL() string {
-	return c.baseURL + "/json/things/*?_action=get_access_token&realm=" + c.realm
+	return c.baseURL + "/json/things/*?_action=get_access_token&realm=" + c.realmQuery()
 }
 
 func (c *amConnection) attributesURL() string {
-	return c.baseURL + "/json/things/*?realm=" + c.realm
+	return c.baseURL + "/json/things/*?realm=" + c.realmQuery()
 }
 
 // amInfo returns AM related information to the client
@@ -420,6 +420,14 @@ func (c *amConnection) makeCommandRequest(tokenID string, content ContentType, r
 		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
+}
+
+// realmQuery returns the realm name or alias to use as a query value in an URL
+func (c *amConnection) realmQuery() string {
+	if c.realmAlias != "" {
+		return c.realmAlias
+	}
+	return c.realm
 }
 
 // SetAuthenticationTree changes the authentication tree that the connection was created with.

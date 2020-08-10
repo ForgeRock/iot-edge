@@ -166,9 +166,9 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 	tags := "http coap"
 	if t.limitedTags {
 		switch state.ClientType() {
-		case "am":
+		case anvil.AMClientType:
 			tags = "http"
-		case "gateway":
+		case anvil.GatewayClientType:
 			tags = "coap"
 		default:
 			return false
@@ -290,7 +290,7 @@ func (t *GatewayAppAuth) Setup(state anvil.TestState) (data anvil.ThingData, ok 
 }
 
 func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == "gateway" {
+	if state.ClientType() == anvil.GatewayClientType {
 		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}
@@ -364,7 +364,7 @@ func (t *GatewayAppAuthNonDefaultKID) Setup(state anvil.TestState) (data anvil.T
 }
 
 func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == "gateway" {
+	if state.ClientType() == anvil.GatewayClientType {
 		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}
@@ -448,7 +448,7 @@ func (t *GatewayAppReg) Setup(state anvil.TestState) (data anvil.ThingData, ok b
 }
 
 func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == "gateway" {
+	if state.ClientType() == anvil.GatewayClientType {
 		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}

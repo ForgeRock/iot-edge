@@ -250,7 +250,7 @@ func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.
 		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
 		Create()
 	switch state.ClientType() {
-	case "gateway":
+	case anvil.GatewayClientType:
 		if err != nil {
 			return false
 		}
@@ -260,4 +260,76 @@ func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.
 		}
 	}
 	return true
+}
+
+// AuthenticateThingRealmAlias checks that authentication supports realm aliases
+type AuthenticateThingRealmAlias struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateThingRealmAlias) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AuthenticateThingRealmAlias) Run(state anvil.TestState, data anvil.ThingData) bool {
+	// don't mess with the root realm aliases
+	// can't set the alias on the gateway yet
+	if state.Realm() == anvil.RootRealm || state.ClientType() == anvil.GatewayClientType {
+		return true
+	}
+	alias := "pseudonym-" + anvil.RandomName()
+	err := anvil.SetRealmAlias(state.Realm(), alias)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to set the alias of the realm", err)
+		return false
+	}
+	state.SetGatewayTree(jwtPopAuthTree)
+	_, err = builder.Thing().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithRealmAlias(alias).
+		WithTree(jwtPopAuthTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
+	return err == nil
+}
+
+// AuthenticateThingRealmAliasMissing checks that authentication is using the realm alias by using an invalid alias.
+// Failure expected
+type AuthenticateThingRealmAliasMissing struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateThingRealmAliasMissing) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.Realm(), data)
+}
+
+func (t *AuthenticateThingRealmAliasMissing) Run(state anvil.TestState, data anvil.ThingData) bool {
+	// don't mess with the root realm aliases
+	// can't set the alias on the gateway yet
+	if state.Realm() == anvil.RootRealm || state.ClientType() == anvil.GatewayClientType {
+		return true
+	}
+	alias := "pseudonym-" + anvil.RandomName()
+	state.SetGatewayTree(jwtPopAuthTree)
+	_, err := builder.Thing().
+		ConnectTo(state.URL()).
+		InRealm(state.Realm()).
+		WithRealmAlias(alias).
+		WithTree(jwtPopAuthTree).
+		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
+	return err != nil
 }
