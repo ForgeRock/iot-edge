@@ -49,6 +49,11 @@ const (
 
 	// Standard timeout used in SDK calls in tests
 	StdTimeOut = 10 * time.Second
+
+	RootRealm = "/"
+
+	GatewayClientType = "gateway"
+	AMClientType      = "am"
 )
 
 var DebugLogger = log.New(ioutil.Discard, "", 0)
@@ -241,6 +246,16 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	return nil
 }
 
+// SetRealmAlias sets the alias of the realm with the given name
+func SetRealmAlias(name string, alias string) error {
+	properties, err := am.GetRealm(name)
+	if err != nil {
+		return err
+	}
+	properties.Aliases = []string{alias}
+	return am.UpdateRealm(properties)
+}
+
 const oauth2Service = "oauth-oidc"
 
 func subConfig(config map[string]json.RawMessage, key string) (sub map[string]json.RawMessage, err error) {
@@ -423,7 +438,7 @@ func (a *AMTestState) URL() *url.URL {
 }
 
 func (a *AMTestState) ClientType() string {
-	return "am"
+	return AMClientType
 }
 
 func (a *AMTestState) Realm() string {
@@ -446,7 +461,7 @@ func (i *ThingGatewayTestState) URL() *url.URL {
 }
 
 func (i *ThingGatewayTestState) ClientType() string {
-	return "gateway"
+	return GatewayClientType
 }
 
 func (i *ThingGatewayTestState) Realm() string {

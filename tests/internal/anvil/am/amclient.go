@@ -25,6 +25,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 	"time"
 
 	"github.com/ForgeRock/iot-edge/pkg/callback"
@@ -266,7 +267,8 @@ func getSSOToken() (token string, err error) {
 	return responseBody.TokenID, nil
 }
 
-type realmModel struct {
+type RealmProperties struct {
+	ID         string   `json:"_id,omitempty"`
 	Name       string   `json:"name"`
 	Active     bool     `json:"active"`
 	ParentPath string   `json:"parentPath"`
@@ -279,7 +281,7 @@ func CreateRealm(parentPath, realmName string, aliases ...string) (realmId strin
 	if aliases == nil {
 		aliases = make([]string, 0)
 	}
-	payload, err := json.Marshal(realmModel{
+	payload, err := json.Marshal(RealmProperties{
 		Name:       realmName,
 		Active:     true,
 		ParentPath: parentPath,
@@ -287,7 +289,6 @@ func CreateRealm(parentPath, realmName string, aliases ...string) (realmId strin
 	if err != nil {
 		return realmId, err
 	}
-	fmt.Println(string(payload))
 
 	b, err := crestCreate(
 		AMURL+"/json/global-config/realms",
@@ -306,6 +307,50 @@ func CreateRealm(parentPath, realmName string, aliases ...string) (realmId strin
 // DeleteRealm deletes the realm with the given Id
 func DeleteRealm(realmId string) (err error) {
 	_, err = crestDelete(AMURL+"/json/global-config/realms/"+realmId, "resource=1.0, protocol=2.0")
+	return err
+}
+
+// GetRealm searches for te realm with the given name
+func GetRealm(fullName string) (properties RealmProperties, err error) {
+	name := "/"
+	if fullName != "/" {
+		r := strings.Split(fullName, "/")
+		if len(r) == 0 {
+			return properties, fmt.Errorf("incorrect name %s", fullName)
+		}
+		name = r[len(r)-1]
+	}
+	b, err := get(AMURL+"/json/global-config/realms?_queryFilter=true", "resource=1.0, protocol=2.0")
+	if err != nil {
+		return properties, err
+	}
+	response := struct {
+		Result []RealmProperties `json:"result"`
+	}{}
+	err = json.Unmarshal(b, &response)
+	if err != nil {
+		return properties, err
+	}
+
+	for _, p := range response.Result {
+		if p.Name == name {
+			return p, nil
+		}
+	}
+	return properties, fmt.Errorf("can't find realm with '%s'", fullName)
+}
+
+// UpdateRealm updates the realm with the given properties
+func UpdateRealm(properties RealmProperties) (err error) {
+	id := properties.ID
+	// remove the ID since te update will fail if it is in the body of the request
+	properties.ID = ""
+	payload, err := json.Marshal(properties)
+	if err != nil {
+		return err
+	}
+
+	_, err = crestUpdate(AMURL+"/json/global-config/realms/"+id, "resource=1.0, protocol=2.0", bytes.NewReader(payload))
 	return err
 }
 

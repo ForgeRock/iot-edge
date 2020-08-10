@@ -82,6 +82,10 @@ type Builder interface {
 	// The realm is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
 
+	// WithRealmAlias specifies an optional realm alias to use.
+	// The alias is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
+	WithRealmAlias(alias string) Builder
+
 	// WithTree sets the name of the AM authentication tree that will be used to register and authenticate the thing.
 	// The tree is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
 	WithTree(tree string) Builder

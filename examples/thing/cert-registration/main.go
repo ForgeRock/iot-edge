@@ -32,7 +32,7 @@ import (
 
 var (
 	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-	realm     = flag.String("realm", "example", "AM Realm")
+	realm     = flag.String("realm", "/example", "AM Realm")
 	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
 	thingName = flag.String("name", "dynamic-thing", "Thing name")
 	key       = flag.String("key", "", "The Thing's key in PEM format")

@@ -69,11 +69,12 @@ type Connection interface {
 }
 
 type ConnectionBuilder struct {
-	url     *url.URL
-	realm   string
-	tree    string
-	key     crypto.Signer
-	timeout time.Duration
+	url        *url.URL
+	realm      string
+	realmAlias string
+	tree       string
+	key        crypto.Signer
+	timeout    time.Duration
 }
 
 func NewConnection() *ConnectionBuilder {
@@ -87,6 +88,11 @@ func (b *ConnectionBuilder) ConnectTo(url *url.URL) *ConnectionBuilder {
 
 func (b *ConnectionBuilder) InRealm(realm string) *ConnectionBuilder {
 	b.realm = realm
+	return b
+}
+
+func (b *ConnectionBuilder) WithRealmAlias(alias string) *ConnectionBuilder {
+	b.realmAlias = alias
 	return b
 }
 
@@ -117,6 +123,7 @@ type amConnection struct {
 	http.Client
 	baseURL         string
 	realm           string
+	realmAlias      string
 	authTree        string
 	cookieName      string
 	accessTokenJWKS jose.JSONWebKeySet
@@ -135,7 +142,7 @@ func (b *ConnectionBuilder) Create() (Connection, error) {
 	var connection Connection
 	switch b.url.Scheme {
 	case "http", "https":
-		connection = &amConnection{baseURL: b.url.String(), realm: b.realm, authTree: b.tree, Client: http.Client{
+		connection = &amConnection{baseURL: b.url.String(), realm: b.realm, realmAlias: b.realmAlias, authTree: b.tree, Client: http.Client{
 			Timeout: b.timeout,
 		}}
 	case "coap", "coaps":

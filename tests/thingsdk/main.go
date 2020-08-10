@@ -52,6 +52,8 @@ var tests = []anvil.SDKTest{
 	&AuthenticateWithUserPwd{},
 	&AuthenticateThingThroughGateway{},
 	&AuthenticateWithIncorrectPwd{},
+	&AuthenticateThingRealmAlias{},
+	&AuthenticateThingRealmAliasMissing{},
 	&RegisterDeviceCert{alg: jose.ES256},
 	&RegisterDeviceCert{alg: jose.ES384},
 	&RegisterDeviceCert{alg: jose.ES512},
@@ -78,6 +80,7 @@ var tests = []anvil.SDKTest{
 	&AccessTokenRepeat{},
 	&AccessTokenWithExactScopesNonRestricted{},
 	&AccessTokenWithNoScopesNonRestricted{},
+	&AccessTokenWithRealmAlias{},
 	&IntrospectAccessToken{clientBased: true, alg: jose.ES256},
 	&IntrospectAccessToken{clientBased: true, alg: jose.PS256},
 	&IntrospectAccessTokenFailure{IntrospectAccessToken{clientBased: false, alg: jose.ES256}},
@@ -97,6 +100,7 @@ var tests = []anvil.SDKTest{
 	&AttributesWithFilter{},
 	&AttributesWithNonRestrictedToken{},
 	&AttributesExpiredSession{},
+	&AttributesWithRealmAlias{},
 	&SessionValid{},
 	&SessionInvalid{},
 	&SessionLogout{},
@@ -198,20 +202,8 @@ func runTests() (err error) {
 	}
 	realmIds = append(realmIds, ids...)
 
-	// create realm with a realm alias
-	realmAlias := "alias-" + anvil.RandomName()
-	id, err := anvil.CreateRealmWithAlias(realmAlias)
-	realmIds = append(realmIds, id)
-
-	defer func() {
-		deferError := anvil.DeleteRealms(realmIds)
-		if deferError != nil {
-			err = deferError
-		}
-	}()
-
 	allPass := true
-	for _, r := range []string{"/", subRealm, subSubRealm, realmAlias} {
+	for _, r := range []string{"/", subRealm, subSubRealm} {
 		pass, err := runAllTestsForRealm(r)
 		allPass = allPass && pass
 		if err != nil {
