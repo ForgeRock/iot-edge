@@ -1,36 +1,52 @@
 # Getting Started
 
-This document outlines how to set up ForgeRock Access Management (AM) for the IoT and run the SDK example 
-programs. The SDK examples can communicate directly with AM or via the Thing Gateway.
+## Introduction
 
 <img src="iot-edge-components.svg" width="400"/>
 
-## Prerequisites
+### Thing SDK
 
-- [Docker](https://docs.docker.com/engine/install/)
-- [Go 1.13 or later](https://golang.org/doc/install)
+The _Thing SDK_ enables a _thing_, which can be either a physical _device_ or a software _service_, to register and
+authenticate without human interaction. Once registered, the _thing_ will be represented by a digital identity in the
+ForgeRock Identity Platform and can authenticate itself in order to interact with the platform tier. The Thing SDK
+can communicate directly with the platform using HTTP(S) or via the Thing Gateway using CoAP(S).
 
-## Run and Configure AM
+### Thing Gateway
+The _Thing Gateway_ is an application that enables more constrained devices to interact with the ForgeRock Identity
+Platform by acting as a proxy between a _thing_ and the Platform.
 
-Get the latest AM image,
+## Evaluate ForgeRock Things
 
+This section covers the tasks you need to quickly get a test or demo environment running. It will guide you through
+configuring ForgeRock Access Management (AM) and running the Thing SDK and Gateway examples.
+
+### Install prerequisite software
+
+The Thing SDK and Gateway has been developed in the Go programming language and to run the examples you require
+[Go 1.13 or later](https://golang.org/doc/install).
+
+You also require [Git](https://git-scm.com/) for downloading the source code and running the examples.  
+
+### Get the example code
+
+Clone this repository:
 ```bash
-docker pull gcr.io/forgerock-io/am/docker-build:latest
+git clone git@github.com:ForgeRock/iot-edge.git
 ```
 
-and run it:
+This will create a directory named `iot-edge`. The instructions for running the examples will assume this as your
+current directory:
 
 ```bash
-docker run --name am --rm -ti \
-    -e AM_ADMIN_PWD=password \
-    -e TOMCAT_INSECURE=ENABLED \
-    -p 8080:8080 \
-    gcr.io/forgerock-io/am/docker-build:latest
+cd iot-edge
 ```
 
-Once the AM installation has completed, log in to http://am.localtest.me:8080/am with `amadmin`:`password`.
+### Install and configure AM
 
-Go to [Services](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/services):
+The examples require AM to be installed with a fully qualified domain name of `am.localtest.me`, using port `8080`.
+Follow the [AM Evaluation Guide](https://backstage.forgerock.com/docs/am/7/eval-guide/) to quickly set up an instance.
+
+Log in to AM and go to [Services](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/services):
 
 - Add the _IoT Service_
 - Select _Create OAuth 2.0 Client_ and _Create OAuth 2.0 JWT Issuer_
@@ -44,101 +60,48 @@ Go to the [IoT OAuth 2.0 Client](http://am.localtest.me:8080/am/ui-admin/#realms
 
 Create an [authentication tree](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/authentication-trees) called `auth-tree`:
 
-<img src="auth-tree.png" width="400"/>
+<img src="auth-tree.png" width="400"/></br>
 
-Create a second authentication tree called
-`reg-tree` and enable _Create Identity_ for the _Register Thing_ node:
+Create a second authentication tree called `reg-tree` and enable _Create Identity_ for the _Register Thing_ node:
 
-<img src="reg-tree.png" width="600"/>
+<img src="reg-tree.png" width="600"/></br>
 
 Go to the [default keystore mappings](http://am.localtest.me:8080/am/ui-admin/#configure/secretStores/KeyStoreSecretStore/edit/default-keystore)
 and add the mapping: _Secret ID_: `am.services.iot.cert.verification`, _Alias_: `es256test`. The CA certificate used in
 this example is one of the test certificates (es256test) that AM includes by default. This mapping tells the
 _Register Thing_ node what key to use when verifying the registration certificate.
 
-Use curl and AM's REST endpoints to preregister two identities that can be used in the authentication only examples.
-Get an admin SSO token:
+### Run the Thing SDK examples
 
-```bash
-curl --request POST 'http://am.localtest.me:8080/am/json/authenticate' \
---header 'Content-Type: application/json' \
---header 'X-OpenAM-Username: amadmin' \
---header 'X-OpenAM-Password: password' \
---header 'Accept-API-Version: resource=2.0, protocol=1.0'
-```
+#### Manual Registration
 
-Save the `tokenId` received from this request to a variable:
+<img src="manual-registration.png" width="520"/></br>
 
-```bash
-tokenId="5oXAB6....lMxAAA.*"
-```
+This example will authenticate and request an access token for the thing. It requires the thing to be in possession
+of an asymmetric key pair for signing.
 
-Create the
-`simple-thing` identity:
+Before running the example, [register the thing manually](getting-started.md#register-identity) using `manual-thing` as
+the thing's ID.
 
-```bash
-curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/simple-thing' \
---header 'Content-Type: application/json' \
---header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
---cookie "iPlanetDirectoryPro=${tokenId}" \
---data '{
-    "userPassword": "5tr0ngG3n3r@ted",
-    "thingType": "device",
-    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
-}'
-```
-
-Create the `simple-gateway` identity:
-
-```bash
-curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/simple-gateway' \
---header 'Content-Type: application/json' \
---header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
---cookie "iPlanetDirectoryPro=${tokenId}" \
---data '{
-    "userPassword": "5tr0ngG3n3r@ted",
-    "thingType": "gateway",
-    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
-}'
-```
-
-## Get the example code
-
-Clone this repository
-```bash
-git clone git@github.com:ForgeRock/iot-edge.git
-```
-
-and change directory to the repository root:
-
-```bash
-cd iot-edge
-```
-
-## Run the SDK examples connecting direct to AM
-
-### Simple Example
-
-The simple example will authenticate and request an access token for the thing. It requires the thing to be in
-possession of an asymmetric key pair for signing and have a preregistered identity.
-
-Run the [simple example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go):
+Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go):
 ```bash
 ./run.sh example "thing/simple" \
-    -name "simple-thing" \
+    -name "manual-thing" \
     -url "http://am.localtest.me:8080/am" \
     -realm "/" \
     -tree "auth-tree" \
     -keyfile "./examples/resources/eckey1.key.pem"
 ```
 
-### Register with Certificate Example
+#### Dynamic Registration
+    
+<img src="dynamic-registration.png" width="650"/></br>
 
-The registration example will create a new identity, authenticate and request an access token for the thing. It requires
-the thing to be in possession of an asymmetric key pair for signing and a CA signed X.509 certificate containing the
-key pair's public key.
+This example will create a new identity, authenticate and request an access token for the thing. It requires the thing
+to be in possession of an asymmetric key pair for signing, and a CA signed X.509 certificate containing the key pair's
+public key.
 
-Run the [registration example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/cert-registration/main.go):
+Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/cert-registration/main.go):
 ```bash
 ./run.sh example "thing/cert-registration" \
     -name "dynamic-thing" \
@@ -149,21 +112,25 @@ Run the [registration example](https://github.com/ForgeRock/iot-edge/blob/master
     -certfile "./examples/resources/dynamic-thing.cert.pem"
 ```
 
-## Run the SDK examples connecting to AM via the Thing Gateway
+### Run the Thing Gateway examples
 
-The [Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM, which
-similar to a Thing, can be preregistered or dynamically created on its first authentication. In *authentication* mode,
-the gateway requires an asymmetric key pair for signing and to have a preregistered identity in AM. In *registration*
-mode, the gateway can register itself if it is in possession of an asymmetric key pair for signing and a CA signed
-X.509 certificate containing the key pair's public key. 
+The [Thing Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM,
+which similar to a Thing, can be manually or dynamically registered. When manually registered, the gateway requires an
+asymmetric key pair for signing. When dynamically registered, the gateway requires an asymmetric key pair for signing,
+and a CA signed X.509 certificate containing the key pair's public key. 
 
-### Simple Example via the Gateway
+#### Manual Registration
 
-Run the Gateway in *authentication* mode:
+This example will start the gateway and authenticate it.
+
+Before running the example, [register the gateway manually](getting-started.md#register-identity) using `manual-gateway`
+as the gateway's ID.
+
+Run the gateway:
 
 ```bash
 ./run.sh gateway \
-    --name "simple-gateway" \
+    --name "manual-gateway" \
     --url "http://am.localtest.me:8080/am" \
     --realm "/" \
     --tree "auth-tree" \
@@ -173,22 +140,18 @@ Run the Gateway in *authentication* mode:
     -d
 ```
 
-The message `Thing Gateway server started` will appear if the `simple-gateway` has started up and authenticated itself
+The message `Thing Gateway server started` will appear if the `manual-gateway` has started up and authenticated itself
 successfully.
 
-In a different terminal window, run the SDK [simple example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go)
-to connect a thing to AM via the `simple-gateway`:
+In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-the-thing-gateway).
 
-```bash
-./run.sh example "thing/simple" \
-    -name "simple-thing" \
-    -url "coap://:5683" \
-    -keyfile "./examples/resources/eckey1.key.pem"
-```
+To stop the gateway process, press `Ctrl+C` in the window where the process is running.
 
-### Register with Certificate Example via the Gateway
+#### Dynamic Registration
 
-Run the Gateway in *registration* mode::
+This example will start the gateway, register and authenticate it.
+
+Run the gateway:
 
 ```bash
 ./run.sh gateway \
@@ -202,99 +165,87 @@ Run the Gateway in *registration* mode::
     -d
 ```
 
-The message `Thing Gateway server started` will appear if the Gateway has started up, registered and authenticated
+The message `Thing Gateway server started` will appear if the gateway has started up, registered and authenticated
 itself successfully.
 
-In a different terminal window, run the SDK [registration example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/cert-registration/main.go)
-to connect a Thing to AM via the `dynamic-gateway`:
+In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-the-thing-gateway).
+
+To stop the gateway process, press `Ctrl+C` in the window where the process is running.
+
+#### Connect to the Thing Gateway
+
+This example will connect a thing to the Thing Gateway. Once the thing has connected it will authenticate and request
+an access token.
+
+Before running the example, [register the thing manually](getting-started.md#register-identity) using `gateway-thing`
+as the thing's ID.
+
+Run the SDK [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go)
+to connect the thing to the gateway:
 
 ```bash
-./run.sh example "thing/cert-registration" \
-    -name "dynamic-thing" \
+./run.sh example "thing/simple" \
+    -name "gateway-thing" \
     -url "coap://:5683" \
-    -keyfile "./examples/resources/eckey1.key.pem" \
-    -certfile "./examples/resources/dynamic-thing.cert.pem"
+    -keyfile "./examples/resources/eckey1.key.pem"
 ```
 
-## Develop a client application with the Thing SDK
+### Register Identity
 
-This example will show you how to create a client application for a thing called _Gopher_. The thing will be
-preregistered in AM and authenticated with a username/password authentication flow.
+Use curl and AM's REST endpoints to manually register an identity for a thing or the gateway.
 
-Prepare a directory for your Go project:
-```bash
-mkdir -p things/cmd/gopher
-cd things
-touch cmd/gopher/main.go
-```
-
-Open _cmd/gopher/main.go_ in a text editor and add the following code to it:
-```go
-package main
-
-import (
-	"github.com/ForgeRock/iot-edge/pkg/builder"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"log"
-	"net/url"
-)
-
-func main() {
-	amURL, err := url.Parse("http://am.localtest.me:8080/am")
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = builder.Thing().
-		ConnectTo(amURL).
-		InRealm("/").
-		WithTree("Example").
-		HandleCallbacksWith(
-			callback.NameHandler{Name: "Gopher"},
-			callback.PasswordHandler{Password: "5tr0ngG3n3r@ted"}).
-		Create()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Gopher successfully authenticated.")
-}
-```
-
-Create a new Go module:
-```bash
-go mod init example.com/things
-```
-This will create a _go.mod_ file that specifies your project dependencies and versions.  
-
-Before we can run the application, we need to create the _Gopher_ identity in AM.
- 
 Get an admin SSO token:
+
 ```bash
 curl --request POST 'http://am.localtest.me:8080/am/json/authenticate' \
 --header 'Content-Type: application/json' \
---header 'X-OpenAM-Username: amadmin' \
---header 'X-OpenAM-Password: password' \
+--header 'X-OpenAM-Username: amAdmin' \
+--header 'X-OpenAM-Password: changeit' \
 --header 'Accept-API-Version: resource=2.0, protocol=1.0'
 ```
 
 Save the `tokenId` received from this request to a variable:
+
 ```bash
 tokenId="5oXAB6....lMxAAA.*"
 ```
 
-Create the `Gopher` identity:
+Set the ID of the identity to register. Change the value as specified in the example's instructions:
+
 ```bash
-curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/Gopher' \
+ID=thing-or-gateway
+```
+
+Register an identity for a thing:
+
+```bash
+curl -v --request PUT "http://am.localtest.me:8080/am/json/realms/root/users/${ID}" \
 --header 'Content-Type: application/json' \
 --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
 --cookie "iPlanetDirectoryPro=${tokenId}" \
 --data '{
+    "userPassword": "5tr0ngG3n3r@ted",
     "thingType": "device",
-    "userPassword": "5tr0ngG3n3r@ted"
+    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
 }'
 ```
 
-Build an executable for your client application and run it to authenticate _Gopher_:
+Register an identity for the gateway:
+
 ```bash
-go build example.com/things/cmd/gopher
-./gopher
+curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/${ID}' \
+--header 'Content-Type: application/json' \
+--header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
+--cookie "iPlanetDirectoryPro=${tokenId}" \
+--data '{
+    "userPassword": "5tr0ngG3n3r@ted",
+    "thingType": "gateway",
+    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
+}'
 ```
+
+## Next Steps
+
+#### [Develop a client application with the Thing SDK](develop-a-client-application.md)
+
+#### [Build the Thing Gateway for your target system](building-the-gateway.md)

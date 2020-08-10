@@ -1,23 +1,8 @@
-# Building the Gateway
+# Building the Thing Gateway
 
-## Prerequisites
-
-- [Docker](https://docs.docker.com/engine/install/)
-- [Go](https://golang.org/doc/install)
-
-## Get the Gateway code
-
-Clone this repository
-
-```bash
-git clone git@github.com:ForgeRock/iot-edge.git
-```
-
-and change directory to the repository root:
-
-```bash
-cd iot-edge
-```
+ForgeRock does not deliver binaries for the Thing Gateway as there are simply too many operating system and
+architecture combinations to support. One of the reasons we chose the Go programming language is for its easy to use
+build tooling and great support for cross-compilation to target systems.  
 
 ## Building on the target system
 
@@ -33,34 +18,17 @@ Use the help flag to see the available command line options for the Gateway:
 ./bin/gateway -h
 ```
 
-## Building in Docker
+## Cross-compile for the target system
 
-Alternatively, a Golang docker container can be used to build the Gateway. Get the `golang` docker image:
+The target system can be specified with a combination of the `$GOOS` and `$GOARCH` environment variables.
 
-```bash
-docker pull golang:1.13
-```
-
-To build for `linux/amd64`:
-
-```bash
-docker run --rm -it \
-    -v "$PWD":/go/src/iot-edge -w /go/src/iot-edge \
-    golang:1.13 \
-    go build -o ./bin/gateway ./cmd/gateway
-```
-
-To run the Gateway on an arm 32-bit processor (for example, a Raspberry Pi 3 running in 32-bit mode), build for
+To run the gateway on an arm 32-bit processor (for example, a Raspberry Pi 3 running in 32-bit mode), build for
 `linux/arm`:
 
 ```bash
-docker run --rm -it \
-    -v "$PWD":/go/src/iot-edge -w /go/src/iot-edge \
-    -e GOOS=linux -e GOARCH=arm \
-    golang:1.13 \
-    go build -o ./bin/gateway ./cmd/gateway
+GOOS=linux GOARCH=arm go build -o ./bin/gateway ./cmd/gateway
 ```
-The `$GOOS` and `$GOARCH` [list](https://golang.org/doc/install/source#environment) gives a complete list of possible
-cross-compilation targets.
+
+See the [complete list](https://golang.org/doc/install/source#environment) of possible cross-compilation targets.
 
 See the Go command [environment variables](https://golang.org/cmd/go/#hdr-Environment_variables) for more build options.
