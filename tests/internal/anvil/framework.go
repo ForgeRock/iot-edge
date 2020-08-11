@@ -256,6 +256,29 @@ func SetRealmAlias(name string, alias string) error {
 	return am.UpdateRealm(properties)
 }
 
+func SetDNSAlias(name string, alias string) error {
+	properties, err := am.GetRealm(name)
+	if err != nil {
+		return err
+	}
+	properties.Aliases = []string{alias}
+	err = am.UpdateRealm(properties)
+	if err != nil {
+		return err
+	}
+	serverProperties, err := am.GetAdvancedServerProperties()
+	key := fmt.Sprintf("com.sun.identity.server.fqdnMap[%s]", alias)
+	serverProperties[key] = alias
+	err = am.SetAdvancedServerProperties(serverProperties)
+	fmt.Println(err)
+	return nil
+}
+
+func URL(domain string) *url.URL {
+	u, _ := url.Parse(am.BaseURL(domain))
+	return u
+}
+
 const oauth2Service = "oauth-oidc"
 
 func subConfig(config map[string]json.RawMessage, key string) (sub map[string]json.RawMessage, err error) {

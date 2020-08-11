@@ -32,9 +32,10 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
+// Base AM URL
+var AMURL = BaseURL("am.localtest.me")
+
 const (
-	// Base AM URL
-	AMURL = "http://am.localtest.me:8080/am"
 	// HTTP header keys
 	headerContentType = "Content-Type"
 	headerCookie      = "iPlanetDirectoryPro"
@@ -53,6 +54,10 @@ var DebugLogger = log.New(ioutil.Discard, "", 0)
 
 var httpClient = http.Client{
 	Timeout: 30 * time.Second,
+}
+
+func BaseURL(domain string) string {
+	return fmt.Sprintf("http://%s:8080/am", domain)
 }
 
 // crestAction makes an HTTP POST request with the action appended to the given endpoint.
@@ -555,5 +560,26 @@ func LogoutSession(token string) (err error) {
 		"resource=4.0",
 		bytes.NewReader(b),
 		http.StatusOK)
+	return err
+}
+
+func GetAdvancedServerProperties() (properties map[string]interface{}, err error) {
+	b, err := get(AMURL+"/json/global-config/servers/server-default/properties/advanced", "resource=1.0")
+	if err != nil {
+		return properties, err
+	}
+	err = json.Unmarshal(b, &properties)
+	return properties, err
+}
+
+func SetAdvancedServerProperties(properties map[string]interface{}) (err error) {
+	payload, err := json.Marshal(properties)
+	if err != nil {
+		return err
+	}
+	_, err = crestUpdate(
+		AMURL+"/json/global-config/servers/server-default/properties/advanced",
+		"protocol=1.0,resource=1.0",
+		bytes.NewReader(payload))
 	return err
 }
