@@ -124,11 +124,11 @@ func (h PasswordHandler) Handle(cb Callback) (bool, error) {
 
 // AuthenticateHandler handles the callback received from the Authenticate Thing tree node.
 type AuthenticateHandler struct {
-	Realm   string
-	ThingID string
-	KeyID   string
-	Key     crypto.Signer
-	Claims  func() interface{}
+	Audience string
+	ThingID  string
+	KeyID    string
+	Key      crypto.Signer
+	Claims   func() interface{}
 }
 
 type jwtVerifyClaims struct {
@@ -148,10 +148,10 @@ func (c jwtVerifyClaims) String() string {
 	return fmt.Sprintf("{sub:%s, aud:%s, ThingType:%s}", c.Sub, c.Aud, c.ThingType)
 }
 
-func baseJWTClaims(thingID, realm, challenge string) jwtVerifyClaims {
+func baseJWTClaims(thingID, audience, challenge string) jwtVerifyClaims {
 	return jwtVerifyClaims{
 		Sub:   thingID,
-		Aud:   realm,
+		Aud:   audience,
 		Iat:   time.Now().Unix(),
 		Exp:   time.Now().Add(5 * time.Minute).Unix(),
 		Nonce: challenge,
@@ -183,7 +183,7 @@ func (h AuthenticateHandler) Handle(cb Callback) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	claims := baseJWTClaims(h.ThingID, h.Realm, challenge)
+	claims := baseJWTClaims(h.ThingID, h.Audience, challenge)
 	claims.CNF.KID = h.KeyID
 	builder := jwt.Signed(sig).Claims(claims)
 	if h.Claims != nil {
@@ -200,7 +200,7 @@ func (h AuthenticateHandler) Handle(cb Callback) (bool, error) {
 
 // RegisterHandler handles the callback received from the Register Thing tree node.
 type RegisterHandler struct {
-	Realm        string
+	Audience     string
 	ThingID      string
 	ThingType    ThingType
 	KeyID        string
@@ -234,7 +234,7 @@ func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	claims := baseJWTClaims(h.ThingID, h.Realm, challenge)
+	claims := baseJWTClaims(h.ThingID, h.Audience, challenge)
 	claims.ThingType = h.ThingType
 	claims.CNF.JWK = &jose.JSONWebKey{
 		Key:          h.Key.Public(),

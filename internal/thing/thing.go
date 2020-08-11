@@ -168,10 +168,11 @@ func (t *DefaultThing) RequestAttributes(names ...string) (response thing.Attrib
 }
 
 type authHandlerBuilder struct {
-	thingID string
-	keyID   string
-	key     crypto.Signer
-	claims  func() interface{}
+	thingID  string
+	audience string
+	keyID    string
+	key      crypto.Signer
+	claims   func() interface{}
 }
 
 type regHandlerBuilder struct {
@@ -182,7 +183,6 @@ type regHandlerBuilder struct {
 type BaseBuilder struct {
 	u           *url.URL
 	realm       string
-	realmAlias  string
 	tree        string
 	thingType   callback.ThingType
 	timeout     time.Duration
@@ -197,12 +197,13 @@ func (b *BaseBuilder) AsService() thing.Builder {
 	return b
 }
 
-func (b *BaseBuilder) AuthenticateThing(thingID string, keyID string, key crypto.Signer, claims func() interface{}) thing.Builder {
+func (b *BaseBuilder) AuthenticateThing(thingID string, audience string, keyID string, key crypto.Signer, claims func() interface{}) thing.Builder {
 	b.authHandler = &authHandlerBuilder{
-		thingID: thingID,
-		keyID:   keyID,
-		key:     key,
-		claims:  claims,
+		thingID:  thingID,
+		audience: audience,
+		keyID:    keyID,
+		key:      key,
+		claims:   claims,
 	}
 	return b
 }
@@ -230,11 +231,6 @@ func (b *BaseBuilder) InRealm(realm string) thing.Builder {
 	return b
 }
 
-func (b *BaseBuilder) WithRealmAlias(alias string) thing.Builder {
-	b.realmAlias = alias
-	return b
-}
-
 func (b *BaseBuilder) WithTree(tree string) thing.Builder {
 	b.tree = tree
 	return b
@@ -259,7 +255,6 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 		b.connection, err = client.NewConnection().
 			ConnectTo(b.u).
 			InRealm(b.realm).
-			WithRealmAlias(b.realmAlias).
 			WithTree(b.tree).
 			TimeoutRequestAfter(b.timeout).
 			Create()
@@ -275,24 +270,19 @@ func (b *BaseBuilder) Create() (thing.Thing, error) {
 		if b.authHandler.keyID == "" {
 			return nil, fmt.Errorf("authenticate thing requires Key ID")
 		}
-		// get AM info to obtain the realm from the gateway
-		info, err := b.connection.AMInfo()
-		if err != nil {
-			return nil, err
-		}
 		b.handlers = append(b.handlers, callback.AuthenticateHandler{
-			Realm:   info.Realm,
-			ThingID: b.authHandler.thingID,
-			KeyID:   b.authHandler.keyID,
-			Key:     b.authHandler.key,
-			Claims:  b.authHandler.claims,
+			Audience: b.authHandler.audience,
+			ThingID:  b.authHandler.thingID,
+			KeyID:    b.authHandler.keyID,
+			Key:      b.authHandler.key,
+			Claims:   b.authHandler.claims,
 		})
 		if b.regHandler != nil {
 			if b.thingType == "" {
 				b.thingType = callback.TypeDevice
 			}
 			b.handlers = append(b.handlers, callback.RegisterHandler{
-				Realm:        info.Realm,
+				Audience:     b.authHandler.audience,
 				ThingID:      b.authHandler.thingID,
 				ThingType:    b.thingType,
 				KeyID:        b.authHandler.keyID,

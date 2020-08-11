@@ -118,7 +118,7 @@ func certRegThing() (err error) {
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateThing(*thingName, keyID, key, nil).
+		AuthenticateThing(*thingName, *realm, keyID, key, nil).
 		RegisterThing(certs, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)

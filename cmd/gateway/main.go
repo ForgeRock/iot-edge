@@ -124,10 +124,10 @@ func runGateway() error {
 
 	callbacks := []callback.Handler{
 		callback.AuthenticateHandler{
-			Realm:   opts.Realm,
-			ThingID: opts.Name,
-			KeyID:   opts.KeyID,
-			Key:     amKey,
+			Audience: opts.Realm,
+			ThingID:  opts.Name,
+			KeyID:    opts.KeyID,
+			Key:      amKey,
 		}}
 	if opts.CertFile != "" {
 		certs, err := loadCertificates(opts.CertFile)
@@ -135,7 +135,7 @@ func runGateway() error {
 			return err
 		}
 		callbacks = append(callbacks, callback.RegisterHandler{
-			Realm:        opts.Realm,
+			Audience:     opts.Realm,
 			ThingID:      opts.Name,
 			ThingType:    callback.TypeGateway,
 			KeyID:        opts.KeyID,

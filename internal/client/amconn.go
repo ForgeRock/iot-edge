@@ -424,9 +424,6 @@ func (c *amConnection) makeCommandRequest(tokenID string, content ContentType, r
 
 // realmQuery returns the realm name or alias to use as a query value in an URL
 func (c *amConnection) realmQuery() string {
-	if c.realmAlias != "" {
-		return c.realmAlias
-	}
 	return c.realm
 }
 

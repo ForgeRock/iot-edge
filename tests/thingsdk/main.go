@@ -53,7 +53,6 @@ var tests = []anvil.SDKTest{
 	&AuthenticateThingThroughGateway{},
 	&AuthenticateWithIncorrectPwd{},
 	&AuthenticateThingRealmAlias{},
-	&AuthenticateThingRealmAliasMissing{},
 	&RegisterDeviceCert{alg: jose.ES256},
 	&RegisterDeviceCert{alg: jose.ES384},
 	&RegisterDeviceCert{alg: jose.ES512},

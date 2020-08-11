@@ -401,10 +401,9 @@ func (t *AccessTokenWithRealmAlias) Run(state anvil.TestState, data anvil.ThingD
 	state.SetGatewayTree(jwtPopAuthTree)
 	device, err := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
-		WithRealmAlias(alias).
+		InRealm(alias).
 		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
+		AuthenticateThing(data.Id.Name, state.Realm(), data.Signer.KID, data.Signer.Signer, nil).Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
