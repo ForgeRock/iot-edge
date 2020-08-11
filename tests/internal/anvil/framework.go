@@ -77,8 +77,8 @@ func CreateRealmHierarchy(names ...string) (fullName string, ids []string, err e
 	return fullName, ids, nil
 }
 
-func CreateRealmWithAlias(alias string) (id string, err error) {
-	return am.CreateRealm("/", RandomName(), alias)
+func CreateRealmWithAlias(name string, alias string) (id string, err error) {
+	return am.CreateRealm("/", name, alias)
 }
 
 // nameWithoutExtension returns the name of the file without the file extension
@@ -404,7 +404,7 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 }
 
 // TestThingGateway creates a test Thing Gateway
-func TestThingGateway(realm string, authTree string) (*gateway.ThingGateway, error) {
+func TestThingGateway(realm string, audience string, authTree string) (*gateway.ThingGateway, error) {
 	jwk, signer, err := ConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
@@ -421,7 +421,7 @@ func TestThingGateway(realm string, authTree string) (*gateway.ThingGateway, err
 	}
 	return gateway.NewThingGateway(am.AMURL, realm, authTree, StdTimeOut, []callback.Handler{
 		callback.AuthenticateHandler{
-			Audience: realm,
+			Audience: audience,
 			ThingID:  attributes.Name,
 			KeyID:    signer.KID,
 			Key:      signer.Signer},
@@ -439,6 +439,8 @@ type ThingData struct {
 type TestState interface {
 	// Realm returns the current test realm
 	Realm() string
+	// Audience returns the JWT audience for the current test realm
+	Audience() string
 	// ClientType returns 'am' or 'gateway' depending on the type of client
 	ClientType() string
 	// URL of the current test server (AM or Gateway)
@@ -449,7 +451,8 @@ type TestState interface {
 
 // AMTestState contains data and methods for testing the AM client
 type AMTestState struct {
-	TestRealm string
+	TestRealm    string
+	TestAudience string
 }
 
 func (a *AMTestState) SetGatewayTree(tree string) {
@@ -468,10 +471,15 @@ func (a *AMTestState) Realm() string {
 	return a.TestRealm
 }
 
+func (a *AMTestState) Audience() string {
+	return a.TestAudience
+}
+
 // ThingGatewayTestState contains data and methods for testing the Thing Gateway client
 type ThingGatewayTestState struct {
 	ThingGateway *gateway.ThingGateway
 	TestRealm    string
+	TestAudience string
 }
 
 func (i *ThingGatewayTestState) SetGatewayTree(tree string) {
@@ -489,6 +497,10 @@ func (i *ThingGatewayTestState) ClientType() string {
 
 func (i *ThingGatewayTestState) Realm() string {
 	return i.TestRealm
+}
+
+func (i *ThingGatewayTestState) Audience() string {
+	return i.TestAudience
 }
 
 // SDKTest defines the interface required by a SDK API test

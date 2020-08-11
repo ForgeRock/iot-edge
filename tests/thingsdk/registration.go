@@ -59,7 +59,7 @@ func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bo
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Realm(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	return err == nil
@@ -91,7 +91,7 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Realm(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(nil, nil)
 
 	_, err := builder.Create()
@@ -141,7 +141,7 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Realm(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, func() interface{} {
 			return sdkAttribute
 		})
@@ -193,7 +193,7 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Realm(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil).
 		AsService()
 
@@ -248,7 +248,7 @@ func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData)
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Realm(), "", data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), "", data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	return err != nil
@@ -270,7 +270,7 @@ func (t *RegisterDeviceNoKey) Run(state anvil.TestState, data anvil.ThingData) b
 		ConnectTo(state.URL()).
 		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Realm(), "", nil, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), "", nil, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	return err != nil

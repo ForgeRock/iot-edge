@@ -52,7 +52,6 @@ var tests = []anvil.SDKTest{
 	&AuthenticateWithUserPwd{},
 	&AuthenticateThingThroughGateway{},
 	&AuthenticateWithIncorrectPwd{},
-	&AuthenticateThingRealmAlias{},
 	&RegisterDeviceCert{alg: jose.ES256},
 	&RegisterDeviceCert{alg: jose.ES384},
 	&RegisterDeviceCert{alg: jose.ES512},
@@ -79,7 +78,6 @@ var tests = []anvil.SDKTest{
 	&AccessTokenRepeat{},
 	&AccessTokenWithExactScopesNonRestricted{},
 	&AccessTokenWithNoScopesNonRestricted{},
-	&AccessTokenWithRealmAlias{},
 	&IntrospectAccessToken{clientBased: true, alg: jose.ES256},
 	&IntrospectAccessToken{clientBased: true, alg: jose.PS256},
 	&IntrospectAccessTokenFailure{IntrospectAccessToken{clientBased: false, alg: jose.ES256}},
@@ -99,7 +97,6 @@ var tests = []anvil.SDKTest{
 	&AttributesWithFilter{},
 	&AttributesWithNonRestrictedToken{},
 	&AttributesExpiredSession{},
-	&AttributesWithRealmAlias{},
 	&SessionValid{},
 	&SessionInvalid{},
 	&SessionLogout{},
@@ -122,24 +119,33 @@ func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 	return result
 }
 
-func runAllTestsForRealm(realm string) (result bool, err error) {
-	err = anvil.ConfigureTestRealm(realm, testdataDir)
+type realmInfo struct {
+	name     string
+	audience string
+}
+
+func (i realmInfo) String() string {
+	return i.name
+}
+
+func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
+	err = anvil.ConfigureTestRealm(realm.name, testdataDir)
 	if err != nil {
 		return false, err
 	}
 	defer func() {
-		err = anvil.RestoreTestRealm(realm, testdataDir)
+		err = anvil.RestoreTestRealm(realm.name, testdataDir)
 	}()
 
 	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Connection Tests --\n\n")
-	result = runAllTestsForContext(&anvil.AMTestState{TestRealm: realm})
+	result = runAllTestsForContext(&anvil.AMTestState{TestRealm: realm.name, TestAudience: realm.audience})
 
 	fmt.Printf("\n-- Running Thing Gateway COAP Connection Tests --\n\n")
 
 	// run the Thing Gateway
-	gateway, err := anvil.TestThingGateway(realm, jwtPopAuthTree)
+	gateway, err := anvil.TestThingGateway(realm.name, realm.audience, jwtPopAuthTree)
 	if err != nil {
 		return false, err
 	}
@@ -154,7 +160,7 @@ func runAllTestsForRealm(realm string) (result bool, err error) {
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(&anvil.ThingGatewayTestState{ThingGateway: gateway, TestRealm: realm}) && result
+	result = runAllTestsForContext(&anvil.ThingGatewayTestState{ThingGateway: gateway, TestRealm: realm.name, TestAudience: realm.audience}) && result
 
 	return result, nil
 }
@@ -200,6 +206,12 @@ func runTests() (err error) {
 		return err
 	}
 	realmIds = append(realmIds, ids...)
+
+	aliasRealm := anvil.RandomName()
+	alias := "alias-" + aliasRealm
+	realmId, err := anvil.CreateRealmWithAlias(aliasRealm, alias)
+	realmIds = append(realmIds, realmId)
+
 	defer func() {
 		deferError := anvil.DeleteRealms(realmIds)
 		if deferError != nil {
@@ -208,7 +220,12 @@ func runTests() (err error) {
 	}()
 
 	allPass := true
-	for _, r := range []string{"/", subRealm, subSubRealm} {
+	for _, r := range []realmInfo{
+		{name: anvil.RootRealm, audience: anvil.RootRealm},
+		{name: subRealm, audience: subRealm},
+		{name: subSubRealm, audience: subSubRealm},
+		{name: alias, audience: anvil.RootRealm + aliasRealm},
+	} {
 		pass, err := runAllTestsForRealm(r)
 		allPass = allPass && pass
 		if err != nil {

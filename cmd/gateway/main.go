@@ -66,6 +66,7 @@ func loadCertificates(filename string) ([]*x509.Certificate, error) {
 type commandlineOpts struct {
 	URL      string `long:"url" required:"true" description:"AM URL"`
 	Realm    string `long:"realm" required:"true" description:"AM Realm"`
+	Audience string `long:"audience" description:"JWT Audience"`
 	Tree     string `long:"tree" required:"true" description:"Authentication tree"`
 	Name     string `long:"name" required:"true" description:"Gateway name"`
 	Address  string `long:"address" required:"true" description:"CoAP Address of Gateway"`
@@ -122,9 +123,13 @@ func runGateway() error {
 		}
 	}
 
+	if opts.Audience == "" {
+		opts.Audience = opts.Realm
+	}
+
 	callbacks := []callback.Handler{
 		callback.AuthenticateHandler{
-			Audience: opts.Realm,
+			Audience: opts.Audience,
 			ThingID:  opts.Name,
 			KeyID:    opts.KeyID,
 			Key:      amKey,
@@ -135,7 +140,7 @@ func runGateway() error {
 			return err
 		}
 		callbacks = append(callbacks, callback.RegisterHandler{
-			Audience:     opts.Realm,
+			Audience:     opts.Audience,
 			ThingID:      opts.Name,
 			ThingType:    callback.TypeGateway,
 			KeyID:        opts.KeyID,

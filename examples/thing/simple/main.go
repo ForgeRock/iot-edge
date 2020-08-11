@@ -33,6 +33,7 @@ import (
 var (
 	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
 	realm     = flag.String("realm", "/example", "AM Realm")
+	audience  = flag.String("audience", "", "JWT audience")
 	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
 	thingName = flag.String("name", "simple-thing", "Thing name")
 	key       = flag.String("key", "", "The Thing's key in PEM format")
@@ -84,11 +85,15 @@ func simpleThing() error {
 		return err
 	}
 
+	if *audience == "" {
+		*audience = *realm
+	}
+
 	builder := builder.Thing().
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateThing(*thingName, *realm, *keyID, key, nil)
+		AuthenticateThing(*thingName, *audience, *keyID, key, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
 	device, err := builder.Create()
