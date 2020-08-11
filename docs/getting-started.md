@@ -233,7 +233,7 @@ curl -v --request PUT "http://am.localtest.me:8080/am/json/realms/root/users/${I
 Register an identity for the gateway:
 
 ```bash
-curl -v --request PUT 'http://am.localtest.me:8080/am/json/realms/root/users/${ID}' \
+curl -v --request PUT "http://am.localtest.me:8080/am/json/realms/root/users/${ID}" \
 --header 'Content-Type: application/json' \
 --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
 --cookie "iPlanetDirectoryPro=${tokenId}" \
