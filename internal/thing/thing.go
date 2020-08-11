@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ForgeRock/iot-edge/internal/client"
@@ -149,7 +150,22 @@ func (t *DefaultThing) RequestAttributes(names ...string) (response thing.Attrib
 			if err != nil {
 				return err
 			}
-			requestBody, err = signedJWTBody(popSession, info.AttributesURL+client.FieldsQuery(names), info.ThingsVersion, nil)
+			urlString := info.AttributesURL
+			if len(names) > 0 {
+				// Add the names as a '_field' query to the url but the url may have queries already
+				// The url.Values Encode method would have been ideal but the encoding of '/' breaks the audience check
+				// in AM
+				u, err := url.ParseRequestURI(urlString)
+				if err != nil {
+					return err
+				}
+				prefix := "?"
+				if len(u.Query()) > 0 {
+					prefix = "&"
+				}
+				urlString += prefix + "_fields=" + strings.Join(names, ",")
+			}
+			requestBody, err = signedJWTBody(popSession, urlString, info.ThingsVersion, nil)
 			if err != nil {
 				return err
 			}

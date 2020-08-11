@@ -112,7 +112,7 @@ func doSetup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	}
 	data.Id.ThingType = callback.TypeDevice
 	data.Id.ThingConfig = "host=localhost;port=80"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 // AttributesWithNonRestrictedToken requests all the thing's allowed attributes with a non-restricted token
@@ -128,7 +128,7 @@ func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -168,14 +168,14 @@ type AttributesExpiredSession struct {
 
 func (t *AttributesExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AttributesExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},

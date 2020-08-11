@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/go-ocf/go-coap"
@@ -103,13 +102,6 @@ func (b *ConnectionBuilder) WithKey(key crypto.Signer) *ConnectionBuilder {
 func (b *ConnectionBuilder) TimeoutRequestAfter(timeout time.Duration) *ConnectionBuilder {
 	b.timeout = timeout
 	return b
-}
-
-func FieldsQuery(fields []string) string {
-	if len(fields) > 0 {
-		return "&_fields=" + strings.Join(fields, ",")
-	}
-	return ""
 }
 
 // amConnection contains information for connecting directly to AM

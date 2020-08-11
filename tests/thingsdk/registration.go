@@ -57,7 +57,7 @@ func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bo
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopRegCertTree).
 		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
@@ -89,7 +89,7 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopRegCertTree).
 		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(nil, nil)
@@ -139,7 +139,7 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopRegCertTree).
 		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, func() interface{} {
@@ -149,7 +149,7 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 	if err != nil {
 		return false
 	}
-	err = anvil.GetIdentityAttributes(state.Realm(), data.Id.Name, &amAttribute)
+	err = anvil.GetIdentityAttributes(state.TestRealm(), data.Id.Name, &amAttribute)
 	if err != nil {
 		anvil.DebugLogger.Printf("Getting attribute %s failed; %s", amAttribute, err)
 		return false
@@ -191,7 +191,7 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopRegCertTree).
 		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil).
@@ -204,7 +204,7 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 	var amAttribute struct {
 		ThingType []string
 	}
-	err = anvil.GetIdentityAttributes(state.Realm(), data.Id.Name, &amAttribute)
+	err = anvil.GetIdentityAttributes(state.RealmForConfiguration(), data.Id.Name, &amAttribute)
 	if err != nil {
 		anvil.DebugLogger.Printf("Getting attribute %s failed; %s", amAttribute, err)
 		return false
@@ -246,7 +246,7 @@ func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData)
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopRegCertTree).
 		AuthenticateThing(data.Id.Name, state.Audience(), "", data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
@@ -268,7 +268,7 @@ func (t *RegisterDeviceNoKey) Run(state anvil.TestState, data anvil.ThingData) b
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopRegCertTree).
 		AuthenticateThing(data.Id.Name, state.Audience(), "", nil, nil).
 		RegisterThing(data.Certificates, nil)

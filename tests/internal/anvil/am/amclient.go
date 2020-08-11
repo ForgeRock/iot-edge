@@ -33,7 +33,7 @@ import (
 )
 
 // Base AM URL
-var AMURL = BaseURL("am.localtest.me")
+var AMURL = URL("am")
 
 const (
 	// HTTP header keys
@@ -56,8 +56,8 @@ var httpClient = http.Client{
 	Timeout: 30 * time.Second,
 }
 
-func BaseURL(domain string) string {
-	return fmt.Sprintf("http://%s:8080/am", domain)
+func URL(subDomain string) string {
+	return fmt.Sprintf("http://%s.localtest.me:8080/am", subDomain)
 }
 
 // crestAction makes an HTTP POST request with the action appended to the given endpoint.

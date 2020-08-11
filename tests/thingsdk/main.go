@@ -21,6 +21,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -120,12 +121,22 @@ func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 }
 
 type realmInfo struct {
-	name     string
-	audience string
+	description   string
+	name          string
+	audience      string
+	u             *url.URL
+	dnsConfigured bool
 }
 
 func (i realmInfo) String() string {
-	return i.name
+	s := i.description
+	extra := ""
+	if i.dnsConfigured {
+		extra = i.u.Hostname()
+	} else {
+		extra = i.name
+	}
+	return fmt.Sprintf("%s (%s)", s, extra)
 }
 
 func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
@@ -137,15 +148,20 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 		err = anvil.RestoreTestRealm(realm.name, testdataDir)
 	}()
 
-	fmt.Printf("\n\n-- Running Tests in realm %s --\n\n", realm)
+	fmt.Printf("\n\n-- Running Tests in %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Connection Tests --\n\n")
-	result = runAllTestsForContext(&anvil.AMTestState{TestRealm: realm.name, TestAudience: realm.audience})
+	result = runAllTestsForContext(&anvil.AMTestState{
+		TestAudience:  realm.audience,
+		TestURL:       realm.u,
+		Realm:         realm.name,
+		DNSConfigured: realm.dnsConfigured,
+	})
 
 	fmt.Printf("\n-- Running Thing Gateway COAP Connection Tests --\n\n")
 
 	// run the Thing Gateway
-	gateway, err := anvil.TestThingGateway(realm.name, realm.audience, jwtPopAuthTree)
+	gateway, err := anvil.TestThingGateway(realm.u, realm.name, realm.audience, jwtPopAuthTree, realm.dnsConfigured)
 	if err != nil {
 		return false, err
 	}
@@ -160,7 +176,12 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(&anvil.ThingGatewayTestState{ThingGateway: gateway, TestRealm: realm.name, TestAudience: realm.audience}) && result
+	result = runAllTestsForContext(
+		&anvil.ThingGatewayTestState{
+			ThingGateway: gateway,
+			Realm:        realm.name,
+			TestAudience: realm.audience,
+		}) && result
 
 	return result, nil
 }
@@ -210,6 +231,17 @@ func runTests() (err error) {
 	aliasRealm := anvil.RandomName()
 	alias := "alias-" + aliasRealm
 	realmId, err := anvil.CreateRealmWithAlias(aliasRealm, alias)
+	if err != nil {
+		return err
+	}
+	realmIds = append(realmIds, realmId)
+
+	dnsRealm := anvil.RandomName()
+	dnsURL := anvil.URL(dnsRealm)
+	realmId, err = anvil.CreateRealmWithDNSAlias(dnsRealm, dnsURL.Hostname())
+	if err != nil {
+		return err
+	}
 	realmIds = append(realmIds, realmId)
 
 	defer func() {
@@ -221,10 +253,11 @@ func runTests() (err error) {
 
 	allPass := true
 	for _, r := range []realmInfo{
-		{name: anvil.RootRealm, audience: anvil.RootRealm},
-		{name: subRealm, audience: subRealm},
-		{name: subSubRealm, audience: subSubRealm},
-		{name: alias, audience: anvil.RootRealm + aliasRealm},
+		{description: "root", name: anvil.RootRealm, audience: anvil.RootRealm, u: anvil.BaseURL()},
+		{description: "sub-realm", name: subRealm, audience: subRealm, u: anvil.BaseURL()},
+		{description: "sub-sub-realm", name: subSubRealm, audience: subSubRealm, u: anvil.BaseURL()},
+		{description: "realm with alias", name: alias, audience: anvil.RootRealm + aliasRealm, u: anvil.BaseURL()},
+		{description: "realm with DNS alias", name: dnsRealm, audience: anvil.RootRealm + dnsRealm, u: dnsURL, dnsConfigured: true},
 	} {
 		pass, err := runAllTestsForRealm(r)
 		allPass = allPass && pass

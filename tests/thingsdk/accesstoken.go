@@ -43,7 +43,7 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -75,7 +75,7 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -107,7 +107,7 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -140,7 +140,7 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -178,7 +178,7 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 	}
 	data.Id.ThingType = callback.TypeDevice
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -243,7 +243,7 @@ func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, 
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -274,14 +274,14 @@ type AccessTokenWithExactScopesNonRestricted struct {
 
 func (a AccessTokenWithExactScopesNonRestricted) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -306,14 +306,14 @@ type AccessTokenWithNoScopesNonRestricted struct {
 
 func (a AccessTokenWithNoScopesNonRestricted) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -338,14 +338,14 @@ type AccessTokenExpiredSession struct {
 
 func (t *AccessTokenExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},

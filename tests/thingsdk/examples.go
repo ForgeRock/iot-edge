@@ -31,7 +31,6 @@ import (
 
 	"github.com/ForgeRock/iot-edge/pkg/callback"
 	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -99,7 +98,7 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -117,7 +116,7 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
 		"-url", state.URL().String(),
-		"-realm", state.Realm(),
+		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
@@ -151,7 +150,7 @@ func (t *SimpleThingExampleTags) Setup(state anvil.TestState) (data anvil.ThingD
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -182,7 +181,7 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 	cmd := exec.CommandContext(ctx, "go", "run", "-tags", tags,
 		"github.com/ForgeRock/iot-edge/examples/thing/simple",
 		"-url", state.URL().String(),
-		"-realm", state.Realm(),
+		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
@@ -256,7 +255,7 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
 		"-url", state.URL().String(),
-		"-realm", state.Realm(),
+		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
@@ -289,7 +288,7 @@ func (t *GatewayAppAuth) Setup(state anvil.TestState) (data anvil.ThingData, ok 
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeGateway
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -323,8 +322,8 @@ func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
 		"-d",
 		"--timeout", "4s",
-		"--url", am.AMURL,
-		"--realm", state.Realm(),
+		"--url", state.URL().String(),
+		"--realm", state.TestRealm(),
 		"--audience", state.Audience(),
 		"--tree", jwtPopAuthTree,
 		"--name", data.Id.Name,
@@ -364,7 +363,7 @@ func (t *GatewayAppAuthNonDefaultKID) Setup(state anvil.TestState) (data anvil.T
 	// change KID
 	data.Signer.KID = "keyOne"
 	data.Id.ThingKeys.Keys[0].KeyID = data.Signer.KID
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -397,8 +396,8 @@ func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.Thin
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
 		"--debug",
-		"--url", am.AMURL,
-		"--realm", state.Realm(),
+		"--url", state.URL().String(),
+		"--realm", state.TestRealm(),
 		"--audience", state.Audience(),
 		"--tree", jwtPopAuthTree,
 		"--name", data.Id.Name,
@@ -494,8 +493,8 @@ func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
 		"--debug",
-		"--url", am.AMURL,
-		"--realm", state.Realm(),
+		"--url", state.URL().String(),
+		"--realm", state.TestRealm(),
 		"--audience", state.Audience(),
 		"--tree", jwtPopRegCertTree,
 		"--name", data.Id.Name,

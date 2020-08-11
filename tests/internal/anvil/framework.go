@@ -77,8 +77,26 @@ func CreateRealmHierarchy(names ...string) (fullName string, ids []string, err e
 	return fullName, ids, nil
 }
 
+// CreateRealmWithAlias creates a test realm with an alias
 func CreateRealmWithAlias(name string, alias string) (id string, err error) {
 	return am.CreateRealm("/", name, alias)
+}
+
+// CreateRealmWithDNSAlias creates a test realm with a DNS alias
+func CreateRealmWithDNSAlias(name string, alias string) (id string, err error) {
+	id, err = am.CreateRealm("/", name, alias)
+	if err != nil {
+		return id, err
+	}
+	serverProperties, err := am.GetAdvancedServerProperties()
+	if err != nil {
+		return id, err
+	}
+
+	key := fmt.Sprintf("com.sun.identity.server.fqdnMap[%s]", alias)
+	serverProperties[key] = alias
+	err = am.SetAdvancedServerProperties(serverProperties)
+	return id, err
 }
 
 // nameWithoutExtension returns the name of the file without the file extension
@@ -246,36 +264,15 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	return nil
 }
 
-// SetRealmAlias sets the alias of the realm with the given name
-func SetRealmAlias(name string, alias string) error {
-	properties, err := am.GetRealm(name)
-	if err != nil {
-		return err
-	}
-	properties.Aliases = []string{alias}
-	return am.UpdateRealm(properties)
+// URL returns an AM URL that points at the given sub-domain
+func URL(subDomain string) *url.URL {
+	u, _ := url.Parse(am.URL(subDomain))
+	return u
 }
 
-func SetDNSAlias(name string, alias string) error {
-	properties, err := am.GetRealm(name)
-	if err != nil {
-		return err
-	}
-	properties.Aliases = []string{alias}
-	err = am.UpdateRealm(properties)
-	if err != nil {
-		return err
-	}
-	serverProperties, err := am.GetAdvancedServerProperties()
-	key := fmt.Sprintf("com.sun.identity.server.fqdnMap[%s]", alias)
-	serverProperties[key] = alias
-	err = am.SetAdvancedServerProperties(serverProperties)
-	fmt.Println(err)
-	return nil
-}
-
-func URL(domain string) *url.URL {
-	u, _ := url.Parse(am.BaseURL(domain))
+// BaseURL returns the root realm URL of AM
+func BaseURL() *url.URL {
+	u, _ := url.Parse(am.AMURL)
 	return u
 }
 
@@ -404,7 +401,7 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 }
 
 // TestThingGateway creates a test Thing Gateway
-func TestThingGateway(realm string, audience string, authTree string) (*gateway.ThingGateway, error) {
+func TestThingGateway(u *url.URL, realm string, audience string, authTree string, dnsConfigured bool) (*gateway.ThingGateway, error) {
 	jwk, signer, err := ConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
@@ -419,7 +416,11 @@ func TestThingGateway(realm string, audience string, authTree string) (*gateway.
 	if err != nil {
 		return nil, err
 	}
-	return gateway.NewThingGateway(am.AMURL, realm, authTree, StdTimeOut, []callback.Handler{
+	testRealm := ""
+	if !dnsConfigured {
+		testRealm = realm
+	}
+	return gateway.NewThingGateway(u.String(), testRealm, authTree, StdTimeOut, []callback.Handler{
 		callback.AuthenticateHandler{
 			Audience: audience,
 			ThingID:  attributes.Name,
@@ -437,8 +438,10 @@ type ThingData struct {
 
 // TestState contains client and realm data required to run a test
 type TestState interface {
-	// Realm returns the current test realm
-	Realm() string
+	// RealmForConfiguration returns the realm that can be used for test setup, validation and clean up
+	RealmForConfiguration() string
+	// TestRealm returns the test realm that should be passed to the Thing SDK
+	TestRealm() string
 	// Audience returns the JWT audience for the current test realm
 	Audience() string
 	// ClientType returns 'am' or 'gateway' depending on the type of client
@@ -451,24 +454,32 @@ type TestState interface {
 
 // AMTestState contains data and methods for testing the AM client
 type AMTestState struct {
-	TestRealm    string
-	TestAudience string
+	Realm         string
+	TestAudience  string
+	TestURL       *url.URL
+	DNSConfigured bool
 }
 
 func (a *AMTestState) SetGatewayTree(tree string) {
 }
 
 func (a *AMTestState) URL() *url.URL {
-	u, _ := url.Parse(am.AMURL)
-	return u
+	return a.TestURL
 }
 
 func (a *AMTestState) ClientType() string {
 	return AMClientType
 }
 
-func (a *AMTestState) Realm() string {
-	return a.TestRealm
+func (a *AMTestState) RealmForConfiguration() string {
+	return a.Realm
+}
+
+func (a *AMTestState) TestRealm() string {
+	if a.DNSConfigured {
+		return ""
+	}
+	return a.Realm
 }
 
 func (a *AMTestState) Audience() string {
@@ -478,7 +489,7 @@ func (a *AMTestState) Audience() string {
 // ThingGatewayTestState contains data and methods for testing the Thing Gateway client
 type ThingGatewayTestState struct {
 	ThingGateway *gateway.ThingGateway
-	TestRealm    string
+	Realm        string
 	TestAudience string
 }
 
@@ -495,8 +506,12 @@ func (i *ThingGatewayTestState) ClientType() string {
 	return GatewayClientType
 }
 
-func (i *ThingGatewayTestState) Realm() string {
-	return i.TestRealm
+func (i *ThingGatewayTestState) RealmForConfiguration() string {
+	return i.Realm
+}
+
+func (i *ThingGatewayTestState) TestRealm() string {
+	return ""
 }
 
 func (i *ThingGatewayTestState) Audience() string {
@@ -607,7 +622,7 @@ func RunTest(state TestState, t SDKTest) (pass bool) {
 	if data, pass = t.Setup(state); !pass {
 		return false
 	}
-	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", state.Realm())
+	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", state.RealmForConfiguration())
 	pass = t.Run(state, data)
 	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
 	if err := t.Cleanup(state, data); err != nil {

@@ -30,14 +30,14 @@ type SessionValid struct {
 
 func (t *SessionValid) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *SessionValid) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Session().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -68,14 +68,14 @@ type SessionInvalid struct {
 
 func (t *SessionInvalid) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *SessionInvalid) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Session().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -113,14 +113,14 @@ type SessionLogout struct {
 
 func (t *SessionLogout) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *SessionLogout) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Session().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},

@@ -169,7 +169,9 @@ func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply Authenti
 
 	// add realm and auth tree to query
 	q := request.URL.Query()
-	q.Set(realmQueryKey, c.realmQuery())
+	if c.realm != "" {
+		q.Set(realmQueryKey, c.realm)
+	}
 	q.Set(authIndexTypeQueryKey, "service")
 	q.Set(authTreeQueryKey, c.authTree)
 	request.URL.RawQuery = q.Encode()
@@ -182,14 +184,14 @@ func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply Authenti
 		return reply, err
 	}
 	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
+		return reply, ErrUnauthorised
+	}
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, err
-	}
-	if response.StatusCode != http.StatusOK {
-		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return reply, ErrUnauthorised
 	}
 	if err = json.Unmarshal(responseBody, &reply); err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
@@ -241,10 +243,11 @@ func (c *amConnection) getServerInfo() (info serverInfo, err error) {
 
 // getJWKSURI gets the OAuth 2.0 JSON Web Key set URI from AM
 func (c *amConnection) getJWKSURI() (uri string, err error) {
-	request, err := http.NewRequest(
-		http.MethodGet,
-		c.baseURL+"/oauth2/.well-known/openid-configuration?realm="+c.realm,
-		nil)
+	u := c.baseURL + "/oauth2/.well-known/openid-configuration"
+	if c.realm != "" {
+		u = u + "?realm=" + c.realm
+	}
+	request, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return uri, err
@@ -312,11 +315,27 @@ func (c *amConnection) updateJSONWebKeySet() (err error) {
 }
 
 func (c *amConnection) accessTokenURL() string {
-	return c.baseURL + "/json/things/*?_action=get_access_token&realm=" + c.realmQuery()
+	q := "_action=get_access_token"
+	if c.realm != "" {
+		q += "&realm=" + c.realm
+	}
+	return c.baseURL + "/json/things/*?" + q
 }
 
-func (c *amConnection) attributesURL() string {
-	return c.baseURL + "/json/things/*?realm=" + c.realmQuery()
+func (c *amConnection) attributesURL(names []string) string {
+	q := make([]string, 0)
+	if c.realm != "" {
+		q = append(q, "realm="+c.realm)
+	}
+	if len(names) > 0 {
+		q = append(q, "_fields="+strings.Join(names, ","))
+	}
+
+	u := c.baseURL + "/json/things/*"
+	if len(q) == 0 {
+		return u
+	}
+	return u + "?" + strings.Join(q, "&")
 }
 
 // amInfo returns AM related information to the client
@@ -324,7 +343,7 @@ func (c *amConnection) AMInfo() (info AMInfoResponse, err error) {
 	return AMInfoResponse{
 		Realm:          c.realm,
 		AccessTokenURL: c.accessTokenURL(),
-		AttributesURL:  c.attributesURL(),
+		AttributesURL:  c.attributesURL(nil),
 		ThingsVersion:  thingsEndpointVersion,
 	}, nil
 }
@@ -392,7 +411,7 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 
 // attributes makes a thing attributes request with the given session token and payload
 func (c *amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
-	request, err := http.NewRequest(http.MethodGet, c.attributesURL()+FieldsQuery(names), strings.NewReader(payload))
+	request, err := http.NewRequest(http.MethodGet, c.attributesURL(names), strings.NewReader(payload))
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
@@ -420,11 +439,6 @@ func (c *amConnection) makeCommandRequest(tokenID string, content ContentType, r
 		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
-}
-
-// realmQuery returns the realm name or alias to use as a query value in an URL
-func (c *amConnection) realmQuery() string {
-	return c.realm
 }
 
 // SetAuthenticationTree changes the authentication tree that the connection was created with.
