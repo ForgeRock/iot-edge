@@ -43,9 +43,8 @@ import (
 )
 
 const (
-	runStr  = "=== RUN"
-	passStr = "--- PASS:"
-	failStr = "--- FAIL:"
+	PassString = "\033[1;32mPASS\033[0m"
+	FailString = "\033[1;31mFAIL\033[0m"
 
 	// Standard timeout used in SDK calls in tests
 	StdTimeOut = 10 * time.Second
@@ -573,11 +572,11 @@ func GetIdentityAttributes(realm, name string, attributes interface{}) error {
 func resultSprint(pass bool, testName string, startTime time.Time) string {
 	var resStr string
 	if pass {
-		resStr = passStr
+		resStr = PassString
 	} else {
-		resStr = failStr
+		resStr = FailString
 	}
-	return fmt.Sprintf("%-10s%s (%.2fs)\n", resStr, testName, time.Since(startTime).Seconds())
+	return fmt.Sprintf("--- %s: %s (%.2fs)\n", resStr, testName, time.Since(startTime).Seconds())
 }
 
 // RandomName returns a random string
@@ -613,7 +612,7 @@ func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
 // RunTest runs the given SDKTest
 func RunTest(state TestState, t SDKTest) (pass bool) {
 	name := TestName(t)
-	ProgressLogger.Printf("%-10s%s\n", runStr, name)
+	ProgressLogger.Printf("=== RUN   %s\n", name)
 	start := time.Now()
 	defer func() {
 		ProgressLogger.Print(resultSprint(pass, name, start))

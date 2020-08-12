@@ -274,8 +274,8 @@ func runTests() (err error) {
 
 func main() {
 	if err := runTests(); err != nil {
-		anvil.ProgressLogger.Fatalf("\nFAIL %s", err)
+		anvil.ProgressLogger.Fatalf("\n%s %s", anvil.FailString, err)
 	}
-	anvil.ProgressLogger.Println("\nPASS")
+	anvil.ProgressLogger.Println("\n", anvil.PassString)
 	os.Exit(0)
 }
