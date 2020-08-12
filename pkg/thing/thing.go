@@ -72,7 +72,7 @@ type Builder interface {
 
 	// ConnectTo the server at the given URL.
 	// Supports http(s) for connecting to AM and coap(s) for connecting to the Thing Gateway.
-	// When connecting to AM, the URL should be either the top level realm in AM or the DNS alias of a sub realm
+	// When connecting to AM, the URL should be either the top level realm in AM or the DNS alias of a sub realm.
 	ConnectTo(url *url.URL) Builder
 
 	// InRealm specifies the path to the AM realm in which the thing should authenticate and operate in.
@@ -81,7 +81,7 @@ type Builder interface {
 	//  - a sub-realm of root called "alfheim": "/alfheim"
 	//  - a sub-realm of alfheim called "svartalfheim": "/alfheim/svartalfheim"
 	//
-	// The realm should not be set if a DNS alias is being used to connect to AM
+	// The realm should not be set if a DNS alias is being used to connect to AM.
 	// The realm is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
 
