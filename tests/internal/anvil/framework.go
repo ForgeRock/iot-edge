@@ -552,7 +552,7 @@ func CreateIdentity(realm string, data ThingData) (ThingData, bool) {
 		data.Id.Name = RandomName()
 	}
 	if data.Id.Password == "" {
-		data.Id.Password = RandomName()
+		data.Id.Password = "5tr0ngG3n3r@ted"
 	}
 	return data, am.CreateIdentity(realm, data.Id) == nil
 }
