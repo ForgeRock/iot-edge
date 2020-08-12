@@ -48,7 +48,7 @@ type IntrospectAccessToken struct {
 
 func (t *IntrospectAccessToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.Realm(), t.clientBased, t.alg)
+	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.RealmForConfiguration(), t.clientBased, t.alg)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to modify OAuth 2.0 provider", err)
 		return data, false
@@ -59,7 +59,7 @@ func (t *IntrospectAccessToken) Setup(state anvil.TestState) (data anvil.ThingDa
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -89,7 +89,7 @@ func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData)
 }
 
 func (t IntrospectAccessToken) Cleanup(state anvil.TestState, data anvil.ThingData) error {
-	return anvil.RestoreOAuth2Service(state.Realm(), t.originalOAuthConfig)
+	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
 }
 
 func (t *IntrospectAccessToken) NameSuffix() string {
@@ -252,7 +252,7 @@ func (t *IntrospectFakeAccessToken) Setup(state anvil.TestState) (data anvil.Thi
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *IntrospectFakeAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {

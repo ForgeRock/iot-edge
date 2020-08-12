@@ -112,7 +112,7 @@ func doSetup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	}
 	data.Id.ThingType = callback.TypeDevice
 	data.Id.ThingConfig = "host=localhost;port=80"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 // AttributesWithNonRestrictedToken requests all the thing's allowed attributes with a non-restricted token
@@ -128,7 +128,7 @@ func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -168,14 +168,14 @@ type AttributesExpiredSession struct {
 
 func (t *AttributesExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AttributesExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -198,49 +198,4 @@ func (t *AttributesExpiredSession) Run(state anvil.TestState, data anvil.ThingDa
 		return false
 	}
 	return true
-}
-
-// AttributesWithRealmAlias requests a thing's attributes while using a realm alias
-type AttributesWithRealmAlias struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *AttributesWithRealmAlias) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	return doSetup(state)
-}
-
-func (t *AttributesWithRealmAlias) Run(state anvil.TestState, data anvil.ThingData) bool {
-	// don't mess with the root realm aliases
-	// can't set the alias on the gateway yet
-	if state.Realm() == anvil.RootRealm || state.ClientType() == anvil.GatewayClientType {
-		return true
-	}
-	alias := "pseudonym-" + anvil.RandomName()
-	err := anvil.SetRealmAlias(state.Realm(), alias)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to set the alias of the realm", err)
-		return false
-	}
-	state.SetGatewayTree(jwtPopAuthTree)
-	device, err := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
-		WithRealmAlias(alias).
-		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	response, err := device.RequestAttributes()
-	if err != nil {
-		anvil.DebugLogger.Println("attributes request failed: ", err)
-		return false
-	}
-	id, err := response.ID()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	return id == data.Id.Name
 }

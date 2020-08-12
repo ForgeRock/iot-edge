@@ -208,7 +208,7 @@ func TestAMClient_AMInfo(t *testing.T) {
 	if info.AccessTokenURL != client.accessTokenURL() {
 		t.Error("incorrect access token endpoint url")
 	}
-	if info.AttributesURL != client.attributesURL() {
+	if info.AttributesURL != client.attributesURL(nil) {
 		t.Error("incorrect attributes endpoint url")
 	}
 }

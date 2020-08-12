@@ -72,19 +72,18 @@ type Builder interface {
 
 	// ConnectTo the server at the given URL.
 	// Supports http(s) for connecting to AM and coap(s) for connecting to the Thing Gateway.
+	// When connecting to AM, the URL should be either the top level realm in AM or the DNS alias of a sub realm.
 	ConnectTo(url *url.URL) Builder
 
-	// InRealm specifies the path to the AM realm in which the thing should authenticate and operate in, for example:
+	// InRealm specifies the path to the AM realm in which the thing should authenticate and operate in.
+	// This can be a realm alias or the fully qualified realm path, for example:
 	//  - root realm: "/"
 	//  - a sub-realm of root called "alfheim": "/alfheim"
 	//  - a sub-realm of alfheim called "svartalfheim": "/alfheim/svartalfheim"
 	//
+	// The realm should not be set if a DNS alias is being used to connect to AM.
 	// The realm is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
-
-	// WithRealmAlias specifies an optional realm alias to use.
-	// The alias is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
-	WithRealmAlias(alias string) Builder
 
 	// WithTree sets the name of the AM authentication tree that will be used to register and authenticate the thing.
 	// The tree is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
@@ -97,7 +96,7 @@ type Builder interface {
 	// signed with the key that was registered for the thing. The JWT must contain the key ID provided for the
 	// registered key. In addition, the JWT may include custom claims about the thing. The claims will be available for
 	// processing by the proceeding nodes in the tree.
-	AuthenticateThing(thingID string, keyID string, key crypto.Signer, claims func() interface{}) Builder
+	AuthenticateThing(thingID string, audience string, keyID string, key crypto.Signer, claims func() interface{}) Builder
 
 	// RegisterThing with the ForgeRock Register Thing tree node. This node uses JWT PoP and requires a signed JWT
 	// containing the thing's public key and key ID, along with a CA signed certificate that contains the same public

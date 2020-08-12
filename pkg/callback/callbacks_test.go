@@ -139,10 +139,10 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	thingID := "thingOne"
 	lue := "42"
 	h := AuthenticateHandler{
-		Realm:   testRealm,
-		ThingID: thingID,
-		KeyID:   testKID,
-		Key:     testKey,
+		Audience: testRealm,
+		ThingID:  thingID,
+		KeyID:    testKID,
+		Key:      testKey,
 		Claims: func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
@@ -212,7 +212,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := RegisterHandler{
-		Realm:        testRealm,
+		Audience:     testRealm,
 		ThingID:      thingID,
 		ThingType:    TypeDevice,
 		KeyID:        testKID,

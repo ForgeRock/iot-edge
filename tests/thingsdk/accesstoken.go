@@ -43,7 +43,7 @@ func (t *AccessTokenWithExactScopes) Setup(state anvil.TestState) (data anvil.Th
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -75,7 +75,7 @@ func (t *AccessTokenWithASubsetOfScopes) Setup(state anvil.TestState) (data anvi
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -107,7 +107,7 @@ func (t *AccessTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data an
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -140,7 +140,7 @@ func (t *AccessTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.Thing
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -178,7 +178,7 @@ func (t *AccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.T
 	}
 	data.Id.ThingType = callback.TypeDevice
 	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -243,7 +243,7 @@ func (t *AccessTokenRepeat) Setup(state anvil.TestState) (data anvil.ThingData, 
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenRepeat) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -274,14 +274,14 @@ type AccessTokenWithExactScopesNonRestricted struct {
 
 func (a AccessTokenWithExactScopesNonRestricted) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -306,14 +306,14 @@ type AccessTokenWithNoScopesNonRestricted struct {
 
 func (a AccessTokenWithNoScopesNonRestricted) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -338,14 +338,14 @@ type AccessTokenExpiredSession struct {
 
 func (t *AccessTokenExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -368,51 +368,4 @@ func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingD
 		return false
 	}
 	return true
-}
-
-// AccessTokenWithRealmAlias requests an access token while using a realm alias
-type AccessTokenWithRealmAlias struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *AccessTokenWithRealmAlias) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
-}
-
-func (t *AccessTokenWithRealmAlias) Run(state anvil.TestState, data anvil.ThingData) bool {
-	// don't mess with the root realm aliases
-	// can't set the alias on the gateway yet
-	if state.Realm() == anvil.RootRealm || state.ClientType() == anvil.GatewayClientType {
-		return true
-	}
-	alias := "pseudonym-" + anvil.RandomName()
-	err := anvil.SetRealmAlias(state.Realm(), alias)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to set the alias of the realm", err)
-		return false
-	}
-	state.SetGatewayTree(jwtPopAuthTree)
-	device, err := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
-		WithRealmAlias(alias).
-		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	response, err := device.RequestAccessToken("publish", "subscribe")
-	if err != nil {
-		anvil.DebugLogger.Println("access token request failed", err)
-		return false
-	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "publish", "subscribe")
 }

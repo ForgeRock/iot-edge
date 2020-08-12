@@ -52,13 +52,13 @@ func Test_processCallbacks(t *testing.T) {
 	}
 	callbacks := []callback.Callback{nameCB, authCB, regCB}
 	authHL := callback.AuthenticateHandler{
-		Realm:   "/",
-		ThingID: "Bob",
-		KeyID:   "1",
-		Key:     signingKey,
+		Audience: "/",
+		ThingID:  "Bob",
+		KeyID:    "1",
+		Key:      signingKey,
 	}
 	regHL := callback.RegisterHandler{
-		Realm:        "/",
+		Audience:     "/",
 		ThingID:      "Bob",
 		ThingType:    callback.TypeDevice,
 		KeyID:        "1",

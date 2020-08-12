@@ -29,9 +29,9 @@ func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
 	state.SetGatewayTree(jwtPopAuthTree)
 	return builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil)
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil)
 }
 
 // AuthenticateThingJWT tests the authentication of a pre-registered device
@@ -47,7 +47,7 @@ func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingDat
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AuthenticateThingJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -72,7 +72,7 @@ func (t *AuthenticateThingJWTNonDefaultKID) Setup(state anvil.TestState) (data a
 	data.Signer.KID = "pop.cnf"
 
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AuthenticateThingJWTNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -88,7 +88,7 @@ type AuthenticateWithoutConfirmationKey struct {
 
 func (t *AuthenticateWithoutConfirmationKey) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -121,16 +121,16 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopAuthTreeCustomClaims).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, func() interface{} {
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
 			}{"42"}
@@ -154,16 +154,16 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(jwtPopAuthTreeCustomClaims).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, func() interface{} {
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
 			}{"0"}
@@ -183,14 +183,14 @@ type AuthenticateWithUserPwd struct {
 
 func (a AuthenticateWithUserPwd) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -207,14 +207,14 @@ type AuthenticateWithIncorrectPwd struct {
 
 func (a AuthenticateWithIncorrectPwd) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
+		InRealm(state.TestRealm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -240,14 +240,14 @@ func (t *AuthenticateThingThroughGateway) Setup(state anvil.TestState) (data anv
 		return data, false
 	}
 	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTree)
 	_, err := builder.Thing().
 		ConnectTo(state.URL()).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
 		Create()
 	switch state.ClientType() {
 	case anvil.GatewayClientType:
@@ -260,76 +260,4 @@ func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.
 		}
 	}
 	return true
-}
-
-// AuthenticateThingRealmAlias checks that authentication supports realm aliases
-type AuthenticateThingRealmAlias struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *AuthenticateThingRealmAlias) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
-}
-
-func (t *AuthenticateThingRealmAlias) Run(state anvil.TestState, data anvil.ThingData) bool {
-	// don't mess with the root realm aliases
-	// can't set the alias on the gateway yet
-	if state.Realm() == anvil.RootRealm || state.ClientType() == anvil.GatewayClientType {
-		return true
-	}
-	alias := "pseudonym-" + anvil.RandomName()
-	err := anvil.SetRealmAlias(state.Realm(), alias)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to set the alias of the realm", err)
-		return false
-	}
-	state.SetGatewayTree(jwtPopAuthTree)
-	_, err = builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
-		WithRealmAlias(alias).
-		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
-	return err == nil
-}
-
-// AuthenticateThingRealmAliasMissing checks that authentication is using the realm alias by using an invalid alias.
-// Failure expected
-type AuthenticateThingRealmAliasMissing struct {
-	anvil.NopSetupCleanup
-}
-
-func (t *AuthenticateThingRealmAliasMissing) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.Realm(), data)
-}
-
-func (t *AuthenticateThingRealmAliasMissing) Run(state anvil.TestState, data anvil.ThingData) bool {
-	// don't mess with the root realm aliases
-	// can't set the alias on the gateway yet
-	if state.Realm() == anvil.RootRealm || state.ClientType() == anvil.GatewayClientType {
-		return true
-	}
-	alias := "pseudonym-" + anvil.RandomName()
-	state.SetGatewayTree(jwtPopAuthTree)
-	_, err := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.Realm()).
-		WithRealmAlias(alias).
-		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, data.Signer.KID, data.Signer.Signer, nil).Create()
-	return err != nil
 }
