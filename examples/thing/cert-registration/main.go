@@ -32,8 +32,8 @@ import (
 
 var (
 	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-	realm     = flag.String("realm", "/example", "AM Realm")
-	audience  = flag.String("audience", "", "JWT audience")
+	realm     = flag.String("realm", "", "AM Realm")
+	audience  = flag.String("audience", "/example", "JWT audience")
 	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
 	thingName = flag.String("name", "dynamic-thing", "Thing name")
 	key       = flag.String("key", "", "The Thing's key in PEM format")
@@ -113,10 +113,6 @@ func certRegThing() (err error) {
 	certs, err := loadCertificates()
 	if err != nil {
 		return err
-	}
-
-	if *audience == "" {
-		*audience = *realm
 	}
 
 	builder := builder.Thing().

@@ -88,6 +88,7 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
 ./run.sh example "thing/simple" \
     -name "manual-thing" \
     -url "http://am.localtest.me:8080/am" \
+    -audience "/" \
     -realm "/" \
     -tree "auth-tree" \
     -keyfile "./examples/resources/eckey1.key.pem"
@@ -106,6 +107,7 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
 ./run.sh example "thing/cert-registration" \
     -name "dynamic-thing" \
     -url "http://am.localtest.me:8080/am" \
+    -audience "/" \
     -realm "/" \
     -tree "reg-tree" \
     -keyfile "./examples/resources/eckey1.key.pem" \
