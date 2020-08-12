@@ -132,6 +132,7 @@ Run the gateway:
 ./run.sh gateway \
     --name "manual-gateway" \
     --url "http://am.localtest.me:8080/am" \
+    --audience "/" \
     --realm "/" \
     --tree "auth-tree" \
     --kid "pop.cnf" \
@@ -157,6 +158,7 @@ Run the gateway:
 ./run.sh gateway \
     --name "dynamic-gateway" \
     --url "http://am.localtest.me:8080/am" \
+    --audience "/" \
     --realm "/" \
     --tree "reg-tree" \
     --key "./examples/resources/eckey1.key.pem" \
