@@ -23,7 +23,7 @@ import (
 	"crypto/x509"
 	"math/big"
 
-	"github.com/ForgeRock/iot-edge/internal/jws"
+	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 )
 
 // PublicKeyCertificate returns a stripped down tls certificate containing the public key

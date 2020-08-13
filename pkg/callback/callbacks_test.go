@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/internal/jws"
+	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 )
 

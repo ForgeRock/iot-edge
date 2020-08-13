@@ -15,8 +15,8 @@ Open _cmd/gopher/main.go_ in a text editor and add the following code to it:
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/pkg/builder"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"log"
 	"net/url"
 )

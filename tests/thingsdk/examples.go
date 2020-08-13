@@ -29,8 +29,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -114,7 +114,7 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/examples/thing/simple",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
@@ -179,7 +179,7 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "-tags", tags,
-		"github.com/ForgeRock/iot-edge/examples/thing/simple",
+		"github.com/ForgeRock/iot-edge/v7/examples/thing/simple",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
@@ -253,7 +253,7 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/examples/thing/cert-registration",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
@@ -319,7 +319,7 @@ func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
 	defer cancel()
 	result := new(bool)
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/cmd/gateway",
 		"-d",
 		"--timeout", "4s",
 		"--url", state.URL().String(),
@@ -394,7 +394,7 @@ func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.Thin
 	defer cancel()
 	result := new(bool)
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/cmd/gateway",
 		"--debug",
 		"--url", state.URL().String(),
 		"--realm", state.TestRealm(),
@@ -491,7 +491,7 @@ func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
 	defer cancel()
 	result := new(bool)
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/cmd/gateway",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/cmd/gateway",
 		"--debug",
 		"--url", state.URL().String(),
 		"--realm", state.TestRealm(),

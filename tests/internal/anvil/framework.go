@@ -35,9 +35,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/internal/gateway"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
+	"github.com/ForgeRock/iot-edge/v7/internal/gateway"
+	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
 	"github.com/dchest/uniuri"
 	jose "gopkg.in/square/go-jose.v2"
 )

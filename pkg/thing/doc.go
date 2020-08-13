@@ -38,7 +38,7 @@
 //       ConnectTo(amURL).
 //       InRealm("/all-the-things").
 //       WithTree("reg-auth-tree").
-//       AuthenticateThing("my-device", keyID, privateKey, nil).
+//       AuthenticateThing("my-device", "/all-the-things", keyID, privateKey, nil).
 //       RegisterThing(certificate, nil).
 //       Create()
 //
