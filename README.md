@@ -7,4 +7,4 @@
 
 ForgeRock Things is an open source project containing the IoT edge tier components of the ForgeRock Identity Platform.
 
-For more information about ForgeRock Things and how to use it, please refer to the [getting started guide](docs/getting-started.md). 
+For more information about ForgeRock Things and how to use it, please refer to the [getting started guide](v7/docs/getting-started.md).
