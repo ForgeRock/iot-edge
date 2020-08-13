@@ -17,10 +17,10 @@
 package builder
 
 import (
-	isession "github.com/ForgeRock/iot-edge/internal/session"
-	ithing "github.com/ForgeRock/iot-edge/internal/thing"
-	"github.com/ForgeRock/iot-edge/pkg/session"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
+	isession "github.com/ForgeRock/iot-edge/v7/internal/session"
+	ithing "github.com/ForgeRock/iot-edge/v7/internal/thing"
+	"github.com/ForgeRock/iot-edge/v7/pkg/session"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
 // Thing returns a new Thing builder.

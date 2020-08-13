@@ -26,8 +26,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ForgeRock/iot-edge/internal/debug"
-	"github.com/ForgeRock/iot-edge/internal/introspect"
+	"github.com/ForgeRock/iot-edge/v7/internal/debug"
+	"github.com/ForgeRock/iot-edge/v7/internal/introspect"
 	"gopkg.in/square/go-jose.v2"
 )
 

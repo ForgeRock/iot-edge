@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"gopkg.in/square/go-jose.v2"
 )
 

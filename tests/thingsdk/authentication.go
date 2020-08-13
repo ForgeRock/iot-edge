@@ -17,11 +17,11 @@
 package main
 
 import (
-	"github.com/ForgeRock/iot-edge/internal/client"
-	"github.com/ForgeRock/iot-edge/pkg/builder"
-	"github.com/ForgeRock/iot-edge/pkg/callback"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/v7/internal/client"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
 	"gopkg.in/square/go-jose.v2"
 )
 

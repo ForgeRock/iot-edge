@@ -19,7 +19,7 @@ package introspect
 import (
 	"encoding/json"
 
-	"github.com/ForgeRock/iot-edge/internal/clock"
+	"github.com/ForgeRock/iot-edge/v7/internal/clock"
 )
 
 // InactiveIntrospectionBytes contains the standard introspection for an inactive token

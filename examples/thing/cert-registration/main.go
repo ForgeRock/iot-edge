@@ -22,8 +22,8 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/pkg/builder"
-	"github.com/ForgeRock/iot-edge/pkg/thing"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -91,7 +91,7 @@ func loadCertificates() ([]*x509.Certificate, error) {
 //     openssl req -new -sha256 -subj "/CN=${thingName}" -key ./examples/resources/eckey1.key.pem -out "${thingName}.csr.pem"
 //     openssl x509 -req -CA ./examples/resources/es256test.cert.pem -CAkey ./examples/resources/es256test.key.pem -CAcreateserial -in "${thingName}.csr.pem" -out "${thingName}.cert.pem"
 // Ensure that the ID and the path to the certificate is passed to this example:
-//     go run github.com/ForgeRock/iot-edge/examples/thing/cert-registration -name "${thingName}" -certfile "${thingName}.cert.pem"
+//     go run github.com/ForgeRock/iot-edge/v7/examples/thing/cert-registration -name "${thingName}" -certfile "${thingName}.cert.pem"
 func certRegThing() (err error) {
 
 	u, err := url.Parse(*urlString)

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/ForgeRock/iot-edge/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 )
 
 // AMInfoResponse contains the information required to construct valid signed JWTs

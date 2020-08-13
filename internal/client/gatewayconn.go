@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	frcrypto "github.com/ForgeRock/iot-edge/internal/crypto"
+	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
 	"github.com/pion/dtls/v2"

@@ -25,9 +25,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ForgeRock/iot-edge/internal/debug"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil"
-	"github.com/ForgeRock/iot-edge/tests/internal/anvil/am"
+	"github.com/ForgeRock/iot-edge/v7/internal/debug"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 )
 
