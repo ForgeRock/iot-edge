@@ -27,7 +27,7 @@ export GO111MODULE=on
 case "$1" in
 anvil)
   # Run the Thing SDK tests
-  go run ./tests/thingsdk/*
+  go run ./tests/thingsdk/*.go
 	;;
 test)
   # Run the IoT unit tests
