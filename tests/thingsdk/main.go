@@ -17,13 +17,18 @@
 package main
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"flag"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/debug"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
@@ -103,19 +108,65 @@ var tests = []anvil.SDKTest{
 	&SessionLogout{},
 }
 
+func logFailure(path string, start time.Time, anvilDebug []byte, sdkDebug []byte) {
+	err := os.MkdirAll(filepath.Dir(path), 0777)
+	if err != nil {
+		anvil.ProgressLogger.Println(err)
+		return
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+	if err != nil {
+	}
+	defer func() {
+		err = f.Close()
+	}()
+
+	// add Anvil logs to logfile
+	_, _ = f.WriteString("\n>>>> Anvil Logs <<<<\n")
+	_, _ = f.Write(anvilDebug)
+	_, _ = f.WriteString("\n")
+
+	// add SDK logs to logfile
+	_, _ = f.WriteString("\n>>>> SDK Logs <<<<\n")
+	_, _ = f.Write(sdkDebug)
+	_, _ = f.WriteString("\n")
+
+	// add AM logs to logfile
+	cmd := exec.Command("docker", "logs", *container, "--since", time.Since(start).String())
+	output, err := cmd.Output()
+	if err == nil {
+		_, _ = f.WriteString("\n>>>> AM Logs <<<<\n")
+		_, _ = f.Write(output)
+		_, _ = f.WriteString("\n")
+	} else {
+		anvil.ProgressLogger.Println(err)
+	}
+}
+
 // run the full test set for a single client
 func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
+	oldAnvilLogger := am.DebugLogger
+	defer func() {
+		am.DebugLogger = oldAnvilLogger
+	}()
+
 	// put the debug for the client in its own subdirectory
 	subDir := filepath.Join(debugDir, fmt.Sprintf("%sClient", testCtx.ClientType()))
 
 	result = true
-	var logfile *os.File
+	var sdkDebug bytes.Buffer
+	var anvilDebug bytes.Buffer
+	debug.Logger = log.New(&sdkDebug, "", log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	anvil.DebugLogger = log.New(&anvilDebug, "", log.Ltime|log.Lmicroseconds|log.Lshortfile)
+
 	for _, test := range tests {
-		debug.Logger, logfile = anvil.NewFileDebugger(subDir, anvil.TestName(test))
+		sdkDebug.Reset()
+		anvilDebug.Reset()
+		start := time.Now()
 		if !anvil.RunTest(testCtx, test) {
 			result = false
+			logFailure(filepath.Join(subDir, anvil.TestName(test)+".log"), start, anvilDebug.Bytes(), sdkDebug.Bytes())
 		}
-		_ = logfile.Close()
 	}
 	return result
 }
@@ -192,17 +243,13 @@ func runTests() (err error) {
 	fmt.Println("-- Thing SDK Tests --")
 	fmt.Println("=====================")
 
-	var logfile *os.File
 	// delete old debug files by removing the debug directory
 	err = os.RemoveAll(debugDir)
 	if err != nil {
 		return err
 	}
-	thingsdkLogger, logfile := anvil.NewFileDebugger(debugDir, "thingsdk")
-	am.DebugLogger, debug.Logger = thingsdkLogger, thingsdkLogger
-	defer func() {
-		_ = logfile.Close()
-	}()
+
+	am.DebugLogger = anvil.ProgressLogger
 
 	err = anvil.CreateCertVerificationMapping()
 	if err != nil {
@@ -272,7 +319,12 @@ func runTests() (err error) {
 	return nil
 }
 
+var (
+	container = flag.String("container", "am", "The name of the AM container")
+)
+
 func main() {
+	flag.Parse()
 	if err := runTests(); err != nil {
 		anvil.ProgressLogger.Fatalf("\n%s %s", anvil.FailString, err)
 	}

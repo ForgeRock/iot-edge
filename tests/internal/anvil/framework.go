@@ -595,20 +595,6 @@ func TestName(t SDKTest) string {
 	return TypeName(t) + t.NameSuffix()
 }
 
-// NewFileDebugger creates a new Anvil logger that logs to file with the given test name
-func NewFileDebugger(directory, testName string) (*log.Logger, *os.File) {
-	err := os.MkdirAll(directory, 0777)
-	if err != nil {
-		log.Fatal(err)
-	}
-	file, err := os.OpenFile(filepath.Join(directory, testName+".log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	DebugLogger = log.New(file, "", log.Ltime|log.Lmicroseconds|log.Lshortfile)
-	return DebugLogger, file
-}
-
 // RunTest runs the given SDKTest
 func RunTest(state TestState, t SDKTest) (pass bool) {
 	name := TestName(t)
