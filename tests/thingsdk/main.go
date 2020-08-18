@@ -191,14 +191,6 @@ func (i realmInfo) String() string {
 }
 
 func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
-	err = anvil.ConfigureTestRealm(realm.name, testdataDir)
-	if err != nil {
-		return false, err
-	}
-	defer func() {
-		err = anvil.RestoreTestRealm(realm.name, testdataDir)
-	}()
-
 	fmt.Printf("\n\n-- Running Tests in %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Connection Tests --\n\n")
@@ -298,14 +290,32 @@ func runTests() (err error) {
 		}
 	}()
 
-	allPass := true
-	for _, r := range []realmInfo{
+	realms := []realmInfo{
 		{description: "root", name: anvil.RootRealm, audience: anvil.RootRealm, u: anvil.BaseURL()},
 		{description: "sub-realm", name: subRealm, audience: subRealm, u: anvil.BaseURL()},
 		{description: "sub-sub-realm", name: subSubRealm, audience: subSubRealm, u: anvil.BaseURL()},
 		{description: "realm with alias", name: alias, audience: anvil.RootRealm + aliasRealm, u: anvil.BaseURL()},
 		{description: "realm with DNS alias", name: dnsRealm, audience: anvil.RootRealm + dnsRealm, u: dnsURL, dnsConfigured: true},
-	} {
+	}
+
+	// Configure the test realms in a single batch.
+	// Gives more time for the realm configuration changes to complete.
+	for _, r := range realms {
+		err = anvil.ConfigureTestRealm(r.name, testdataDir)
+		if err != nil {
+			return err
+		}
+	}
+	defer func() {
+		// Restore root realm, the others will be deleted
+		deferError := anvil.RestoreTestRealm(anvil.RootRealm, testdataDir)
+		if deferError != nil {
+			err = deferError
+		}
+	}()
+
+	allPass := true
+	for _, r := range realms {
 		pass, err := runAllTestsForRealm(r)
 		allPass = allPass && pass
 		if err != nil {
