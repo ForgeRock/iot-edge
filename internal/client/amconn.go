@@ -404,6 +404,7 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 		return introspection, err
 	}
 	if !introspect.ValidNow(introspection) {
+		debug.Logger.Printf("not within the valid time period of the token")
 		return introspect.InactiveIntrospectionBytes, nil
 	}
 	return introspect.AddActive(introspection)
