@@ -39,6 +39,18 @@ func getAccessToken(thing thing.Thing) (string, error) {
 	return response.AccessToken()
 }
 
+// nearFuture moves the clock in the SDK to a near point in the future to counter small differences between it
+// and the clock in AM.
+func nearFuture() {
+	clock.Clock = func() time.Time {
+		return time.Now().Add(10 * time.Second)
+	}
+}
+
+func returnToPresent() {
+	clock.Clock = clock.DefaultClock()
+}
+
 // IntrospectAccessToken checks that a valid access token can be introspected
 type IntrospectAccessToken struct {
 	clientBased         bool
@@ -74,6 +86,9 @@ func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData)
 		anvil.DebugLogger.Println(err)
 		return false
 	}
+
+	nearFuture()
+	defer returnToPresent()
 
 	introspection, err := device.IntrospectAccessToken(accessToken)
 	if err != nil {
@@ -120,6 +135,9 @@ func (t *IntrospectAccessTokenFailure) Run(state anvil.TestState, data anvil.Thi
 		return false
 	}
 
+	nearFuture()
+	defer returnToPresent()
+
 	_, err = device.IntrospectAccessToken(accessToken)
 	if err == nil {
 		anvil.DebugLogger.Println("expected failure")
@@ -150,9 +168,7 @@ func (t *IntrospectAccessTokenExpired) Run(state anvil.TestState, data anvil.Thi
 	clock.Clock = func() time.Time {
 		return time.Now().Add(24 * time.Hour)
 	}
-	defer func() {
-		clock.Clock = clock.DefaultClock()
-	}()
+	defer returnToPresent()
 
 	introspection, err := device.IntrospectAccessToken(accessToken)
 	if err != nil {
@@ -194,9 +210,7 @@ func (t *IntrospectAccessTokenPremature) Run(state anvil.TestState, data anvil.T
 	clock.Clock = func() time.Time {
 		return time.Now().Add(-24 * time.Hour)
 	}
-	defer func() {
-		clock.Clock = clock.DefaultClock()
-	}()
+	defer returnToPresent()
 
 	introspection, err := thing.IntrospectAccessToken(accessToken)
 	if err != nil {
