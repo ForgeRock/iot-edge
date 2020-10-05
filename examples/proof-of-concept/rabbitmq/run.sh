@@ -67,6 +67,13 @@ function run_cdk() {
   echo "Run the platform"
   echo "====================================================="
   skaffold run
+
+  echo "====================================================="
+  echo "Install the certificate"
+  echo "====================================================="
+  cp ../../../../resources/_wildcard.iam.example.com* .
+  kubectl create secret tls sslcert --cert=_wildcard.iam.example.com.pem --key=_wildcard.iam.example.com-key.pem
+
   cd ../../
 }
 
@@ -75,4 +82,8 @@ run_cdk
 echo "====================================================="
 echo "Build and run the things image"
 echo "====================================================="
+cd things
+rm -rf tmp && mkdir tmp
+cp ../../../resources/_wildcard.iam.example.com* tmp/
+cd ../
 AM_IP_ADDRESS=$(minikube ip) docker-compose -f docker-compose.yml  up -d --build

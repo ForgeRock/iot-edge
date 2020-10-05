@@ -2,9 +2,9 @@ FROM golang:1.14-buster
 
 WORKDIR /root/thing
 
-# Create and install the cert
-RUN git clone https://github.com/FiloSottile/mkcert && cd mkcert && go build -ldflags "-X main.Version=$(git describe --tags)"
-RUN cd mkcert && ./mkcert "*.iam.example.com" && ./mkcert -install
+# Install the cert
+ADD tmp/_wildcard.iam.example.com.pem /usr/local/share/ca-certificates/_wildcard.iam.example.com.crt
+RUN update-ca-certificates
 
 # Get dependencies
 COPY go.mod .
