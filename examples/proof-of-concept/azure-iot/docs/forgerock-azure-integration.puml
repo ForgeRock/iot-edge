@@ -1,0 +1,39 @@
+@startuml
+
+skinparam component {
+  FontColor #062b8c
+  BackgroundColor<<ForgeRock>> #fc6700
+  BorderColor #062b8c
+  BackgroundColor<<Azure>> azure
+  ArrowColor #062b8c
+  ArrowFontColor #062b8c
+}
+skinparam node {
+  BorderColor #4ED827
+  FontColor #4ED827
+}
+skinparam frame {
+  BorderColor gray
+  FontColor gray
+}
+
+frame "Microsoft Azure IoT" {
+    [IoT Hub] as hub <<Azure>>
+    [Identity Registry] as db <<Azure>>
+}
+frame "ForgeRock Identity Platform" {
+    [Identity Management] as idm <<ForgeRock>>
+    [Directory Services] as ds <<ForgeRock>>
+    node "Connector" {
+        [ICF Framework] as icf <<ForgeRock>>
+        [Azure IoT SDK] as sdk <<Azure>>
+    }
+}
+
+idm -down-> ds : Store \n Things
+idm -right-> icf : Synchronise \n Things
+icf -down-> sdk
+sdk -right-> hub : Query \n Device Twins
+hub -up-> db
+
+@enduml
