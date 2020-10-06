@@ -1,0 +1,4 @@
+/tmp/
+/iot-hub-connector/target/
+_wildcard.iam.example.com.pem
+_wildcard.iam.example.com-key.pem
