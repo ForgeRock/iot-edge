@@ -37,14 +37,18 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
 
-	// Provided
+	// ForgeRock connection information
 	thingID := "47cf707c-80c1-4816-b067-99db2a443113"
 	signer := secrets.Signer(thingID)
 	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
+
+	// MQTT connection information
+	// Can be retrieved from configuration
 	server := os.Getenv("MQTT_SERVER_URL")
-	qos := 2
+	qos := byte(2)
+	topic := "test"
 
 	dynamicThing, err := builder.Thing().
 		ConnectTo(amURL).
@@ -80,6 +84,7 @@ func main() {
 
 	tlsConfig := &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}
 	connOpts.SetTLSConfig(tlsConfig)
+	connOpts.SetWill(topic, "Game Over", qos, false)
 
 	client := mqtt.NewClient(connOpts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -87,21 +92,36 @@ func main() {
 	}
 
 	fmt.Printf("Connected to %s\n", server)
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
-	i := 10
-	for i > 0 {
-		select {
-		case <-ticker.C:
-			msg := fmt.Sprintf("T-minus %d", i)
-			i--
-			if token := client.Publish("test", byte(qos), true, msg); token.Wait() && token.Error() != nil {
+	go func() {
+		i := 1
+		var msg string
+		for {
+			switch {
+			case i%35 == 0:
+				msg = "fizz-buzz"
+			case i%5 == 0:
+				msg = "fizz"
+			case i%7 == 0:
+				msg = "buzz"
+			default:
+				msg = fmt.Sprintf("%d", i)
+			}
+			if token := client.Publish(topic, qos, false, msg); token.Wait() && token.Error() != nil {
 				log.Fatal(token.Error())
 			}
 			log.Printf("message \"%s\" sent", msg)
-		case <-c:
-			break
+
+			select {
+			case <-ticker.C:
+				i++
+			case <-c:
+				break
+			}
 		}
-	}
+	}()
+
+	<-c
 }

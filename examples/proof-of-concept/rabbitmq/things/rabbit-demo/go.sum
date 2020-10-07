@@ -1,5 +1,7 @@
 github.com/ForgeRock/iot-edge/v7 v7.0.0 h1:Pt99uDKxMFnifYZToI4cNUw9Z719nGFSg9nZhnfkJTU=
 github.com/ForgeRock/iot-edge/v7 v7.0.0/go.mod h1:0sjqlaizExRNQNM3mldV+ca7OPj6zQGU4s3wew3p61A=
+github.com/ForgeRock/iot-edge/v7 v7.0.1-0.20201005135449-4f6c39f16220 h1:cdRLOg8mnv6pchSUP+pMm8Pz54bY2e7ShtmqftNrJDQ=
+github.com/ForgeRock/iot-edge/v7 v7.0.1-0.20201005135449-4f6c39f16220/go.mod h1:0sjqlaizExRNQNM3mldV+ca7OPj6zQGU4s3wew3p61A=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5/go.mod h1:GgB8SF9nRG+GqaDtLcwJZsQFhcogVCJ79j4EdT0c2V4=
