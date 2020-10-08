@@ -7,6 +7,6 @@ ADD tmp/_wildcard.iam.example.com.pem /usr/local/share/ca-certificates/_wildcard
 RUN update-ca-certificates
 
 # Get dependencies
-COPY go.mod .
-COPY go.sum .
+COPY rabbit-demo/go.mod .
+COPY rabbit-demo/go.sum .
 RUN go mod download

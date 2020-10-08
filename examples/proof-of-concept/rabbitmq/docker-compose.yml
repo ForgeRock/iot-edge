@@ -20,7 +20,7 @@ services:
       - AM_REALM=/
       - MQTT_SERVER_URL=tcp://rabbit.example.com:1883
     volumes:
-      - ./things/thing-pub:/root/thing/thing-pub:ro
+      - ./things/rabbit-demo:/usr/local/go/src/rabbit-demo
 
   rabbitmq:
     image: rabbitmq-integration-example:latest
