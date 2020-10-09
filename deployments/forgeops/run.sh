@@ -17,22 +17,20 @@ set -e
 # limitations under the License.
 #
 
-
 BASE_OVERLAY_DIR=$(PWD)/overlay
 CUSTOM_OVERLAY_DIR=
 DEPLOY_DIR=$(PWD)/tmp
-PLATFORM_PASSWORD=$(openssl rand -base64 32)
+# The characters =/l+ are replaced with 1 or 0 for readability and regex substitution
+PLATFORM_PASSWORD=$(openssl rand -base64 32 | tr =/ 0 | tr l+ 1)
 
 if [ -n "$1" ]; then
-  DEPLOY_DIR=$1
+  CUSTOM_OVERLAY_DIR=$1
+  echo "Custom overlay directory: $CUSTOM_OVERLAY_DIR"
 fi
 
 if [ -n "$2" ]; then
-  CUSTOM_OVERLAY_DIR=$2
-fi
-
-if [ -n "$3" ]; then
-  PLATFORM_PASSWORD=$3
+  PLATFORM_PASSWORD=$2
+  echo "Overriding platform password: $PLATFORM_PASSWORD"
 fi
 
 echo "====================================================="
@@ -52,8 +50,10 @@ minikube ssh sudo ip link set docker0 promisc on
 echo "====================================================="
 echo "Create 'iot' namespace"
 echo "====================================================="
+set +e
 kubectl create namespace iot
 kubens iot
+set -e
 
 echo "====================================================="
 echo "Use Minikube's built-in docker"
@@ -109,6 +109,7 @@ kubectl delete secret sslcert
 kubectl create secret tls sslcert --cert=_wildcard.iam.example.com.pem --key=_wildcard.iam.example.com-key.pem
 
 echo "====================================================="
+echo "~~~ Platform login details ~~~"
 echo "URL: https://iot.iam.example.com/platform"
 echo "Username: amadmin"
 echo "Password: $PLATFORM_PASSWORD"
