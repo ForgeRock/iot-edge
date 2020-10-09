@@ -1,0 +1,88 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "&{version}",
+    "entityType" : "OAuth2Clients",
+    "entityId" : "end-user-ui",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "end-user-ui",
+    "advancedOAuth2ClientConfig" : {
+      "contacts" : [ ],
+      "clientUri" : [ ],
+      "responseTypes" : [ "code", "token", "id_token", "code token", "token id_token", "code id_token", "code token id_token", "device_code", "device_code id_token" ],
+      "subjectType" : "Public",
+      "sectorIdentifierUri" : null,
+      "isConsentImplied" : true,
+      "updateAccessToken" : null,
+      "tokenEndpointAuthMethod" : "client_secret_post",
+      "requestUris" : [ ],
+      "logoUri" : [ ],
+      "name" : [ ],
+      "descriptions" : [ ],
+      "policyUri" : [ ],
+      "mixUpMitigation" : false,
+      "grantTypes" : [ "authorization_code", "implicit" ],
+      "javascriptOrigins" : [ ]
+    },
+    "coreOpenIDClientConfig" : {
+      "defaultMaxAgeEnabled" : false,
+      "claims" : [ ],
+      "clientSessionUri" : null,
+      "defaultMaxAge" : 600,
+      "postLogoutRedirectUri" : [ ],
+      "jwtTokenLifetime" : 0,
+      "defaultAcrValues" : [ ]
+    },
+    "signEncOAuth2ClientConfig" : {
+      "userinfoEncryptedResponseEncryptionAlgorithm" : "A128CBC-HS256",
+      "requestParameterEncryptedEncryptionAlgorithm" : "A128CBC-HS256",
+      "userinfoSignedResponseAlg" : null,
+      "clientJwtPublicKey" : null,
+      "idTokenEncryptionAlgorithm" : "RSA-OAEP-256",
+      "jwksUri" : null,
+      "requestParameterEncryptedAlg" : null,
+      "idTokenSignedResponseAlg" : "RS256",
+      "jwksCacheTimeout" : 3600000,
+      "idTokenEncryptionEnabled" : false,
+      "mTLSTrustedCert" : null,
+      "tokenIntrospectionResponseFormat" : "JSON",
+      "idTokenPublicEncryptionKey" : null,
+      "tokenEndpointAuthSigningAlgorithm" : "RS256",
+      "mTLSCertificateBoundAccessTokens" : false,
+      "tokenIntrospectionEncryptedResponseAlg" : "RSA-OAEP-256",
+      "jwkSet" : null,
+      "jwkStoreCacheMissCacheTime" : 60000,
+      "tokenIntrospectionEncryptedResponseEncryptionAlgorithm" : "A128CBC-HS256",
+      "tokenIntrospectionSignedResponseAlg" : "RS256",
+      "userinfoEncryptedResponseAlg" : null,
+      "mTLSSubjectDN" : null,
+      "publicKeyLocation" : "jwks_uri",
+      "userinfoResponseFormat" : "JSON",
+      "idTokenEncryptionMethod" : "A128CBC-HS256",
+      "requestParameterSignedAlg" : null
+    },
+    "coreOAuth2ClientConfig" : {
+      "status" : "Active",
+      "loopbackInterfaceRedirection" : false,
+      "redirectionUris" : [ "https://&{fqdn}/enduser/appAuthHelperRedirect.html", "https://&{fqdn}/enduser/sessionCheck.html", "http://localhost:8888/appAuthHelperRedirect.html", "http://localhost:8888/sessionCheck.html" ],
+      "accessTokenLifetime" : 240,
+      "authorizationCodeLifetime" : 0,
+      "refreshTokenLifetime" : 0,
+      "clientName" : [ ],
+      "defaultScopes" : [ ],
+      "agentgroup" : null,
+      "scopes" : [ "openid" ],
+      "clientType" : "Public"
+    },
+    "coreUmaClientConfig" : {
+      "claimsRedirectionUris" : [ ]
+    },
+    "_type" : {
+      "_id" : "OAuth2Client",
+      "name" : "OAuth2 Clients",
+      "collection" : true
+    }
+  }
+}
