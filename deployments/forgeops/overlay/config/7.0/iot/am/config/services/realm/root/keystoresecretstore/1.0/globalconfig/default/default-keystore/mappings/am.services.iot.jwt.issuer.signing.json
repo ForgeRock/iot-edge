@@ -1,0 +1,22 @@
+{
+  "metadata" : {
+    "realm" : null,
+    "entityType" : "KeyStoreSecretStore",
+    "entityId" : "default/default-keystore/mappings/am.services.iot.jwt.issuer.signing",
+    "uid" : "ou=am.services.iot.jwt.issuer.signing,ou=mappings,ou=default-keystore,ou=default,ou=GlobalConfig,ou=1.0,ou=KeyStoreSecretStore,ou=services,ou=am-config",
+    "sunServiceID" : "instance",
+    "objectClass" : [ "top", "sunServiceComponent" ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_id" : "default/default-keystore/mappings/am.services.iot.jwt.issuer.signing",
+    "_type" : {
+      "_id" : "KeyStoreSecretStore",
+      "name" : "KeyStoreSecretStore",
+      "collection" : false
+    },
+    "aliases" : [ "hmacsigningtest" ],
+    "secretId" : "am.services.iot.jwt.issuer.signing"
+  }
+}
