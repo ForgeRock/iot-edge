@@ -16,74 +16,27 @@
 # limitations under the License.
 #
 
-function run_cdk() {
-  echo "====================================================="
-  echo "Clone ForgeOps"
-  echo "====================================================="
-  cd forgeops
-  rm -rf tmp && mkdir tmp
-  git clone https://github.com/ForgeRock/forgeops.git tmp
-  cd tmp
-  git checkout tags/2020.08.07-ZucchiniRicotta.1
+PLATFORM_PASSWORD=
+if [ -n "$1" ]; then
+  PLATFORM_PASSWORD=$1
+fi
 
-  echo "====================================================="
-  echo "Start and configure Minikube"
-  echo "====================================================="
-  minikube start --memory=12288 --cpus=3 --disk-size=40g --vm-driver=virtualbox --bootstrapper kubeadm --kubernetes-version=1.17.4
-  minikube addons enable ingress
-  minikube ssh sudo ip link set docker0 promisc on
+POC_DIR=$(PWD)
+OVERLAY_DIR=$POC_DIR/forgeops
+DEPLOYMENT_DIR=$POC_DIR/../../../deployments/forgeops
 
-  echo "====================================================="
-  echo "Create 'iot' namespace"
-  echo "====================================================="
-  kubectl create namespace iot
-  kubens iot
-
-  echo "====================================================="
-  echo "Use Minikube's built-in docker"
-  echo "====================================================="
-  eval $(minikube docker-env)
-  skaffold config set --kube-context minikube local-cluster true
-
-  echo "====================================================="
-  echo "Overlay and initialise 'iot' configuration"
-  echo "====================================================="
-  cp -rf ../config/* config
-  cd bin
-  ./config.sh init --profile iot --version 7.0
-  ./config.sh init --profile iot --component ds --version 7.0
-  cd ../
-  # This must be done after initialisation otherwise it will be deleted
-  cp -rf ../docker/* docker
-  cp -rf ../kustomize/* kustomize
-
-  echo "====================================================="
-  echo "Clean out existing pods for 'iot' namespace"
-  echo "====================================================="
-  skaffold delete
-  cd bin && ./clean.sh && cd ../
-
-  echo "====================================================="
-  echo "Run the platform"
-  echo "====================================================="
-  skaffold run
-
-  echo "====================================================="
-  echo "Install the certificate"
-  echo "====================================================="
-  cp ../../../../resources/_wildcard.iam.example.com* .
-  kubectl create secret tls sslcert --cert=_wildcard.iam.example.com.pem --key=_wildcard.iam.example.com-key.pem
-
-  cd ../../
-}
-
-run_cdk
+echo "====================================================="
+echo "Run ForgeOps CDK"
+echo "====================================================="
+cd "$DEPLOYMENT_DIR"
+./run.sh "$OVERLAY_DIR" "$PLATFORM_PASSWORD"
 
 echo "====================================================="
 echo "Build and run the things image"
 echo "====================================================="
-cd things
-rm -rf tmp && mkdir tmp
-cp ../../../resources/_wildcard.iam.example.com* tmp/
-cd ../
-AM_IP_ADDRESS=$(minikube ip) docker-compose -f docker-compose.yml  up -d --build
+rm -rf "$POC_DIR"/things/tmp && mkdir "$POC_DIR"/things/tmp
+cp "$DEPLOYMENT_DIR"/tmp/_wildcard.iam.example.com* "$POC_DIR"/things/tmp/
+cd "$POC_DIR"
+# Switch back to local docker to use with docker compose
+eval $(minikube docker-env --unset)
+AM_IP_ADDRESS=$(minikube ip) docker-compose -f docker-compose.yml up -d --build
