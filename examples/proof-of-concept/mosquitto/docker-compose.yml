@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+
+  things:
+    image: things-rabbitmq:latest
+    container_name: things
+    stdin_open: true
+    tty: true
+    build: ./things
+    networks:
+      iec_net:
+        ipv4_address: 172.16.0.13
+    hostname: iot-things
+    extra_hosts:
+      - "iot.iam.example.com:$AM_IP_ADDRESS"
+      - "mosquitto.example.com:172.16.0.14"
+    environment:
+      - AM_URL=https://iot.iam.example.com/am
+      - AM_REALM=/
+      - MQTT_SERVER_URL=tcp://mosquitto.example.com:1883
+    volumes:
+      - ./things/mosquitto-demo:/usr/local/go/src/mosquitto-demo
+
+  mosquitto:
+    image: mosquitto-integration-example:latest
+    container_name: mosquitto
+    stdin_open: true
+    tty: true
+    build: ./mosquitto
+    ports:
+      - "5672:5672"
+      - "1883:1883"
+      - "15672:15672"
+    networks:
+      iec_net:
+        ipv4_address: 172.16.0.14
+    hostname: iot-mosquitto
+    extra_hosts:
+      - "iot.iam.example.com:$AM_IP_ADDRESS"
+    environment:
+      - AM_URL=https://iot.iam.example.com/am
+      - AM_REALM=/
+
+networks:
+  iec_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.0.0/24
