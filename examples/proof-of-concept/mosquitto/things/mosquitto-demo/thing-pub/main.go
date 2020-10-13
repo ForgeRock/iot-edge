@@ -82,7 +82,6 @@ func main() {
 		return thingID, password
 	})
 
-	fmt.Println("BOOM")
 	tlsConfig := &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}
 	connOpts.SetTLSConfig(tlsConfig)
 	connOpts.SetWill(topic, "Game Over", qos, false)

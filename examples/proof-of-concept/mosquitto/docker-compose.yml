@@ -3,13 +3,13 @@ version: '3'
 services:
 
   things:
-    image: things-rabbitmq:latest
+    image: things-mosquitto:latest
     container_name: things
     stdin_open: true
     tty: true
     build: ./things
     networks:
-      iec_net:
+      iot_net:
         ipv4_address: 172.16.0.13
     hostname: iot-things
     extra_hosts:
@@ -33,7 +33,7 @@ services:
       - "1883:1883"
       - "15672:15672"
     networks:
-      iec_net:
+      iot_net:
         ipv4_address: 172.16.0.14
     hostname: iot-mosquitto
     extra_hosts:
@@ -43,7 +43,7 @@ services:
       - AM_REALM=/
 
 networks:
-  iec_net:
+  iot_net:
     ipam:
       driver: default
       config:
