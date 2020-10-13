@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 ForgeRock AS
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package main
 
 /*
@@ -14,17 +30,61 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
+	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strings"
+	"time"
 	"unsafe"
+)
+
+const (
+	read      access = 0x01 // read from a topic
+	write     access = 0x02 // write to a topic
+	subscribe access = 0x04 // subscribe to a topic
+
+	// configuration
+	optPrefix  = "oauth2_"
+	optLogDest = optPrefix + "log_dest"
+
+	// constants used by the config file to switch log destination
+	destNone   = "none"
+	destFile   = "file"
+	destStdout = "stdout"
 )
 
 var (
 	logger *log.Logger
 	file   *os.File = nil
+
+	readRE  = regexp.MustCompile(`mqtt.read:([\\p{L}/#\+]+)`)
+	writeRE = regexp.MustCompile(`mqtt.write:([\\p{L}/#\+]+)`)
 )
+
+// access describes the type of access to a topic that the client is requesting
+type access int
+
+func (a access) String() string {
+	switch a {
+	case read:
+		return "read"
+	case write:
+		return "write"
+	case subscribe:
+		return "subscribe"
+	default:
+		return "unknown"
+	}
+}
+
+// userData contains the persistent data that is kept between plugin calls
+type userData struct {
+	identity thing.Thing
+	// tokenCache to store access tokens between API calls. The client pointer value is used as the key.
+	tokenCache map[unsafe.Pointer]string
+}
 
 //export mosquitto_auth_plugin_version
 /*
@@ -50,6 +110,7 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 		return C.MOSQ_ERR_AUTH
 	}
 	logger.Println("Init plugin")
+	thing.SetDebugLogger(logger)
 
 	// ForgeRock connection information
 	thingID := "572ddcde-1532-4175-861b-0622ac2f3bf3"
@@ -57,25 +118,30 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
+	amRealm := os.Getenv("AM_REALM")
+	amTree := os.Getenv("AM_TREE")
 
-	dynamicThing, err := builder.Thing().
-		ConnectTo(amURL).
-		InRealm("/").
-		WithTree("RegisterThings").
-		AuthenticateThing(thingID, "/", keyID, signer, nil).
-		RegisterThing(certificate, nil).
-		Create()
-	logger.Printf("Created thing %v, %v", dynamicThing, err)
-
-	// initialise the user data that will be used in subsequent plugin calls
-	userData, err := initialiseUserData(optMap)
-	if err != nil {
-		logger.Println("initialiseUserData failed with err:", err)
-		return C.MOSQ_ERR_AUTH
+	data := userData{
+		tokenCache: make(map[unsafe.Pointer]string),
 	}
-	userData.t = dynamicThing
-	*cUserData = unsafe.Pointer(&userData)
 
+	for {
+		data.identity, err = builder.Thing().
+			ConnectTo(amURL).
+			InRealm(amRealm).
+			WithTree(amTree).
+			AuthenticateThing(thingID, amRealm, keyID, signer, nil).
+			RegisterThing(certificate, nil).
+			Create()
+		if err == nil {
+			break
+		}
+		logger.Printf("thing create error; %v", err)
+		time.Sleep(5 * time.Second)
+	}
+	logger.Println("created thing")
+
+	*cUserData = unsafe.Pointer(&data)
 	logger.Println("leave - plugin init successful")
 	return C.MOSQ_ERR_SUCCESS
 }
@@ -92,8 +158,8 @@ func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, cOpts *C.struct_mos
 		file.Close()
 		file = nil
 	}
-	// set the client cache to nil so it can be garage collected
-	clearUserData((*userData)(cUserData))
+	// set the token cache to nil so it can be garage collected
+	(*userData)(cUserData).tokenCache = nil
 
 	logger.Println("leave - plugin cleanup")
 	logger = nil
@@ -110,12 +176,48 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 		logger.Println("Missing cUserData")
 		return C.MOSQ_ERR_AUTH
 	}
+	if cClient == nil {
+		logger.Println("Missing cClient")
+		return C.MOSQ_ERR_AUTH
+	}
 
+	data := (*userData)(cUserData)
+	client := unsafe.Pointer(cClient)
 	access := access(cAccess)
-	allow, err := authorise(http.DefaultClient, (*userData)(cUserData), access, unsafe.Pointer(cClient),
-		C.GoString(cMsg.topic))
+	topic := C.GoString(cMsg.topic)
+
+	// get cache data
+	token, ok := data.tokenCache[unsafe.Pointer(cClient)]
+	if !ok {
+		// the user will not be in the cache if it was authenticated by mosquitto or another plugin
+		return C.MOSQ_ERR_PLUGIN_DEFER
+	}
+	introspection, err := data.identity.IntrospectAccessToken(token)
+	logger.Printf("Introspection %v, %v", introspection, err)
 	if err != nil {
-		logger.Printf("leave - acl check error, %s", err)
+		logger.Printf("leave - unpwd check error, %s", err)
+		return C.MOSQ_ERR_AUTH
+	}
+	if !introspection.Active() {
+		logger.Printf("leave - acl check %s token inactive", access)
+		delete(data.tokenCache, client)
+		return C.MOSQ_ERR_PLUGIN_DEFER
+	}
+
+	scopes, err := introspection.Content.GetStringArray("scope")
+	if err != nil {
+		logger.Printf("leave - unpwd check error, %s", err)
+		return C.MOSQ_ERR_AUTH
+	}
+
+	allow := false
+	switch access {
+	case subscribe, read:
+		allow = matchTopic(parseFilter(readRE, scopes), topic)
+	case write:
+		allow = matchTopic(parseFilter(writeRE, scopes), topic)
+	default:
+		logger.Printf("Unexpected access request %d\n", access)
 		return C.MOSQ_ERR_AUTH
 	}
 	if !allow {
@@ -132,16 +234,23 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
  */
 func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosquitto, cUsername, cPassword *C.const_char) C.int {
 	logger.Println("enter - unpwd check")
-	if cUsername == nil || cPassword == nil {
+	if cUserData == nil {
+		logger.Println("Missing cUserData")
+		return C.MOSQ_ERR_AUTH
+	}
+	if cClient == nil {
+		logger.Println("Missing cClient")
+		return C.MOSQ_ERR_AUTH
+	}
+	if cPassword == nil {
 		return C.MOSQ_ERR_AUTH
 	}
 
-	username := goStringFromConstant(cUsername)
-	password := goStringFromConstant(cPassword)
-	logger.Printf("u: %s, p: %s\n", username, password)
+	token := goStringFromConstant(cPassword)
+	logger.Printf("p: %s\n", token)
 
 	data := (*userData)(cUserData)
-	introspection, err := data.t.IntrospectAccessToken(password)
+	introspection, err := data.identity.IntrospectAccessToken(token)
 	logger.Printf("Introspection %v, %v", introspection, err)
 	if err != nil {
 		logger.Printf("leave - unpwd check error, %s", err)
@@ -152,6 +261,8 @@ func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosqu
 	if !introspection.Active() {
 		return C.MOSQ_ERR_PLUGIN_DEFER
 	}
+	data.tokenCache[unsafe.Pointer(cClient)] = token
+
 	return C.MOSQ_ERR_SUCCESS
 }
 
@@ -181,4 +292,43 @@ func mosquitto_auth_psk_key_get(cUserData unsafe.Pointer, cClient *C.const_mosqu
 
 func main() {
 
+}
+
+// initialiseLogger initialises the logger depending on the fields in the supplied configuration string
+// Defaults to stdout if the input string is empty or unrecognised.
+// Returns an error if logging to a file is requested but fails.
+func initialiseLogger(s string) (l *log.Logger, f *os.File, err error) {
+	settings := strings.Fields(s)
+	var w = ioutil.Discard
+	if len(settings) > 0 {
+		switch settings[0] {
+		case destFile:
+			if len(settings) < 2 {
+				return l, f, fmt.Errorf("file path missing")
+			}
+			var err error
+			f, err = os.OpenFile(settings[1], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return l, f, err
+			}
+			w = f
+		case destStdout:
+			w = os.Stdout
+		default:
+			fmt.Printf("WARNING: unknown debug setting, %s", settings)
+		}
+	}
+	return log.New(w, "AUTH_PLUGIN: ", log.LstdFlags|log.Lmsgprefix), f, nil
+}
+
+// parseFilter parses the MQTT topic filter from the scopes
+// Assumes that the filter will be found in the the first capturing group of the regexp if the entire expression matches
+func parseFilter(re *regexp.Regexp, scopes []string) string {
+	for _, s := range scopes {
+		m := re.FindStringSubmatch(s)
+		if len(m) > 1 {
+			return m[1]
+		}
+	}
+	return ""
 }

@@ -43,6 +43,8 @@ func main() {
 	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
+	amRealm := os.Getenv("AM_REALM")
+	amTree := os.Getenv("AM_TREE")
 
 	// MQTT connection information
 	// Can be retrieved from configuration
@@ -52,9 +54,9 @@ func main() {
 
 	dynamicThing, err := builder.Thing().
 		ConnectTo(amURL).
-		InRealm("/").
-		WithTree("RegisterThings").
-		AuthenticateThing(thingID, "/", keyID, signer, nil).
+		InRealm(amRealm).
+		WithTree(amTree).
+		AuthenticateThing(thingID, amRealm, keyID, signer, nil).
 		RegisterThing(certificate, nil).
 		Create()
 
@@ -68,9 +70,7 @@ func main() {
 		SetCleanSession(true)
 
 	connOpts.SetCredentialsProvider(func() (username string, password string) {
-		tokenResponse, err := dynamicThing.RequestAccessToken(
-			"forgerock-iot-oauth2-client.write:*/*/*",
-			"forgerock-iot-oauth2-client.configure:*/*")
+		tokenResponse, err := dynamicThing.RequestAccessToken("mqtt.write:#")
 		if err != nil {
 			log.Fatal(err)
 		}

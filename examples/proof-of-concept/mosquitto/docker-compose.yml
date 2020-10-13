@@ -18,6 +18,7 @@ services:
     environment:
       - AM_URL=https://iot.iam.example.com/am
       - AM_REALM=/
+      - AM_TREE=RegisterThings
       - MQTT_SERVER_URL=tcp://mosquitto.example.com:1883
     volumes:
       - ./things/mosquitto-demo:/usr/local/go/src/mosquitto-demo
@@ -31,6 +32,7 @@ services:
     ports:
       - "5672:5672"
       - "1883:1883"
+      - "1884:1884"
       - "15672:15672"
     networks:
       iot_net:
@@ -41,6 +43,7 @@ services:
     environment:
       - AM_URL=https://iot.iam.example.com/am
       - AM_REALM=/
+      - AM_TREE=RegisterThings
 
 networks:
   iot_net:

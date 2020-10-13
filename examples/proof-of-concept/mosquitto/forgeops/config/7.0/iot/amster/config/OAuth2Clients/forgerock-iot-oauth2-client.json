@@ -74,7 +74,7 @@
       "clientName" : [ ],
       "defaultScopes" : [ ],
       "agentgroup" : null,
-      "scopes" : ["forgerock-iot-oauth2-client.write:*/*/*", "forgerock-iot-oauth2-client.configure:*/*"],
+      "scopes" : ["mqtt.write:#"],
       "userpassword" : "password"
     },
     "coreUmaClientConfig" : {

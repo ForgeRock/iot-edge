@@ -14,11 +14,6 @@ RUN apt-get update --yes && \
 RUN curl http://mosquitto.org/files/source/mosquitto-1.5.8.tar.gz | tar zxf - && \
     cd mosquitto-1.5.8 && make && make install && cd - && rm -rf mosquitto-1.5.8
 
-# get gomozzie plugin for mosquitto
-#COPY local /go
-#RUN go get -d github.com/limaechocharlie/gomozzie
-#RUN cd /usr/local/go/src/oauth2-auth-plugin && go mod download
-
 # Install the cert
 ADD tmp/_wildcard.iam.example.com.pem /usr/local/share/ca-certificates/_wildcard.iam.example.com.crt
 RUN update-ca-certificates
@@ -28,17 +23,17 @@ WORKDIR /mosquitto
 # create directories and copy across config and plugin
 RUN mkdir -p config plugin log
 
-# build gomozzie
+# build OAuth2 auth plugin
 ADD oauth2-auth-plugin plugin
 ENV CGO_CFLAGS="-I/usr/local/include"
 ENV CGO_ENABLED=1
-RUN cd ./plugin && go build -o gomozzie.so -buildmode=c-shared .
+RUN cd ./plugin && go build -o oauth2-auth-plugin.so -buildmode=c-shared .
 
 # copy across configuration
 COPY config/mosquitto.conf config/
 
 # add a "human" user to the mosquitto password file
-RUN touch config/passwd && mosquitto_passwd -b config/passwd human password
+RUN touch config/passwd && mosquitto_passwd -b config/passwd admin password
 
 # add user for mosquitto
 RUN useradd mosquitto && chown -R mosquitto: /mosquitto
