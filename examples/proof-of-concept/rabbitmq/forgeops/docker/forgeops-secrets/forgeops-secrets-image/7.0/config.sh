@@ -139,8 +139,7 @@ keytoolgen -importpass -alias configstorepwd $(useRandomPass ds-passwords/dirman
 
 
 #genRSA rsajwtsigningkey 2048
-#keytool -importkeystore -srckeystore /opt/gen/7.0/mqttTest.p12 ${KS_PROPS} -srcstoretype pkcs12 -alias mqttTest -noprompt --srcstorepass ksg7Ip09kGXsxf1OXW3lFwwNSYPI5khX
-keytool -importkeystore -srckeystore /opt/gen/7.0/rsajwtsigningkey.p12 ${KS_PROPS} -srcstoretype pkcs12 -alias rsajwtsigningkey -noprompt --srcstorepass ksg7Ip09kGXsxf1OXW3lFwwNSYPI5khX
+keytool -importkeystore -srckeystore /opt/gen/7.0/rsajwtsigningkey.p12 ${KS_PROPS_IMPORT} -srcstoretype pkcs12 -alias rsajwtsigningkey -noprompt --srcstorepass ksg7Ip09kGXsxf1OXW3lFwwNSYPI5khX
 genRSA selfserviceenctest 2048
 genKey selfservicesigntest HmacSHA256 256
 #genEC es256test 256
