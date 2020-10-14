@@ -36,6 +36,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -83,6 +84,7 @@ type userData struct {
 	identity thing.Thing
 	// tokenCache to store access tokens between API calls. The client pointer value is used as the key.
 	tokenCache map[unsafe.Pointer]string
+	mutex      sync.RWMutex
 }
 
 //export mosquitto_auth_plugin_version
@@ -199,7 +201,9 @@ func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosqu
 	if !introspection.Active() {
 		return C.MOSQ_ERR_PLUGIN_DEFER
 	}
+	data.mutex.Lock()
 	data.tokenCache[unsafe.Pointer(cClient)] = token
+	data.mutex.Unlock()
 
 	return C.MOSQ_ERR_SUCCESS
 }
@@ -226,7 +230,9 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 	topic := C.GoString(cMsg.topic)
 
 	// get cache data
+	data.mutex.RLock()
 	token, ok := data.tokenCache[client]
+	data.mutex.RUnlock()
 	if !ok {
 		// the user will not be in the cache if it was authenticated by mosquitto or another plugin
 		return C.MOSQ_ERR_PLUGIN_DEFER
@@ -239,7 +245,9 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 	}
 	if !introspection.Active() {
 		logger.Printf("leave - acl check %s token inactive", access)
+		data.mutex.Lock()
 		delete(data.tokenCache, client)
+		data.mutex.Unlock()
 		// raising an error results in the client being disconnected by mosquitto, enabling the client to obtain a new
 		// token. If DEFER is returned instead, a publish\read will fail quietly.
 		return C.MOSQ_ERR_AUTH
