@@ -50,7 +50,6 @@ const (
 	optLogDest = optPrefix + "log_dest"
 
 	// constants used by the config file to switch log destination
-	destNone   = "none"
 	destFile   = "file"
 	destStdout = "stdout"
 )
@@ -113,6 +112,7 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 	thing.SetDebugLogger(logger)
 
 	// ForgeRock connection information
+	// Can be passed to the plugin via Mosquitto configuration
 	thingID := "572ddcde-1532-4175-861b-0622ac2f3bf3"
 	signer := secrets.Signer(thingID)
 	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
@@ -150,7 +150,7 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 /*
  * Cleans up the plugin before the server shuts down.
  */
-func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, cOpts *C.struct_mosquitto_opt, cOptCount C.int) C.int {
+func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, _ *C.struct_mosquitto_opt, _ C.int) C.int {
 	logger.Println("enter - plugin cleanup")
 	// close logfile
 	if file != nil {
@@ -166,73 +166,11 @@ func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, cOpts *C.struct_mos
 	return C.MOSQ_ERR_SUCCESS
 }
 
-//export mosquitto_auth_acl_check
-/*
- * Checks whether a client is authorised to read from or write to a topic.
- */
-func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *C.const_mosquitto, cMsg *C.const_mosquitto_acl_msg) C.int {
-	logger.Println("enter - acl check")
-	if cUserData == nil {
-		logger.Println("Missing cUserData")
-		return C.MOSQ_ERR_AUTH
-	}
-	if cClient == nil {
-		logger.Println("Missing cClient")
-		return C.MOSQ_ERR_AUTH
-	}
-
-	data := (*userData)(cUserData)
-	client := unsafe.Pointer(cClient)
-	access := access(cAccess)
-	topic := C.GoString(cMsg.topic)
-
-	// get cache data
-	token, ok := data.tokenCache[unsafe.Pointer(cClient)]
-	if !ok {
-		// the user will not be in the cache if it was authenticated by mosquitto or another plugin
-		return C.MOSQ_ERR_PLUGIN_DEFER
-	}
-	introspection, err := data.identity.IntrospectAccessToken(token)
-	logger.Printf("Introspection %v, %v", introspection, err)
-	if err != nil {
-		logger.Printf("leave - unpwd check error, %s", err)
-		return C.MOSQ_ERR_AUTH
-	}
-	if !introspection.Active() {
-		logger.Printf("leave - acl check %s token inactive", access)
-		delete(data.tokenCache, client)
-		return C.MOSQ_ERR_PLUGIN_DEFER
-	}
-
-	scopes, err := introspection.Content.GetStringArray("scope")
-	if err != nil {
-		logger.Printf("leave - unpwd check error, %s", err)
-		return C.MOSQ_ERR_AUTH
-	}
-
-	allow := false
-	switch access {
-	case subscribe, read:
-		allow = matchTopic(parseFilter(readRE, scopes), topic)
-	case write:
-		allow = matchTopic(parseFilter(writeRE, scopes), topic)
-	default:
-		logger.Printf("Unexpected access request %d\n", access)
-		return C.MOSQ_ERR_AUTH
-	}
-	if !allow {
-		logger.Printf("leave - acl check %s denied", access)
-		return C.MOSQ_ERR_PLUGIN_DEFER
-	}
-	logger.Printf("leave - acl check %s granted", access)
-	return C.MOSQ_ERR_SUCCESS
-}
-
 //export mosquitto_auth_unpwd_check
 /*
- * Authenticates the client by checking the supplied username and password.
+ * Authenticates the client by checking the validity of the supplied OAuth 2.0 access token given as the password.
  */
-func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosquitto, cUsername, cPassword *C.const_char) C.int {
+func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosquitto, _, cPassword *C.const_char) C.int {
 	logger.Println("enter - unpwd check")
 	if cUserData == nil {
 		logger.Println("Missing cUserData")
@@ -263,6 +201,71 @@ func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosqu
 	}
 	data.tokenCache[unsafe.Pointer(cClient)] = token
 
+	return C.MOSQ_ERR_SUCCESS
+}
+
+//export mosquitto_auth_acl_check
+/*
+ * Checks whether a client's access token authorises it to subscribe to, read from or write to a topic.
+ */
+func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *C.const_mosquitto, cMsg *C.const_mosquitto_acl_msg) C.int {
+	logger.Println("enter - acl check")
+	if cUserData == nil {
+		logger.Println("Missing cUserData")
+		return C.MOSQ_ERR_AUTH
+	}
+	if cClient == nil {
+		logger.Println("Missing cClient")
+		return C.MOSQ_ERR_AUTH
+	}
+
+	// C -> Go
+	data := (*userData)(cUserData)
+	client := unsafe.Pointer(cClient)
+	access := access(cAccess)
+	topic := C.GoString(cMsg.topic)
+
+	// get cache data
+	token, ok := data.tokenCache[client]
+	if !ok {
+		// the user will not be in the cache if it was authenticated by mosquitto or another plugin
+		return C.MOSQ_ERR_PLUGIN_DEFER
+	}
+	introspection, err := data.identity.IntrospectAccessToken(token)
+	logger.Printf("Introspection %v, %v", introspection, err)
+	if err != nil {
+		logger.Printf("leave - unpwd check error, %s", err)
+		return C.MOSQ_ERR_AUTH
+	}
+	if !introspection.Active() {
+		logger.Printf("leave - acl check %s token inactive", access)
+		delete(data.tokenCache, client)
+		// raising an error results in the client being disconnected by mosquitto, enabling the client to obtain a new
+		// token. If DEFER is returned instead, a publish\read will fail quietly.
+		return C.MOSQ_ERR_AUTH
+	}
+
+	scopes, err := introspection.Content.GetStringArray("scope")
+	if err != nil {
+		logger.Printf("leave - unpwd check error, %s", err)
+		return C.MOSQ_ERR_AUTH
+	}
+
+	allow := false
+	switch access {
+	case subscribe, read:
+		allow = matchTopic(parseFilter(readRE, scopes), topic)
+	case write:
+		allow = matchTopic(parseFilter(writeRE, scopes), topic)
+	default:
+		logger.Printf("Unexpected access request %d\n", access)
+		return C.MOSQ_ERR_AUTH
+	}
+	if !allow {
+		logger.Printf("leave - acl check %s denied", access)
+		return C.MOSQ_ERR_PLUGIN_DEFER
+	}
+	logger.Printf("leave - acl check %s granted", access)
 	return C.MOSQ_ERR_SUCCESS
 }
 

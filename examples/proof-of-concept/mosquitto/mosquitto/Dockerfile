@@ -32,7 +32,7 @@ RUN cd ./plugin && go build -o oauth2-auth-plugin.so -buildmode=c-shared .
 # copy across configuration
 COPY config/mosquitto.conf config/
 
-# add a "human" user to the mosquitto password file
+# add a "admin" user to the mosquitto password file
 RUN touch config/passwd && mosquitto_passwd -b config/passwd admin password
 
 # add user for mosquitto
