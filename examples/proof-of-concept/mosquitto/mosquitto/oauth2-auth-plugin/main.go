@@ -18,6 +18,7 @@ package main
 
 /*
 #include <mosquitto.h>
+#include <mosquitto_broker.h>
 #include <mosquitto_plugin.h>
 typedef const struct mosquitto const_mosquitto;
 typedef const struct mosquitto_acl_msg const_mosquitto_acl_msg;
@@ -83,7 +84,7 @@ func (a access) String() string {
 type userData struct {
 	identity thing.Thing
 	// tokenCache to store access tokens between API calls. The client pointer value is used as the key.
-	tokenCache map[unsafe.Pointer]string
+	tokenCache map[string]string
 	mutex      sync.RWMutex
 }
 
@@ -124,11 +125,12 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 	amTree := os.Getenv("AM_TREE")
 
 	data := userData{
-		tokenCache: make(map[unsafe.Pointer]string),
+		tokenCache: make(map[string]string),
 	}
 
 	for {
 		data.identity, err = builder.Thing().
+			AsService().
 			ConnectTo(amURL).
 			InRealm(amRealm).
 			WithTree(amTree).
@@ -172,7 +174,7 @@ func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, _ *C.struct_mosquit
 /*
  * Authenticates the client by checking the validity of the supplied OAuth 2.0 access token given as the password.
  */
-func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosquitto, _, cPassword *C.const_char) C.int {
+func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosquitto, cUsername, cPassword *C.const_char) C.int {
 	logger.Println("enter - unpwd check")
 	if cUserData == nil {
 		logger.Println("Missing cUserData")
@@ -182,10 +184,11 @@ func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosqu
 		logger.Println("Missing cClient")
 		return C.MOSQ_ERR_AUTH
 	}
-	if cPassword == nil {
+	if cUsername == nil || cPassword == nil {
 		return C.MOSQ_ERR_AUTH
 	}
 
+	username := goStringFromConstant(cUsername)
 	token := goStringFromConstant(cPassword)
 	logger.Printf("p: %s\n", token)
 
@@ -202,7 +205,7 @@ func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosqu
 		return C.MOSQ_ERR_PLUGIN_DEFER
 	}
 	data.mutex.Lock()
-	data.tokenCache[unsafe.Pointer(cClient)] = token
+	data.tokenCache[username] = token
 	data.mutex.Unlock()
 
 	return C.MOSQ_ERR_SUCCESS
@@ -225,13 +228,13 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 
 	// C -> Go
 	data := (*userData)(cUserData)
-	client := unsafe.Pointer(cClient)
+	username := C.GoString(C.mosquitto_client_username(cClient))
 	access := access(cAccess)
 	topic := C.GoString(cMsg.topic)
 
 	// get cache data
 	data.mutex.RLock()
-	token, ok := data.tokenCache[client]
+	token, ok := data.tokenCache[username]
 	data.mutex.RUnlock()
 	if !ok {
 		// the user will not be in the cache if it was authenticated by mosquitto or another plugin
@@ -246,7 +249,7 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 	if !introspection.Active() {
 		logger.Printf("leave - acl check %s token inactive", access)
 		data.mutex.Lock()
-		delete(data.tokenCache, client)
+		delete(data.tokenCache, username)
 		data.mutex.Unlock()
 		// raising an error results in the client being disconnected by mosquitto, enabling the client to obtain a new
 		// token. If DEFER is returned instead, a publish\read will fail quietly.
