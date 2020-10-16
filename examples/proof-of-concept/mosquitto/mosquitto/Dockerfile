@@ -25,7 +25,8 @@ RUN mkdir -p config plugin log
 
 # build OAuth2 auth plugin
 ADD oauth2-auth-plugin plugin
-ENV CGO_CFLAGS="-I/usr/local/include"
+ENV CGO_CFLAGS="-I/usr/local/include -fPIC"
+ENV CGO_LDFLAGS="-L/usr/local/lib -lmosquitto -shared"
 ENV CGO_ENABLED=1
 RUN cd ./plugin && go build -o oauth2-auth-plugin.so -buildmode=c-shared .
 
