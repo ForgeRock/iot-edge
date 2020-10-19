@@ -36,49 +36,37 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
-	"time"
 )
 
 const (
-	deviceID       = "47cf707c-80c1-4816-b067-99db2a443113"
-	oAuth2ClientID = "forgerock-iot-oauth2-client"
-
+	deviceID                     = "47cf707c-80c1-4816-b067-99db2a443113"
 	authorizerName               = "iot-custom-authorizer"
 	authorizationTokenHeaderName = "X-Token-Header"
 	devicePrivateKeyLocation     = "../keys/device-private.pem"
-
-	bearerTokenExp = time.Minute * 5
+	message                      = "{\"msg\":\"Hello from client!\"}"
 )
 
-var amIntrospectURL string
 var awsPublishURL string
 
 type authorizationToken struct {
-	AccessToken      string `json:"access_token"`
-	JWTBearerToken   string `json:"jwt_bearer_token"`
-	AuthorizationURL string `json:"authorization_url"`
-	ClientID         string `json:"client_id"`
+	AccessToken string `json:"access_token"`
+	AmURL       string `json:"am_url"`
 }
 
 func main() {
 	amBaseURL := flag.String("am-base-url", "", "Provide the AM base URL")
-	introspectURL := flag.String("am-introspect-url", "", "Provide the AM introspect URL")
 	awsIoTEndpoint := flag.String("aws-iot-endpoint", "", "Provide the AWS IoT endpoint")
 	flag.Parse()
 
 	if *amBaseURL == "" {
 		log.Fatal("AM base URL must be provided")
 	}
-	if *introspectURL == "" {
-		log.Fatal("AM introspect URL must be provided")
-	}
-	amIntrospectURL = *introspectURL
 	if *awsIoTEndpoint == "" {
 		log.Fatal("AWS IoT endpoint must be provided")
 	}
 	awsPublishURL = fmt.Sprintf("https://%s/topics/customauthtesting", *awsIoTEndpoint)
 
-	log.Printf("Registering device (id: %s)... ", deviceID)
+	log.Println("Register device with id: ", deviceID)
 	signer := secrets.Signer(deviceID)
 	certificate := []*x509.Certificate{secrets.Certificate(deviceID, signer.Public())}
 	keyID, _ := thing.JWKThumbprint(signer)
@@ -93,9 +81,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Registration failed", "\nReason: ", err)
 	}
-	log.Println("Done")
 
-	log.Printf("Requesting OAuth 2.0 tokens for device (id: %s)... ", deviceID)
+	log.Println("Requesting OAuth 2.0 access token:")
 	tokenResponse, err := dynamicThing.RequestAccessToken("publish")
 	if err != nil {
 		log.Fatal("Access token request failed", "\nReason: ", err)
@@ -104,38 +91,18 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to parse access token response", "\nReason: ", err)
 	}
-	log.Println("Done")
+	log.Println(accessToken)
 
-	log.Printf("Publish message for device (id: %s)... ", deviceID)
-	if err = publishMessage(authorizationTokenJson(accessToken)); err != nil {
+	log.Println("Publish message for device:\n", message)
+	if err = publishMessage(authorizationTokenJson(accessToken, *amBaseURL)); err != nil {
 		log.Fatal("Failed to publish message to AWS: " + err.Error())
 	}
-	log.Println("Done")
 }
 
-func signedJWTBearerToken() string {
-	// remove the `introspect` part and add `access_token` as specified in the AM docs for audience
-	audience := amIntrospectURL[:len(amIntrospectURL)-10] + "access_token"
-	claims := &jwt.StandardClaims{
-		Issuer:    oAuth2ClientID,
-		Subject:   oAuth2ClientID,
-		ExpiresAt: time.Now().Add(bearerTokenExp).Unix(),
-		Audience:  audience,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	signedJWT, err := token.SignedString(privateKey())
-	if err != nil {
-		log.Fatal("Failed to sign JWT bearer token: " + err.Error())
-	}
-	return signedJWT
-}
-
-func authorizationTokenJson(accessToken string) string {
+func authorizationTokenJson(accessToken, amBaseURL string) string {
 	token := authorizationToken{
-		AccessToken:      accessToken,
-		JWTBearerToken:   signedJWTBearerToken(),
-		AuthorizationURL: amIntrospectURL,
-		ClientID:         oAuth2ClientID,
+		AccessToken: accessToken,
+		AmURL:       amBaseURL,
 	}
 	tokenJson, err := json.Marshal(token)
 	if err != nil {
@@ -146,7 +113,7 @@ func authorizationTokenJson(accessToken string) string {
 
 func publishMessage(authorizationToken string) error {
 
-	messageBody := strings.NewReader("{\"msg\":\"Hello from client!\"}")
+	messageBody := strings.NewReader(message)
 
 	client := &http.Client{
 		Transport: &http.Transport{

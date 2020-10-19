@@ -20,7 +20,6 @@ set -e
 source ../../.env
 
 AM_URL=https://$FR_FQDN/am
-AM_INTROSPECT_URL=$AM_URL/oauth2/introspect
 
 go mod download
-go run client -am-base-url "${AM_URL}" -am-introspect-url "${AM_INTROSPECT_URL}" -aws-iot-endpoint "${AWS_IOT_ENDPOINT}"
+go run client -am-base-url "${AM_URL}" -aws-iot-endpoint "${AWS_IOT_ENDPOINT}"

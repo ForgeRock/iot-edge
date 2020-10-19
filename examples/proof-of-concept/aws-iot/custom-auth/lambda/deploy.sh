@@ -36,10 +36,10 @@ if [ "${roles}" == "[]" ]; then
     --role-name ${AWS_ROLE_NAME} \
     --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
 
-  aws iam attach-role-policy \
-    --role-name ${AWS_ROLE_NAME} \
-    --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 fi
+aws iam attach-role-policy \
+  --role-name ${AWS_ROLE_NAME} \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
 # Give the role some time to settle
 sleep 5

@@ -18,15 +18,16 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/aws/aws-lambda-go/lambda"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"net/http/httputil"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -66,10 +67,8 @@ type policyClient struct {
 }
 
 type authorizationToken struct {
-	AccessToken      string `json:"access_token"`
-	JWTBearerToken   string `json:"jwt_bearer_token"`
-	AuthorizationURL string `json:"authorization_url"`
-	ClientID         string `json:"client_id"`
+	AccessToken string `json:"access_token"`
+	AmURL       string `json:"am_url"`
 }
 
 func (c *policyClient) handleRequest(ctx context.Context, event IoTCustomAuthorizerRequest) (IoTCustomAuthorizerResponse, error) {
@@ -83,16 +82,26 @@ func (c *policyClient) handleRequest(ctx context.Context, event IoTCustomAuthori
 		log.Printf("Introspection error: %v\n", err)
 		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
 	}
+	if !tokenInfo.Active() {
+		log.Printf("Access token is not active")
+		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
+	}
 	log.Printf("Access token info: %v\n", tokenInfo)
 
-	sub, err := tokenInfoStringEntry(tokenInfo, "sub")
+	sub, err := tokenInfo.Content.GetString("sub")
 	if err != nil {
 		log.Printf("Token info error: %v: %v\n", err, tokenInfo)
 		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
 	}
 	principleID := strings.ReplaceAll(sub, "-", "")
 
-	policyDocument, err := policyDocument(tokenInfo)
+	scope, err := tokenInfo.Content.GetStringArray("scope")
+	if err != nil {
+		log.Printf("Token info error: %v: %v\n", err, tokenInfo)
+		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
+	}
+
+	policyDocument, err := policyDocument(scope)
 	if err != nil {
 		log.Printf("Policy document error: %v\n", err)
 		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
@@ -115,70 +124,34 @@ func (c *policyClient) handleRequest(ctx context.Context, event IoTCustomAuthori
 	return response, nil
 }
 
-func introspect(authorizationTokenJson string) (map[string]interface{}, error) {
+func introspect(authorizationTokenJson string) (introspection thing.IntrospectionResponse, err error) {
 	var authorizationToken authorizationToken
-	err := json.Unmarshal([]byte(authorizationTokenJson), &authorizationToken)
+	err = json.Unmarshal([]byte(authorizationTokenJson), &authorizationToken)
 	if err != nil {
 		log.Printf("Failed to unmarshal authorization token: %s\n", authorizationTokenJson)
-		return nil, err
+		return
 	}
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-	request, err := http.NewRequest(http.MethodPost, authorizationToken.AuthorizationURL, nil)
+	thingID := "572ddcde-1532-4175-861b-0622ac2f3bf3"
+	signer := secrets.Signer(thingID)
+	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
+	keyID, _ := thing.JWKThumbprint(signer)
+	amURL, _ := url.Parse(authorizationToken.AmURL)
+	service, err := builder.Thing().
+		AsService().
+		ConnectTo(amURL).
+		InRealm("/").
+		WithTree("RegisterThings").
+		AuthenticateThing(thingID, "/", keyID, signer, nil).
+		RegisterThing(certificate, nil).
+		Create()
 	if err != nil {
-		log.Printf("Failed to create request to: %s\n", authorizationToken.AuthorizationURL)
-		return nil, err
+		return
 	}
-	query := request.URL.Query()
-	query.Add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
-	query.Add("client_assertion", authorizationToken.JWTBearerToken)
-	query.Add("client_id", authorizationToken.ClientID)
-	query.Add("token", authorizationToken.AccessToken)
-	request.URL.RawQuery = query.Encode()
-
-	response, err := client.Do(request)
-	if err != nil {
-		reqDump, _ := httputil.DumpRequest(request, true)
-		log.Printf("Introspection request: %s\n", string(reqDump))
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		resDump, _ := httputil.DumpResponse(response, true)
-		log.Printf("Introspection response: %s\n", string(resDump))
-		return nil, err
-	}
-	log.Printf("Response body:\n%s\n", string(body))
-
-	if response.StatusCode != 200 {
-		reqDump, _ := httputil.DumpRequest(request, true)
-		resDump, _ := httputil.DumpResponse(response, true)
-		log.Printf("Response body:\n%s\n", string(body))
-		return nil, fmt.Errorf("invalid introspect status: %s\nRequest:\n%s\nResponse:\n%s", response.Status, reqDump, resDump)
-	}
-
-	var tokenInfo map[string]interface{}
-	err = json.Unmarshal(body, &tokenInfo)
-	if err != nil {
-		return nil, err
-	}
-	return tokenInfo, nil
+	return service.IntrospectAccessToken(authorizationToken.AccessToken)
 }
 
-func policyDocument(tokenInfo map[string]interface{}) (string, error) {
+func policyDocument(scopes []string) (string, error) {
 	var effect string
-	scope, err := tokenInfoStringEntry(tokenInfo, "scope")
-	if err != nil {
-		return "", err
-	}
-	scopes := strings.Split(scope, " ")
 	if containsElement(scopes, "publish") {
 		effect = "Allow"
 	} else {
@@ -198,15 +171,6 @@ func policyDocument(tokenInfo map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("failed to marshal policy document: %v", policyDocument)
 	}
 	return string(policyDocument), nil
-}
-
-func tokenInfoStringEntry(tokenInfo map[string]interface{}, entry string) (string, error) {
-	entryInterface, contains := tokenInfo[entry]
-	entryValue, isString := entryInterface.(string)
-	if !contains || !isString {
-		return "", fmt.Errorf("invalid token info: missing '%s'", entry)
-	}
-	return entryValue, nil
 }
 
 func containsElement(elems []string, elem string) bool {
