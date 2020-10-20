@@ -1,0 +1,51 @@
+@startuml
+
+skinparam component {
+  FontColor #062b8c
+  BackgroundColor<<ForgeRock>> #fc6700
+  BorderColor #062b8c
+  BackgroundColor<<AWS>> azure
+  ArrowColor #062b8c
+  ArrowFontColor #062b8c
+}
+skinparam node {
+  BorderColor #4ED827
+  FontColor #4ED827
+}
+skinparam frame {
+  BorderColor gray
+  FontColor gray
+}
+
+frame "Platform Tier" {
+    frame "AWS IoT" {
+        [IoT Core] as hub <<AWS>>
+        node "Custom\nAuthorizer" {
+            [Lambda Function] as lamb <<AWS>>
+            [Thing SDK] as service <<ForgeRock>>
+        }
+    }
+    frame "ForgeRock Identity Platform" {
+        [Access Management] as am <<ForgeRock>>
+        [Directory Services] as ds <<ForgeRock>>
+        [Identity Management] as idm <<ForgeRock>>
+    }
+}
+
+frame "Edge Tier" {
+    frame "Device" {
+        [Thing SDK] as device <<ForgeRock>>
+    }
+}
+
+am -left-> ds : Store\nThings
+idm -down-> ds
+idm <-> am
+device -up-> am : Register &\nAuthorize
+device -up-> hub : Publish\n(Access Token)
+hub -> lamb : Authorize
+lamb -down-> service : Verify\nToken
+service -> am
+
+
+@enduml
