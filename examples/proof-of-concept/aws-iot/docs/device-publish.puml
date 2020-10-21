@@ -1,0 +1,34 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+participant Device as dv
+participant "FR Platform" as fr
+participant "AWS IoT Core" as hub
+participant "AWS Lambda" as lam
+
+dv -> fr : Authenticate
+dv <-- fr
+dv -> fr : Request OAuth 2.0\naccess token
+dv <-- fr
+dv -> dv : Create\nauthorization token
+dv -> hub: Publish message\n(authorization token)
+hub -> lam : Authorize publish\n(authorization token)
+lam -> fr : Get verification keys
+fr --> lam
+lam -> lam : Verify access token
+lam --> hub : AWS policy
+
+@enduml
