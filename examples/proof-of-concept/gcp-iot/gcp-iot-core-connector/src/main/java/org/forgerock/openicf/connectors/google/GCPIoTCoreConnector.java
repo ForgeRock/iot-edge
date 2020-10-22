@@ -58,7 +58,7 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
 /**
- * Main implementation of the GoogleIotHub Connector.
+ * Main implementation of the Google Cloud Platform IoT Core Connector.
  */
 @ConnectorClass(displayNameKey = "GCPIoTCore.connector.display", configurationClass = GCPIoTCoreConfiguration.class)
 public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp {
@@ -74,7 +74,8 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
     private Schema schema = null;
 
     private CloudIot getService() throws IOException, GeneralSecurityException {
-        GoogleCredentials credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(this.configuration.getCredentials().getBytes())).createScoped(CloudIotScopes.all());
+        GoogleCredentials credentials = GoogleCredentials.fromStream(this.configuration.getCredentialsAsStream())
+                .createScoped(CloudIotScopes.all());
         credentials.refreshIfExpired();
         CloudIot.Builder builder = new CloudIot.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
@@ -141,10 +142,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
                 }
             }
             ((SyncTokenResultsHandler) handler).handleResult(syncToken);
-        } catch (IOException e) {
-            logger.error("Device sync failed.", e);
-            throw new ConnectorIOException(e);
-        } catch (GeneralSecurityException e) {
+        } catch (IOException | GeneralSecurityException e) {
             logger.error("Device sync failed.", e);
             throw new ConnectorIOException(e);
         }
@@ -195,10 +193,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
                 }
             }
             ((SearchResultsHandler) handler).handleResult(new SearchResult());
-        } catch (IOException e) {
-            logger.error("Device query failed.", e);
-            throw new ConnectorIOException(e);
-        } catch (GeneralSecurityException e) {
+        } catch (IOException | GeneralSecurityException e) {
             logger.error("Device query failed.", e);
             throw new ConnectorIOException(e);
         }
@@ -225,6 +220,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         builder.setName(device.getId());
         builder.addAttribute(THING_TYPE_ATTR);
 
+        // if a device is not blocked then the API returns a null even when that field is requested
         Boolean blocked = device.getBlocked();
         builder.addAttribute(AttributeBuilder.build("accountStatus",
                 blocked != null && blocked.booleanValue() ? "inactive" : "active"));

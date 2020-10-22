@@ -1,0 +1,39 @@
+@startuml
+
+skinparam component {
+  FontColor #062b8c
+  BackgroundColor<<ForgeRock>> #fc6700
+  BorderColor #062b8c
+  BackgroundColor<<Google>> azure
+  ArrowColor #062b8c
+  ArrowFontColor #062b8c
+}
+skinparam node {
+  BorderColor #4ED827
+  FontColor #4ED827
+}
+skinparam frame {
+  BorderColor gray
+  FontColor gray
+}
+
+frame "Google Cloud Platform" {
+    [IoT Core] as core <<Google>>
+    [Device Registry] as db <<Google>>
+}
+frame "ForgeRock Identity Platform" {
+    [Identity Management] as idm <<ForgeRock>>
+    [Directory Services] as ds <<ForgeRock>>
+    node "Connector" {
+        [ICF Framework] as icf <<ForgeRock>>
+        [IoT Core SDK] as sdk <<Google>>
+    }
+}
+
+idm -down-> ds : Store \n Things
+idm -right-> icf : Synchronise \n Things
+icf -down-> sdk
+sdk -right-> core : Query Devices
+core -up-> db
+
+@enduml
