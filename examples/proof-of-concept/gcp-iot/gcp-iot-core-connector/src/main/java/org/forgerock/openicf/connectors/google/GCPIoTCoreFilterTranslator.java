@@ -28,7 +28,7 @@ import org.identityconnectors.framework.common.objects.filter.StartsWithFilter;
  * This is an implementation of AbstractFilterTranslator that gives a concrete representation
  * of which filters can be applied at the connector level (natively).
  * <p>
- * If the GoogleIotHub doesn't support a certain expression type, that factory
+ * If the GoogleIotCore doesn't support a certain expression type, that factory
  * method should return null. This level of filtering is present only to allow any
  * native constructs that may be available to help reduce the result set for the framework,
  * which will (strictly) reapply all filters specified after the connector does the initial
