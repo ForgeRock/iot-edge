@@ -2,9 +2,9 @@
     "mappings" : [
         {
             "target" : "managed/thing",
-            "source" : "system/AzureIoT/THINGS",
-            "name" : "systemAzureiotTHINGS_managedThing",
-            "displayName" : "systemAzureiotTHINGS_managedThing",
+            "source" : "system/GCPIoTCore/THINGS",
+            "name" : "systemGCPIoTCoreTHINGS_managedThing",
+            "displayName" : "systemGCPIoTCoreTHINGS_managedThing",
             "properties" : [
                 {
                     "target" : "_id",
