@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<enterprise-security-extension
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="enterprise-security-extension.xsd"
+        version="1">
+    <realms>
+        <jwt-realm>
+            <name>ForgeRock</name>
+            <enabled>true</enabled>
+            <configuration>
+                <jwks-endpoint>https://iot.iam.example.com/am/oauth2/connect/jwk_uri</jwks-endpoint>
+            </configuration>
+        </jwt-realm>
+    </realms>
+    <pipelines>
+        <listener-pipeline name="forgerock-pipeline" listener="ALL">
+            <jwt-authentication-manager>
+                <realm>ForgeRock</realm>
+                <jwt-validation>
+                    <reserved-claims>
+                        <scope>publish</scope>
+                    </reserved-claims>
+                </jwt-validation>
+            </jwt-authentication-manager>
+            <allow-all-authorization-manager/>
+        </listener-pipeline>
+    </pipelines>
+</enterprise-security-extension>
