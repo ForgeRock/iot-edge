@@ -6,6 +6,7 @@ This directory contains resources for deploying Things with the ForgeRock Identi
 
 Install the third party software by following the instructions in the
 [ForgeOps docs](https://backstage.forgerock.com/docs/forgeops/7/devops-minikube-implementation-env.html#devops-implementation-env-sw).
+Additionally, install [mkcert](https://github.com/FiloSottile/mkcert) for making locally-trusted development certificates.
 
 Clone this repo:
 ```
