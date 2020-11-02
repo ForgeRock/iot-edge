@@ -105,7 +105,8 @@ if [ ! -f _wildcard.iam.example.com.pem ]; then
   mkcert "*.iam.example.com"
   mkcert -install
 fi
-kubectl delete secret sslcert
+# The very first time sslcert does not exist so the delete command will fail. The `||  true' stops the script exiting.
+kubectl delete secret sslcert || true
 kubectl create secret tls sslcert --cert=_wildcard.iam.example.com.pem --key=_wildcard.iam.example.com-key.pem
 
 echo "====================================================="
