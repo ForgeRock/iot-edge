@@ -85,6 +85,79 @@
                     "situation" : "ABSENT"
                 }
             ]
+        },
+        {
+            "target" : "system/GCPIoTCore/THINGS",
+            "source" : "managed/thing",
+            "name" : "managedThing_systemGcpiotcoreTHINGS",
+            "consentRequired" : false,
+            "icon" : null,
+            "displayName" : "managedThing_systemGcpiotcoreTHINGS",
+            "properties" : [
+                {
+                    "source" : "uid",
+                    "target" : "__UID__"
+                },
+                {
+                    "source" : "accountStatus",
+                    "target" : "accountStatus"
+                }
+            ],
+            "policies" : [
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "AMBIGUOUS"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "SOURCE_MISSING"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "MISSING"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "FOUND_ALREADY_LINKED"
+                },
+                {
+                    "action" : "DELETE",
+                    "situation" : "UNQUALIFIED"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "UNASSIGNED"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "LINK_ONLY"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "TARGET_IGNORED"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "SOURCE_IGNORED"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "ALL_GONE"
+                },
+                {
+                    "action" : "UPDATE",
+                    "situation" : "CONFIRMED"
+                },
+                {
+                    "action" : "UPDATE",
+                    "situation" : "FOUND"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "ABSENT"
+                }
+            ],
+            "links" : "systemGCPIoTCoreTHINGS_managedThing"
         }
     ]
 }
