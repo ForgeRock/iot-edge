@@ -25,8 +25,10 @@ import org.identityconnectors.framework.spi.*;
 import org.identityconnectors.framework.spi.operations.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +41,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS`Z`");
     private static final AttributeInfo THING_TYPE_ATTR_INFO = AttributeInfoBuilder.build("thingType", String.class);
     private static final AttributeInfo STATUS_ATTR_INFO = AttributeInfoBuilder.build("accountStatus", String.class);
+    private static final AttributeInfo THING_CONFIG_ATTR_INFO = AttributeInfoBuilder.build("thingConfig", String.class);
     private static final AttributeInfo UID_ATTR_INFO = AttributeInfoBuilder.build(Uid.NAME, String.class);
     private static final Attribute THING_TYPE_ATTR = AttributeBuilder.build("thingType", "DEVICE");
     private static final ObjectClass THINGS = new ObjectClass("THINGS");
@@ -79,11 +82,12 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
                     .registries()
                     .devices()
                     .list(getRegistryPath())
-                    .setFieldMask("blocked")
+                    .setFieldMask("(blocked,config)")
                     .execute()
                     .getDevices();
         } catch (IOException e) {
-           throw new ConnectorIOException("Device list failed", e);
+            logger.error("Device list failed", e);
+            throw new ConnectorIOException("Device list failed", e);
         }
     }
 
@@ -149,6 +153,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         thingsInfoBuilder.addAttributeInfo(Name.INFO);
         thingsInfoBuilder.addAttributeInfo(UID_ATTR_INFO);
         thingsInfoBuilder.addAttributeInfo(THING_TYPE_ATTR_INFO);
+        thingsInfoBuilder.addAttributeInfo(THING_CONFIG_ATTR_INFO);
         thingsInfoBuilder.addAttributeInfo(STATUS_ATTR_INFO);
         builder.defineObjectClass(thingsInfoBuilder.build(), SearchOp.class, SyncOp.class);
         schema = builder.build();
@@ -201,6 +206,12 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         Boolean blocked = device.getBlocked();
         builder.addAttribute(AttributeBuilder.build("accountStatus",
                 blocked != null && blocked.booleanValue() ? "inactive" : "active"));
+
+        byte[] configBytes = device.getConfig() != null ? device.getConfig().decodeBinaryData(): null;
+        if (configBytes != null) {
+            String config = new String(configBytes, StandardCharsets.UTF_8);
+            builder.addAttribute(AttributeBuilder.build("thingConfig", config));
+        }
 
         return builder.build();
     }

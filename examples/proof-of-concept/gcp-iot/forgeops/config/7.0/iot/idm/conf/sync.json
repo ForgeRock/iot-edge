@@ -29,6 +29,10 @@
                 {
                     "target" : "accountStatus",
                     "source" : "accountStatus"
+                },
+                {
+                    "target" : "thingConfig",
+                    "source" : "thingConfig"
                 }
             ],
             "policies" : [
