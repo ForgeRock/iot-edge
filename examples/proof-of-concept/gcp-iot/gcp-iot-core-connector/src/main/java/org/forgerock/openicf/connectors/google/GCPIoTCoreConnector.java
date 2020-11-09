@@ -67,7 +67,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         } catch (IOException e) {
             throw new ConnectorIOException("Cloud IoT service", e);
         } catch (GeneralSecurityException e) {
-            throw new ConnectorIOException("Cloud IoT service", e);
+            throw new ConnectorSecurityException("Cloud IoT service", e);
         }
     }
 
@@ -126,21 +126,16 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         isThing(objectClass);
         CloudIot service = getService();
         List<Device> devices = getDevices(service);
-        try {
-            for( Device d : devices ) {
-                SyncDeltaBuilder deltaBuilder = new SyncDeltaBuilder();
-                deltaBuilder.setObject(buildThing(d));
-                deltaBuilder.setDeltaType(SyncDeltaType.CREATE_OR_UPDATE);
-                deltaBuilder.setToken(syncToken);
-                if (!handler.handle(deltaBuilder.build())) {
-                    break;
-                }
+        for( Device d : devices ) {
+            SyncDeltaBuilder deltaBuilder = new SyncDeltaBuilder();
+            deltaBuilder.setObject(buildThing(d));
+            deltaBuilder.setDeltaType(SyncDeltaType.CREATE_OR_UPDATE);
+            deltaBuilder.setToken(syncToken);
+            if (!handler.handle(deltaBuilder.build())) {
+                break;
             }
-            ((SyncTokenResultsHandler) handler).handleResult(syncToken);
-        } catch (IOException e) {
-            logger.error("Device sync failed.", e);
-            throw new ConnectorIOException(e);
         }
+        ((SyncTokenResultsHandler) handler).handleResult(syncToken);
     }
 
     @Override
@@ -177,22 +172,17 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         isThing(objectClass);
         CloudIot service = getService();
         List<Device> devices = getDevices(service);
-        try {
-            if (devices == null) {
-                logger.error(String.format("empty list returned for %s", getRegistryPath()));
-                return;
-            }
-            for( Device d : devices ) {
-                ConnectorObject thing = buildThing(d);
-                if ((query == null || query.accept(thing)) && !handler.handle(thing)) {
-                    break;
-                }
-            }
-            ((SearchResultsHandler) handler).handleResult(new SearchResult());
-        } catch (IOException e) {
-            logger.error("Device query failed.", e);
-            throw new ConnectorIOException(e);
+        if (devices == null) {
+            logger.error(String.format("empty list returned for %s", getRegistryPath()));
+            return;
         }
+        for( Device d : devices ) {
+            ConnectorObject thing = buildThing(d);
+            if ((query == null || query.accept(thing)) && !handler.handle(thing)) {
+                break;
+            }
+        }
+        ((SearchResultsHandler) handler).handleResult(new SearchResult());
     }
 
 
@@ -202,7 +192,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         getService();
     }
 
-    private ConnectorObject buildThing(Device device) throws IOException {
+    private ConnectorObject buildThing(Device device) {
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(THINGS);
         builder.setUid(device.getId());
@@ -212,7 +202,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         // if a device is not blocked then the API returns a null even when that field is requested
         Boolean blocked = device.getBlocked();
         builder.addAttribute(AttributeBuilder.build("accountStatus",
-                blocked != null && blocked.booleanValue() ? "inactive" : "active"));
+                blocked != null && blocked ? "inactive" : "active"));
 
         byte[] configBytes = device.getConfig() != null ? device.getConfig().decodeBinaryData(): null;
         if (configBytes != null) {
