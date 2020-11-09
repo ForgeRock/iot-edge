@@ -105,6 +105,10 @@
                 {
                     "source" : "accountStatus",
                     "target" : "accountStatus"
+                },
+                {
+                    "target" : "thingConfig",
+                    "source" : "thingConfig"
                 }
             ],
             "policies" : [

@@ -13,6 +13,8 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.cloudiot.v1.CloudIot;
 import com.google.api.services.cloudiot.v1.CloudIotScopes;
 import com.google.api.services.cloudiot.v1.model.Device;
+import com.google.api.services.cloudiot.v1.model.DeviceConfig;
+import com.google.api.services.cloudiot.v1.model.ModifyCloudToDeviceConfigRequest;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import org.identityconnectors.common.logging.Log;
@@ -25,6 +27,7 @@ import org.identityconnectors.framework.spi.*;
 import org.identityconnectors.framework.spi.operations.*;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
@@ -73,6 +76,10 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
                 this.configuration.getProjectId(),
                 this.configuration.getRegion(),
                 this.configuration.getRegistryId());
+    }
+
+    private String getDevicePath(String name) {
+        return String.format("%s/devices/%s", getRegistryPath(), name);
     }
 
     private List<Device> getDevices(CloudIot service) throws ConnectorIOException {
@@ -231,11 +238,14 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         if( attributesAccessor.hasAttribute(STATUS_ATTR_INFO.getName())) {
             updateBlocked(service, uid, attributesAccessor.findString(STATUS_ATTR_INFO.getName()));
         }
+        if( attributesAccessor.hasAttribute(THING_CONFIG_ATTR_INFO.getName())) {
+            updateConfig(service, uid, attributesAccessor.findString(THING_CONFIG_ATTR_INFO.getName()));
+        }
         return uid;
     }
 
     private void updateBlocked(CloudIot service, Uid uid, String accountStatus) throws ConnectorIOException {
-        final String devicePath = String.format("%s/devices/%s", getRegistryPath(), uid.getUidValue());
+        final String devicePath = getDevicePath(uid.getUidValue());
         logger.info("update blocked for {0} with account status {1}", devicePath, accountStatus);
 
         Device thing = new Device().setBlocked(accountStatus.equals("inactive"));
@@ -248,7 +258,38 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
                     .setUpdateMask("blocked")
                     .execute();
         } catch (IOException e) {
+            logger.error("Device blocked update failed", e);
             throw new ConnectorIOException("Device blocked update failed", e);
         }
+    }
+
+    private void updateConfig(CloudIot service, Uid uid, String config) {
+        final String devicePath = getDevicePath(uid.getUidValue());
+        logger.info("update config of {0} to {1}", devicePath, config);
+        ModifyCloudToDeviceConfigRequest req = new ModifyCloudToDeviceConfigRequest();
+
+        try {
+            // Data sent through the wire has to be base64 encoded.
+            String encPayload = Base64.getEncoder().encodeToString(config.getBytes(StandardCharsets.UTF_8.name()));
+            req.setBinaryData(encPayload);
+        } catch (UnsupportedEncodingException e) {
+            logger.error("Config encoding error", e);
+            throw new IllegalArgumentException("Config encoding error", e);
+        }
+
+        try {
+            DeviceConfig deviceConfig = service
+                    .projects()
+                    .locations()
+                    .registries()
+                    .devices()
+                    .modifyCloudToDeviceConfig(devicePath, req)
+                    .execute();
+            logger.info("{0} has new config version {1}", devicePath, deviceConfig.getVersion());
+        } catch (IOException e) {
+            logger.error("Device config update failed", e);
+            throw new ConnectorIOException("Device config update failed", e);
+        }
+
     }
 }
