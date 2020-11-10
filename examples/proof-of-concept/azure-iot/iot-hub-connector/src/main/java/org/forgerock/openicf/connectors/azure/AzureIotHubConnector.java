@@ -8,6 +8,7 @@
 
 package org.forgerock.openicf.connectors.azure;
 
+import static com.microsoft.azure.sdk.iot.service.DeviceStatus.Disabled;
 import static com.microsoft.azure.sdk.iot.service.DeviceStatus.Enabled;
 import static com.microsoft.azure.sdk.iot.service.devicetwin.SqlQuery.FromType.DEVICES;
 import static com.microsoft.azure.sdk.iot.service.devicetwin.SqlQuery.createSqlQuery;
@@ -15,6 +16,7 @@ import static com.microsoft.azure.sdk.iot.service.devicetwin.SqlQuery.createSqlQ
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Set;
 
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
@@ -23,6 +25,7 @@ import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfo;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.AttributesAccessor;
 import org.identityconnectors.framework.common.objects.ConnectorObject;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
@@ -57,12 +60,13 @@ import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinDevice;
 import com.microsoft.azure.sdk.iot.service.devicetwin.Query;
 import com.microsoft.azure.sdk.iot.service.devicetwin.SqlQuery;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
+import org.identityconnectors.framework.spi.operations.UpdateOp;
 
 /**
  * Main implementation of the AzureIotHub Connector.
  */
 @ConnectorClass(displayNameKey = "AzureIotHub.connector.display", configurationClass = AzureIotHubConfiguration.class)
-public class AzureIotHubConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp {
+public class AzureIotHubConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp {
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS`Z`");
     private static final AttributeInfo THING_TYPE_ATTR_INFO = AttributeInfoBuilder.build("thingType", String.class);
     private static final AttributeInfo STATUS_ATTR_INFO = AttributeInfoBuilder.build("accountStatus", String.class);
@@ -229,5 +233,28 @@ public class AzureIotHubConnector implements Connector, TestOp, SchemaOp, Search
             throw new IllegalArgumentException(String.format("Operation requires ObjectClass %s, received %s",
                     THINGS.getDisplayNameKey(), objectClass));
         }
+    }
+
+    @Override
+    public Uid update(ObjectClass objectClass, Uid uid, Set<Attribute> set, OperationOptions operationOptions) {
+        isThing(objectClass);
+        AttributesAccessor attributesAccessor = new AttributesAccessor(set);
+        if( attributesAccessor.hasAttribute(STATUS_ATTR_INFO.getName())) {
+            String accountStatus = attributesAccessor.findString(STATUS_ATTR_INFO.getName());
+            logger.info("update blocked for {0} with account status {1}", uid.getUidValue(), accountStatus);
+            try {
+                RegistryManager manager = getRegistryManager();
+                Device device = manager.getDevice(uid.getUidValue());
+                device.setStatus(accountStatus.equals("inactive")? Disabled: Enabled);
+                manager.updateDevice(device);
+            } catch (IOException e) {
+                logger.error("device update error", e);
+                throw new ConnectorIOException(e);
+            } catch (IotHubException e) {
+                logger.error("device update error", e);
+                throw new ConnectorException(e);
+            }
+        }
+        return uid;
     }
 }
