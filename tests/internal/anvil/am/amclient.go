@@ -626,13 +626,13 @@ func SendUserConsent(realm string, user IdAttributes, userCode thing.DeviceAutho
 	}
 	// the response is an HTML page with an embedded JSON object that contains the pageData message
 	// we need to extract the JSON and parse it to read the pageData
-	re := regexp.MustCompile("(?s:pageData.*})")
+	re := regexp.MustCompile(`(?s:pageData.*})`)
 	pageData := re.FindString(string(responseBodyBytes))
-	re = regexp.MustCompile("(errorCode:\\s*\")(.*)(\")")
+	re = regexp.MustCompile(`(errorCode:\s*")(.*)(")`)
 	if re.MatchString(pageData) {
 		return fmt.Errorf("request failed with error code: " + re.FindStringSubmatch(pageData)[2])
 	}
-	re = regexp.MustCompile("(done:\\s*)(.*)")
+	re = regexp.MustCompile(`(done:\s*)(.*)`)
 	if re.MatchString(pageData) {
 		return nil
 	}
