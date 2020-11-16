@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"io"
 	"io/ioutil"
 	"log"
@@ -30,6 +29,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"gopkg.in/square/go-jose.v2"

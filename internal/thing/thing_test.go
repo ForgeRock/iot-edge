@@ -17,9 +17,10 @@
 package thing
 
 import (
+	"testing"
+
 	"github.com/ForgeRock/iot-edge/v7/internal/mocks"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"testing"
 )
 
 func TestDefaultThing_RequestUserToken(t *testing.T) {

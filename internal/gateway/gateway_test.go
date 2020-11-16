@@ -24,11 +24,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/internal/mocks"
 	"io"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/ForgeRock/iot-edge/v7/internal/mocks"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
