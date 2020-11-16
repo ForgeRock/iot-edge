@@ -17,14 +17,15 @@
 package main
 
 import (
+	"reflect"
+	"sort"
+	"strings"
+
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
-	"reflect"
-	"sort"
-	"strings"
 )
 
 // UserTokenAllow requests an access token for a user and the user consents to the token being issued.
