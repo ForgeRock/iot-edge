@@ -37,9 +37,11 @@ import (
 )
 
 const (
-	execDir     = "./tests/iotsdk"
+	execDir     = "."
 	testdataDir = execDir + "/testdata"
 	debugDir    = execDir + "/debug"
+	examplesDir = execDir + "/../../examples"
+	gatewayDir  = execDir + "/../../cmd/gateway"
 
 	// Auth trees
 	jwtPopAuthTree             = "Anvil-JWT-Auth"

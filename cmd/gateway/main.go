@@ -80,7 +80,7 @@ type commandlineOpts struct {
 
 func (o commandlineOpts) String() string {
 	return fmt.Sprintf(
-		`commandline options
+		`Provided commandline options:
 	url: %s
 	realm: %s
 	tree: %s
@@ -95,16 +95,9 @@ func (o commandlineOpts) String() string {
 }
 
 // runGateway initialises and runs an IoT Gateway
-func runGateway() error {
+func runGateway(opts commandlineOpts) error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-	var opts commandlineOpts
-	_, err := flags.Parse(&opts)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%v\n", opts)
 
 	if opts.Debug {
 		// pipe debug to standard out
@@ -169,7 +162,14 @@ func runGateway() error {
 }
 
 func main() {
-	if err := runGateway(); err != nil {
+	var opts commandlineOpts
+	_, err := flags.Parse(&opts)
+	if err != nil {
+		os.Exit(1)
+	}
+	fmt.Printf("%v\n", opts)
+
+	if err := runGateway(opts); err != nil {
 		log.Fatal(err)
 	}
 }

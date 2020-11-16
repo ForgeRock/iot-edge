@@ -62,7 +62,7 @@ func simpleThing() error {
 		thingName   = flag.String("name", "simple-thing", "Thing name")
 		key         = flag.String("key", "", "The Thing's key in PEM format")
 		keyID       = flag.String("keyid", "pop.cnf", "The Thing's key ID")
-		secretStore = flag.String("secrets", "./examples/resources/example.secrets", "Path to pre-created JWK set file")
+		secretStore = flag.String("secrets", "./resources/example.secrets", "Path to pre-created JWK set file")
 	)
 	flag.Parse()
 

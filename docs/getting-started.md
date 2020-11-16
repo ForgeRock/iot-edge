@@ -91,7 +91,7 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
     -audience "/" \
     -realm "/" \
     -tree "auth-tree" \
-    -secrets "./examples/resources/example.secrets"
+    -secrets "./resources/example.secrets"
 ```
 
 #### Dynamic Registration
@@ -136,7 +136,7 @@ Run the gateway:
     --realm "/" \
     --tree "auth-tree" \
     --kid "pop.cnf" \
-    --key "./examples/resources/eckey1.key.pem" \
+    --key "../../examples/resources/eckey1.key.pem" \
     --address ":5683" \
     -d
 ```
@@ -161,8 +161,8 @@ Run the gateway:
     --audience "/" \
     --realm "/" \
     --tree "reg-tree" \
-    --key "./examples/resources/eckey1.key.pem" \
-    --cert "./examples/resources/dynamic-gateway.cert.pem" \
+    --key "../../examples/resources/eckey1.key.pem" \
+    --cert "../../examples/resources/dynamic-gateway.cert.pem" \
     --address ":5683" \
     -d
 ```
@@ -189,7 +189,7 @@ to connect the thing to the gateway:
 ./run.sh example "thing/simple" \
     -name "gateway-thing" \
     -url "coap://:5683" \
-    -keyfile "./examples/resources/eckey1.key.pem"
+    -secrets "./resources/example.secrets"
 ```
 
 ### Register Identity

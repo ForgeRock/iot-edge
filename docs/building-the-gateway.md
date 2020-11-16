@@ -9,7 +9,8 @@ build tooling and great support for cross-compilation to target systems.
 Build the Gateway into a binary:
 
 ```bash
-go build -o ./bin/gateway ./cmd/gateway
+cd cmd/gateway/
+go build -o ./bin/gateway .
 ```
 
 Use the help flag to see the available command line options for the Gateway:
@@ -26,7 +27,7 @@ To run the gateway on an arm 32-bit processor (for example, a Raspberry Pi 3 run
 `linux/arm`:
 
 ```bash
-GOOS=linux GOARCH=arm go build -o ./bin/gateway ./cmd/gateway
+GOOS=linux GOARCH=arm go build -o ./bin/gateway .
 ```
 
 See the [complete list](https://golang.org/doc/install/source#environment) of possible cross-compilation targets.
