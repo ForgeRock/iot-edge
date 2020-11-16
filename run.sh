@@ -17,17 +17,13 @@ set -e
 # limitations under the License.
 #
 
-# set GO environment variables
-export GOPATH=$(pwd)/vendor
-export GO111MODULE=on
-
 # uncomment to switch on DTLS debug
 #export PION_LOG_TRACE=all
 
 case "$1" in
 anvil)
   # Run the IoT SDK tests
-  go run github.com/ForgeRock/iot-edge/v7/tests/iotsdk
+  cd tests/iotsdk && go run . && cd - &>/dev/null
 	;;
 test)
   # Run the IoT unit tests
@@ -35,11 +31,11 @@ test)
 	;;
 example)
   # Run the example program
-  go run github.com/ForgeRock/iot-edge/v7/examples/"$2" "${@:3}"
+  cd examples && go run ./"$2" "${@:3}" && cd - &>/dev/null
 	;;
 gateway)
   # Run the Gateway application
-  go run github.com/ForgeRock/iot-edge/v7/cmd/gateway "${@:2}"
+  cd cmd/gateway && go run . "${@:2}" && cd - &>/dev/null
 	;;
 coverage)
   go tool cover -html=coverage.out

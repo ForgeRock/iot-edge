@@ -128,6 +128,9 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-key", string(key),
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
 
+	// set the working directory
+	cmd.Dir = examplesDir
+
 	// send standard out and error to debugger
 	stdout, _ := cmd.StdoutPipe()
 	pipeToDebugger(stdout)
@@ -192,6 +195,9 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 		"-name", data.Id.Name,
 		"-key", string(key),
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
+
+	// set the working directory
+	cmd.Dir = examplesDir
 
 	// send standard out and error to debugger
 	stdout, _ := cmd.StdoutPipe()
@@ -267,6 +273,9 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 		"-key", string(key),
 		"-cert", string(cert))
 
+	// set the working directory
+	cmd.Dir = examplesDir
+
 	// send standard out and error to debugger
 	stdout, _ := cmd.StdoutPipe()
 	pipeToDebugger(stdout)
@@ -338,6 +347,9 @@ func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-name", data.Id.Name,
 		"-key", string(key),
 		"-cert", string(cert))
+
+	// set the working directory
+	cmd.Dir = examplesDir
 
 	// process standard out to retrieve the device authorization response
 	stdout, _ := cmd.StdoutPipe()
@@ -427,6 +439,9 @@ func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
 		"--address", nextAvailablePort,
 		"--key", keyFile.Name())
 
+	// set the working directory
+	cmd.Dir = gatewayDir
+
 	// watch stdout to see if the gateway as started up successfully
 	stdout, _ := cmd.StdoutPipe()
 	read(stdout, func(s string) {
@@ -501,6 +516,9 @@ func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.Thin
 		"--address", nextAvailablePort,
 		"--key", keyFile.Name(),
 		"--kid", data.Signer.KID)
+
+	// set the working directory
+	cmd.Dir = gatewayDir
 
 	// watch stdout to see if the gateway as started up successfully
 	stdout, _ := cmd.StdoutPipe()
@@ -598,6 +616,9 @@ func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
 		"--address", nextAvailablePort,
 		"--key", keyFile.Name(),
 		"--cert", certFile.Name())
+
+	// set the working directory
+	cmd.Dir = gatewayDir
 
 	// watch stdout to see if the gateway as started up successfully
 	stdout, _ := cmd.StdoutPipe()
