@@ -29,6 +29,8 @@ type AMInfoResponse struct {
 	AccessTokenURL string
 	AttributesURL  string
 	ThingsVersion  string
+	UserCodeURL    string
+	UserTokenURL   string
 }
 
 // AuthenticatePayload represents the outbound and inbound data during an authentication request

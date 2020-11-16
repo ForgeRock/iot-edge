@@ -106,6 +106,10 @@ var tests = []anvil.SDKTest{
 	&SessionValid{},
 	&SessionInvalid{},
 	&SessionLogout{},
+	&UserTokenAllow{},
+	&UserTokenDeny{},
+	&UserTokenWithUnsupportedScopes{},
+	&UserTokenWithNoScopes{},
 }
 
 func logFailure(path string, start time.Time, anvilDebug []byte, sdkDebug []byte) {

@@ -134,3 +134,14 @@ type readError struct {
 func (e readError) Error() string {
 	return fmt.Sprintf("failed to read `%s` from content", e.key)
 }
+
+// DeviceAuthorizationResponse contains the response received from AM after a successful device authorization request.
+// The response format is specified in https://tools.ietf.org/html/rfc8628#section-3.2.
+type DeviceAuthorizationResponse struct {
+	DeviceCode              string  `json:"device_code"`
+	UserCode                string  `json:"user_code"`
+	VerificationURI         string  `json:"verification_uri"`
+	VerificationURIComplete string  `json:"verification_uri_complete,omitempty"`
+	ExpiresIn               float64 `json:"expires_in"`
+	Interval                float64 `json:"interval,omitempty"`
+}

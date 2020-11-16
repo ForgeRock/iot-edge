@@ -65,6 +65,12 @@ type Connection interface {
 
 	// attributes makes a thing attributes request with the given session token and payload
 	Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error)
+
+	// UserCode makes a user code request with the given session token and payload
+	UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error)
+
+	// UserToken makes a user token request with the given session token and payload
+	UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error)
 }
 
 type ConnectionBuilder struct {

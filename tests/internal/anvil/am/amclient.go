@@ -20,11 +20,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -239,14 +242,23 @@ func get(endpoint string, version string) (reply []byte, err error) {
 
 // getSSOToken gets an SSO token using the AM Admin's credentials
 func getSSOToken() (token string, err error) {
-	req, err := http.NewRequest(http.MethodPost, AMURL+"/json/realms/root/authenticate", nil)
+	attributes := IdAttributes{
+		Name:     adminUsername,
+		Password: adminPassword,
+	}
+	return getSSOTokenForIdentity("/", attributes)
+}
+
+// getSSOTokenForIdentity gets an SSO token using the AM Admin's credentials
+func getSSOTokenForIdentity(realm string, attributes IdAttributes) (token string, err error) {
+	req, err := http.NewRequest(http.MethodPost, AMURL+"/json/authenticate?realm="+realm, nil)
 	if err != nil {
 		return token, err
 	}
 	req.Header.Add(headerAPIVersion, "resource=2.0, protocol=1.0")
 	req.Header.Add(headerContentType, "application/json")
-	req.Header.Add("X-OpenAM-Username", adminUsername)
-	req.Header.Add("X-OpenAM-Password", adminPassword)
+	req.Header.Add("X-OpenAM-Username", attributes.Name)
+	req.Header.Add("X-OpenAM-Password", attributes.Password)
 
 	res, err := httpClient.Do(req)
 	if err != nil {
@@ -582,4 +594,47 @@ func SetAdvancedServerProperties(properties map[string]interface{}) (err error) 
 		"protocol=1.0,resource=1.0",
 		bytes.NewReader(payload))
 	return err
+}
+
+// SendUserConsent will send the decision to allow or deny a device authorization grant request.
+func SendUserConsent(realm string, user IdAttributes, userCode thing.DeviceAuthorizationResponse, decision string) error {
+	ssoToken, err := getSSOTokenForIdentity(realm, user)
+	if err != nil {
+		return err
+	}
+	form := url.Values{}
+	form.Add("user_code", userCode.UserCode)
+	form.Add("decision", decision)
+	form.Add("csrf", ssoToken)
+	request, err := http.NewRequest(http.MethodPost, userCode.VerificationURI, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set(headerContentType, "application/x-www-form-urlencoded")
+	request.AddCookie(&http.Cookie{Name: headerCookie, Value: ssoToken})
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	responseBodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != 200 {
+		return fmt.Errorf("user consent response: %s", string(responseBodyBytes))
+	}
+	// the response is an HTML page with an embedded JSON object that contains the pageData message
+	// we need to extract the JSON and parse it to read the pageData
+	re := regexp.MustCompile("(?s:pageData.*})")
+	pageData := re.FindString(string(responseBodyBytes))
+	re = regexp.MustCompile("(errorCode:\\s*\")(.*)(\")")
+	if re.MatchString(pageData) {
+		return fmt.Errorf("request failed with error code: " + re.FindStringSubmatch(pageData)[2])
+	}
+	re = regexp.MustCompile("(done:\\s*)(.*)")
+	if re.MatchString(pageData) {
+		return nil
+	}
+	return fmt.Errorf("request failed with unrecognised response: " + string(responseBodyBytes))
 }

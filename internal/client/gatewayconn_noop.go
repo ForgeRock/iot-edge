@@ -53,3 +53,11 @@ func (c *gatewayConnection) IntrospectAccessToken(token string) (introspection [
 func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	return reply, errCOAPNotBuilt
 }
+
+func (c *gatewayConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return reply, errCOAPNotBuilt
+}
+
+func (c *gatewayConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return reply, errCOAPNotBuilt
+}

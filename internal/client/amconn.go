@@ -322,6 +322,22 @@ func (c *amConnection) accessTokenURL() string {
 	return c.baseURL + "/json/things/*?" + q
 }
 
+func (c *amConnection) userCodeURL() string {
+	q := "_action=get_user_code"
+	if c.realm != "" {
+		q += "&realm=" + c.realm
+	}
+	return c.baseURL + "/json/things/*?" + q
+}
+
+func (c *amConnection) userTokenURL() string {
+	q := "_action=get_user_token"
+	if c.realm != "" {
+		q += "&realm=" + c.realm
+	}
+	return c.baseURL + "/json/things/*?" + q
+}
+
 func (c *amConnection) attributesURL(names []string) string {
 	q := make([]string, 0)
 	if c.realm != "" {
@@ -345,6 +361,8 @@ func (c *amConnection) AMInfo() (info AMInfoResponse, err error) {
 		AccessTokenURL: c.accessTokenURL(),
 		AttributesURL:  c.attributesURL(nil),
 		ThingsVersion:  thingsEndpointVersion,
+		UserCodeURL:    c.userCodeURL(),
+		UserTokenURL:   c.userTokenURL(),
 	}, nil
 }
 
@@ -355,7 +373,7 @@ func (c *amConnection) AccessToken(tokenID string, content ContentType, payload 
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeCommandRequest(tokenID, content, request)
+	return c.makeRequest(tokenID, content, request)
 }
 
 // IntrospectAccessToken introspects an access token locally
@@ -417,10 +435,30 @@ func (c *amConnection) Attributes(tokenID string, content ContentType, payload s
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeCommandRequest(tokenID, content, request)
+	return c.makeRequest(tokenID, content, request)
 }
 
-func (c *amConnection) makeCommandRequest(tokenID string, content ContentType, request *http.Request) (reply []byte, err error) {
+// UserCode makes a user code request with the given session token and payload
+func (c *amConnection) UserCode(tokenID string, content ContentType, payload string) ([]byte, error) {
+	request, err := http.NewRequest(http.MethodPost, c.userCodeURL(), strings.NewReader(payload))
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return nil, err
+	}
+	return c.makeRequest(tokenID, content, request)
+}
+
+// UserToken makes a user token request with the given session token and payload
+func (c *amConnection) UserToken(tokenID string, content ContentType, payload string) ([]byte, error) {
+	request, err := http.NewRequest(http.MethodPost, c.userTokenURL(), strings.NewReader(payload))
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return nil, err
+	}
+	return c.makeRequest(tokenID, content, request)
+}
+
+func (c *amConnection) makeRequest(tokenID string, content ContentType, request *http.Request) (reply []byte, err error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
 	request.Header.Set(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
