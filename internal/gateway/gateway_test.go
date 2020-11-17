@@ -29,10 +29,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/v7/internal/mocks"
-
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
+	"github.com/ForgeRock/iot-edge/v7/internal/mocks"
 	"github.com/ForgeRock/iot-edge/v7/internal/tokencache"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/net"

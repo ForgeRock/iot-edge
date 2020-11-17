@@ -30,9 +30,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -250,7 +249,7 @@ func getSSOToken() (token string, err error) {
 	return getSSOTokenForIdentity("/", attributes)
 }
 
-// getSSOTokenForIdentity gets an SSO token using the AM Admin's credentials
+// getSSOTokenForIdentity gets an SSO token using the user's credentials
 func getSSOTokenForIdentity(realm string, attributes IdAttributes) (token string, err error) {
 	req, err := http.NewRequest(http.MethodPost, AMURL+"/json/authenticate?realm="+realm, nil)
 	if err != nil {
@@ -622,7 +621,7 @@ func SendUserConsent(realm string, user IdAttributes, userCode thing.DeviceAutho
 	if err != nil {
 		return err
 	}
-	if response.StatusCode != 200 {
+	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("user consent response: %s", string(responseBodyBytes))
 	}
 	// the response is an HTML page with an embedded JSON object that contains the pageData message
