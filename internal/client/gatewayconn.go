@@ -23,7 +23,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -280,13 +279,91 @@ func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payl
 // UserCode makes an user code request with the given session token and payload
 // SSO token is extracted from signed JWT by Thing Gateway
 func (c *gatewayConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
-	return nil, errors.New("unsupported")
+	conn, err := c.dial()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := c.context()
+	defer cancel()
+
+	var coapFormat coap.MediaType
+	switch content {
+	case ApplicationJOSE:
+		coapFormat = AppJOSE
+	case ApplicationJSON:
+		coapFormat = coap.AppJSON
+		wrappedPayload := ThingEndpointPayload{
+			Token:   tokenID,
+			Payload: payload,
+		}
+		b, err := json.Marshal(wrappedPayload)
+		if err != nil {
+			return nil, err
+		}
+		payload = string(b)
+	}
+
+	request, err := conn.NewPostRequest("/usercode", coapFormat, strings.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	response, err := conn.ExchangeWithContext(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	switch response.Code() {
+	case codes.Changed:
+		return response.Payload(), nil
+	case codes.Unauthorized:
+		return nil, ErrUnauthorised
+	default:
+		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
 }
 
 // UserToken makes an user token request with the given session token and payload
 // SSO token is extracted from signed JWT by Thing Gateway
 func (c *gatewayConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
-	return nil, errors.New("unsupported")
+	conn, err := c.dial()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := c.context()
+	defer cancel()
+
+	var coapFormat coap.MediaType
+	switch content {
+	case ApplicationJOSE:
+		coapFormat = AppJOSE
+	case ApplicationJSON:
+		coapFormat = coap.AppJSON
+		wrappedPayload := ThingEndpointPayload{
+			Token:   tokenID,
+			Payload: payload,
+		}
+		b, err := json.Marshal(wrappedPayload)
+		if err != nil {
+			return nil, err
+		}
+		payload = string(b)
+	}
+
+	request, err := conn.NewPostRequest("/usertoken", coapFormat, strings.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	response, err := conn.ExchangeWithContext(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	switch response.Code() {
+	case codes.Changed:
+		return response.Payload(), nil
+	case codes.Unauthorized:
+		return nil, ErrUnauthorised
+	default:
+		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
+	}
 }
 
 // makeSessionRequest sends a request to the session endpoint with the given action

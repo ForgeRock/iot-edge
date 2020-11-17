@@ -252,6 +252,58 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 	debug.Logger.Println("accessTokenHandler: success")
 }
 
+// accessCodeHandler handles user code requests
+func (c *ThingGateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
+	debug.Logger.Println("userCodeHandler")
+
+	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
+	if err != nil {
+		w.SetCode(codes.BadRequest)
+		writeResponse(w, []byte(err.Error()))
+		return
+	}
+
+	b, err := c.amConnection.UserCode(token, content, payload)
+	if err != nil {
+		if errors.Is(err, client.ErrUnauthorised) {
+			w.SetCode(codes.Unauthorized)
+		} else {
+			w.SetCode(codes.GatewayTimeout)
+		}
+		writeResponse(w, []byte(err.Error()))
+		return
+	}
+	w.SetCode(codes.Changed)
+	writeResponse(w, b)
+	debug.Logger.Println("userCodeHandler: success")
+}
+
+// accessTokenHandler handles user token requests
+func (c *ThingGateway) userTokenHandler(w coap.ResponseWriter, r *coap.Request) {
+	debug.Logger.Println("userTokenHandler")
+
+	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
+	if err != nil {
+		w.SetCode(codes.BadRequest)
+		writeResponse(w, []byte(err.Error()))
+		return
+	}
+
+	b, err := c.amConnection.UserToken(token, content, payload)
+	if err != nil {
+		if errors.Is(err, client.ErrUnauthorised) {
+			w.SetCode(codes.Unauthorized)
+		} else {
+			w.SetCode(codes.GatewayTimeout)
+		}
+		writeResponse(w, []byte(err.Error()))
+		return
+	}
+	w.SetCode(codes.Changed)
+	writeResponse(w, b)
+	debug.Logger.Println("userTokenHandler: success")
+}
+
 // attributesHandler handles a thing attributes requests
 func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("attributesHandler")
@@ -371,6 +423,8 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 	mux.HandleFunc("/authenticate", c.authenticateHandler)
 	mux.HandleFunc("/aminfo", c.amInfoHandler)
 	mux.HandleFunc("/accesstoken", c.accessTokenHandler)
+	mux.HandleFunc("/usercode", c.userCodeHandler)
+	mux.HandleFunc("/usertoken", c.userTokenHandler)
 	mux.HandleFunc("/introspect", c.introspectHandler)
 	mux.HandleFunc("/attributes", c.attributesHandler)
 	mux.HandleFunc("/session", c.sessionHandler)

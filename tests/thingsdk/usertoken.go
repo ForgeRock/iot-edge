@@ -41,10 +41,6 @@ func (t *UserTokenAllow) Setup(state anvil.TestState) (data anvil.ThingData, ok 
 }
 
 func (t *UserTokenAllow) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == anvil.GatewayClientType {
-		// this can be removed when the gateway functionality has been added
-		return true
-	}
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -81,10 +77,6 @@ func (t *UserTokenDeny) Setup(state anvil.TestState) (data anvil.ThingData, ok b
 }
 
 func (t *UserTokenDeny) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == anvil.GatewayClientType {
-		// this can be removed when the gateway functionality has been added
-		return true
-	}
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -123,10 +115,6 @@ func (t *UserTokenWithUnsupportedScopes) Setup(state anvil.TestState) (data anvi
 }
 
 func (t *UserTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == anvil.GatewayClientType {
-		// this can be removed when the gateway functionality has been added
-		return true
-	}
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -160,10 +148,6 @@ func (t *UserTokenWithNoScopes) Setup(state anvil.TestState) (data anvil.ThingDa
 }
 
 func (t *UserTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	if state.ClientType() == anvil.GatewayClientType {
-		// this can be removed when the gateway functionality has been added
-		return true
-	}
 	builder := thingJWTAuth(state, data)
 	device, err := builder.Create()
 	if err != nil {
@@ -189,10 +173,6 @@ func (t *UserTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData)
 }
 
 func createDeviceAndUser(state anvil.TestState) (user am.IdAttributes, data anvil.ThingData, ok bool) {
-	if state.ClientType() == anvil.GatewayClientType {
-		// this can be removed when the gateway functionality has been added
-		return user, data, true
-	}
 	var err error
 	user, err = anvil.CreateUser(state.RealmForConfiguration())
 	if err != nil {
