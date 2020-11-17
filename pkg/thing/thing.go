@@ -61,6 +61,18 @@ type Thing interface {
 	// If no names are specified then all the allowed attributes will be returned.
 	RequestAttributes(names ...string) (response AttributesResponse, err error)
 
+	// RequestUserCode makes the device authorization request as defined by the OAuth 2.0 Device Authorization Grant
+	// specification (rfc8628). The device authorization response can be used to request a user access token with the
+	// RequestUserToken method. The provided scopes will be included in the token if they are configured in the thing's
+	// associated OAuth 2.0 Client in AM. If no scopes are provided then the token will include the default scopes
+	// configured in the OAuth 2.0 Client.
+	RequestUserCode(scopes ...string) (response DeviceAuthorizationResponse, err error)
+
+	// RequestUserToken makes the device access token request as defined by the OAuth 2.0 Device Authorization Grant
+	// specification (rfc8628). The authorizationResponse can be retrieved by calling RequestUserCode. This method will
+	// block until the user authorizes the request or the device code expires.
+	RequestUserToken(authorizationResponse DeviceAuthorizationResponse) (response AccessTokenResponse, err error)
+
 	// Logout will invalidate the thing's session with AM. It is good practice to log out if the thing will not make
 	// new requests for a prolonged period. Once logged out the thing will automatically create a new session when a
 	// new request is made.

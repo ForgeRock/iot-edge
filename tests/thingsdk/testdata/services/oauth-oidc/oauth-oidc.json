@@ -52,7 +52,7 @@
   "advancedOAuth2Config": {
     "supportedScopes": ["publish", "subscribe"],
     "codeVerifierEnforced": "false",
-    "tokenSigningAlgorithm": "HS256",
+    "tokenSigningAlgorithm": "ES256",
     "authenticationAttributes": [
       "uid"
     ],

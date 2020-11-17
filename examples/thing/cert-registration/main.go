@@ -22,12 +22,13 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
-	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
+
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
 var (

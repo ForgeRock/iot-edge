@@ -53,3 +53,11 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 func (c amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	return reply, errHTTPNotBuilt
 }
+
+func (c *amConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return reply, errHTTPNotBuilt
+}
+
+func (c *amConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return reply, errHTTPNotBuilt
+}

@@ -37,6 +37,16 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+const (
+	// Device authorization grant constants: https://tools.ietf.org/html/rfc8628#section-3.5
+	authorizationPending = "authorization_pending"
+	slowDown             = "slow_down"
+	accessDenied         = "access_denied"
+	expiredToken         = "expired_token"
+	authorizationError   = "error"
+	intervalDefault      = time.Second * 5 // https://tools.ietf.org/html/rfc8628#section-3.2
+)
+
 type DefaultThing struct {
 	connection client.Connection
 	handlers   []callback.Handler
@@ -181,6 +191,119 @@ func (t *DefaultThing) RequestAttributes(names ...string) (response thing.Attrib
 		return json.Unmarshal(reply, &response.Content)
 	})
 	return response, err
+}
+
+func (t *DefaultThing) RequestUserCode(scopes ...string) (response thing.DeviceAuthorizationResponse, err error) {
+	payload := struct {
+		Scope []string `json:"scope,omitempty"`
+	}{Scope: scopes}
+	var requestBody string
+	var content client.ContentType
+
+	err = t.makeAuthorisedRequest(func(session session.Session) error {
+		if popSession, ok := session.(*isession.PoPSession); ok {
+			info, err := t.connection.AMInfo()
+			if err != nil {
+				return err
+			}
+			requestBody, err = signedJWTBody(popSession, info.UserCodeURL, info.ThingsVersion, payload)
+			if err != nil {
+				return err
+			}
+			content = client.ApplicationJOSE
+		} else {
+			b, err := json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			requestBody = string(b)
+			content = client.ApplicationJSON
+		}
+		reply, err := t.connection.UserCode(session.Token(), content, requestBody)
+		if reply != nil {
+			debug.Logger.Println("RequestUserCode response: ", string(reply))
+		}
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(reply, &response)
+	})
+	return response, err
+}
+
+func (t *DefaultThing) RequestUserToken(authorizationResponse thing.DeviceAuthorizationResponse) (
+	tokenResponse thing.AccessTokenResponse, err error) {
+
+	payload := struct {
+		DeviceCode string `json:"device_code,omitempty"`
+	}{
+		DeviceCode: authorizationResponse.DeviceCode,
+	}
+	interval := intervalDefault
+	if authorizationResponse.Interval > 0 {
+		interval = time.Second * time.Duration(authorizationResponse.Interval)
+	}
+	var responseBytes []byte
+	authorisedRequest := func(session session.Session) error {
+		var content client.ContentType
+		var requestBody string
+		if popSession, ok := session.(*isession.PoPSession); ok {
+			info, err := t.connection.AMInfo()
+			if err != nil {
+				return err
+			}
+			requestBody, err = signedJWTBody(popSession, info.UserTokenURL, info.ThingsVersion, payload)
+			if err != nil {
+				return err
+			}
+			content = client.ApplicationJOSE
+		} else {
+			b, err := json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			requestBody = string(b)
+			content = client.ApplicationJSON
+		}
+		responseBytes, err = t.connection.UserToken(session.Token(), content, requestBody)
+		if responseBytes != nil {
+			debug.Logger.Println("RequestUserToken response: ", string(responseBytes))
+		}
+		return err
+	}
+	for {
+		err = t.makeAuthorisedRequest(authorisedRequest)
+		if err != nil {
+			return
+		}
+		var responseObj thing.JSONContent
+		err = json.Unmarshal(responseBytes, &responseObj)
+		if err != nil {
+			return
+		}
+		if responseError, ok := responseObj[authorizationError].(string); ok {
+			switch responseError {
+			case authorizationPending:
+				// Nothing to do, just wait the interval and request the tokens again
+			case slowDown:
+				// Increase poling time by 5 seconds, see https://tools.ietf.org/html/rfc8628#section-3.5
+				interval += intervalDefault
+			case accessDenied:
+				debug.Logger.Println("Authorization request denied: ", string(responseBytes))
+				return tokenResponse, errors.New(accessDenied)
+			case expiredToken:
+				debug.Logger.Println("Device code expired: ", string(responseBytes))
+				return tokenResponse, errors.New(expiredToken)
+			default:
+				debug.Logger.Println("Unknown authorization request error: ", string(responseBytes))
+				return tokenResponse, errors.New(responseError)
+			}
+		} else {
+			tokenResponse.Content = responseObj
+			return
+		}
+		time.Sleep(interval)
+	}
 }
 
 type authHandlerBuilder struct {

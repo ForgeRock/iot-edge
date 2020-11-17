@@ -120,7 +120,8 @@
     "grantTypes": {
       "inherited": false,
       "value": [
-        "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        "urn:ietf:params:oauth:grant-type:device_code"
       ]
     }
   },

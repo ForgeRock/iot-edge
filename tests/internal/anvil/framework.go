@@ -556,6 +556,15 @@ func CreateIdentity(realm string, data ThingData) (ThingData, bool) {
 	return data, am.CreateIdentity(realm, data.Id) == nil
 }
 
+// CreateUser creates a human identity in AM with a unique name.
+func CreateUser(realm string) (am.IdAttributes, error) {
+	attributes := am.IdAttributes{
+		Name:     RandomName(),
+		Password: "5tr0ngG3n3r@ted",
+	}
+	return attributes, am.CreateIdentity(realm, attributes)
+}
+
 // GetIdentityAttributes gets the identity and unmarshals its attributes into the supplied struct
 func GetIdentityAttributes(realm, name string, attributes interface{}) error {
 	response, err := am.GetIdentity(realm, name)

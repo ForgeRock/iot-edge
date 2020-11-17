@@ -23,10 +23,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
-	"gopkg.in/square/go-jose.v2"
 	"log"
 	"math/big"
 	"time"
+
+	"gopkg.in/square/go-jose.v2"
 )
 
 var keyStore = "{\"keys\":[" +

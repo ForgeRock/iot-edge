@@ -23,6 +23,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -274,6 +275,18 @@ func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payl
 	default:
 		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
 	}
+}
+
+// UserCode makes an user code request with the given session token and payload
+// SSO token is extracted from signed JWT by Thing Gateway
+func (c *gatewayConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return nil, errors.New("unsupported")
+}
+
+// UserToken makes an user token request with the given session token and payload
+// SSO token is extracted from signed JWT by Thing Gateway
+func (c *gatewayConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return nil, errors.New("unsupported")
 }
 
 // makeSessionRequest sends a request to the session endpoint with the given action
