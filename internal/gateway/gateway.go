@@ -252,7 +252,7 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 	debug.Logger.Println("accessTokenHandler: success")
 }
 
-// accessCodeHandler handles user code requests
+// userCodeHandler handles user code requests
 func (c *ThingGateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("userCodeHandler")
 
@@ -278,7 +278,7 @@ func (c *ThingGateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("userCodeHandler: success")
 }
 
-// accessTokenHandler handles user token requests
+// userTokenHandler handles user token requests
 func (c *ThingGateway) userTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("userTokenHandler")
 
