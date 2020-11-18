@@ -282,6 +282,80 @@ func TestGatewayServer_AccessToken(t *testing.T) {
 	}
 }
 
+func testGatewayServerUserCode(t *testing.T, m *mocks.MockClient, jws string) (reply []byte, err error) {
+	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	gateway := testGateway(m)
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
+		panic(err)
+	}
+	defer gateway.ShutdownCOAPServer()
+
+	return gatewayConnection(t, gateway).UserCode("", client.ApplicationJOSE, jws)
+}
+
+func TestGatewayServer_UserCode(t *testing.T) {
+	tests := []struct {
+		name       string
+		successful bool
+		connection *mocks.MockClient
+		jws        string
+	}{
+		{name: "success", successful: true, connection: &mocks.MockClient{}, jws: ".eyJjc3JmIjoiMTIzNDUifQ."},
+		{name: "not-a-valid-jwt", connection: &mocks.MockClient{}, jws: "eyJjc3JmIjoiMTIzNDUifQ"},
+		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", connection: &mocks.MockClient{UserCodeFunc: func(string, string) (bytes []byte, err error) {
+			return nil, errors.New("AM access token error")
+		}}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			_, err := testGatewayServerUserCode(t, subtest.connection, subtest.jws)
+			if subtest.successful && err != nil {
+				t.Error(err)
+			}
+			if !subtest.successful && err == nil {
+				t.Error("Expected an error")
+			}
+		})
+	}
+}
+
+func testGatewayServerUserToken(t *testing.T, m *mocks.MockClient, jws string) (reply []byte, err error) {
+	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	gateway := testGateway(m)
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
+		panic(err)
+	}
+	defer gateway.ShutdownCOAPServer()
+
+	return gatewayConnection(t, gateway).UserToken("", client.ApplicationJOSE, jws)
+}
+
+func TestGatewayServer_UserToken(t *testing.T) {
+	tests := []struct {
+		name       string
+		successful bool
+		connection *mocks.MockClient
+		jws        string
+	}{
+		{name: "success", successful: true, connection: &mocks.MockClient{}, jws: ".eyJjc3JmIjoiMTIzNDUifQ."},
+		{name: "not-a-valid-jwt", connection: &mocks.MockClient{}, jws: "eyJjc3JmIjoiMTIzNDUifQ"},
+		{name: "am-client-returns-error", jws: ".eyJjc3JmIjoiMTIzNDUifQ.", connection: &mocks.MockClient{UserTokenFunc: func(string, string) (bytes []byte, err error) {
+			return nil, errors.New("AM access token error")
+		}}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			_, err := testGatewayServerUserToken(t, subtest.connection, subtest.jws)
+			if subtest.successful && err != nil {
+				t.Error(err)
+			}
+			if !subtest.successful && err == nil {
+				t.Error("Expected an error")
+			}
+		})
+	}
+}
+
 func TestGatewayServer_Address(t *testing.T) {
 	gateway := testGateway(&mocks.MockClient{})
 	// before the server has started, the address is the empty string

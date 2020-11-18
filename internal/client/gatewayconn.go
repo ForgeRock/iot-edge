@@ -23,7 +23,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -166,44 +165,7 @@ func (c *gatewayConnection) AMInfo() (info AMInfoResponse, err error) {
 // AccessToken makes an access token request with the given session token and payload
 // SSO token is extracted from signed JWT by Thing Gateway
 func (c *gatewayConnection) AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
-	conn, err := c.dial()
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := c.context()
-	defer cancel()
-
-	var coapFormat coap.MediaType
-	switch content {
-	case ApplicationJOSE:
-		coapFormat = AppJOSE
-	case ApplicationJSON:
-		wrappedPayload := ThingEndpointPayload{
-			Token:   tokenID,
-			Payload: payload,
-		}
-		b, err := json.Marshal(wrappedPayload)
-		if err != nil {
-			return nil, err
-		}
-		payload = string(b)
-		coapFormat = coap.AppJSON
-	}
-
-	response, err := conn.PostWithContext(ctx, "/accesstoken", coapFormat, strings.NewReader(payload))
-	if err != nil {
-		return nil, err
-	}
-
-	switch response.Code() {
-	case codes.Changed:
-		return response.Payload(), nil
-	case codes.Unauthorized:
-		return nil, ErrUnauthorised
-	default:
-		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
-	}
+	return c.makeAuthorisedPost(tokenID, "/accesstoken", content, payload, nil)
 }
 
 // IntrospectAccessToken makes a request to the gateway to introspect an access token
@@ -234,6 +196,22 @@ func (c *gatewayConnection) IntrospectAccessToken(token string) (introspection [
 // Attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by Thing Gateway
 func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
+	return c.makeAuthorisedPost(tokenID, "/attributes", content, payload, names)
+}
+
+// UserCode makes an user code request with the given session token and payload
+// SSO token is extracted from signed JWT by Thing Gateway
+func (c *gatewayConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return c.makeAuthorisedPost(tokenID, "/usercode", content, payload, nil)
+}
+
+// UserToken makes an user token request with the given session token and payload
+// SSO token is extracted from signed JWT by Thing Gateway
+func (c *gatewayConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
+	return c.makeAuthorisedPost(tokenID, "/usertoken", content, payload, nil)
+}
+
+func (c *gatewayConnection) makeAuthorisedPost(tokenID string, endpoint string, content ContentType, payload string, query []string) (reply []byte, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -258,11 +236,11 @@ func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payl
 		payload = string(b)
 	}
 
-	request, err := conn.NewPostRequest("/attributes", coapFormat, strings.NewReader(payload))
+	request, err := conn.NewPostRequest(endpoint, coapFormat, strings.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
-	request.SetQuery(names)
+	request.SetQuery(query)
 	response, err := conn.ExchangeWithContext(ctx, request)
 	if err != nil {
 		return nil, err
@@ -275,18 +253,6 @@ func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payl
 	default:
 		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
 	}
-}
-
-// UserCode makes an user code request with the given session token and payload
-// SSO token is extracted from signed JWT by Thing Gateway
-func (c *gatewayConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
-	return nil, errors.New("unsupported")
-}
-
-// UserToken makes an user token request with the given session token and payload
-// SSO token is extracted from signed JWT by Thing Gateway
-func (c *gatewayConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
-	return nil, errors.New("unsupported")
 }
 
 // makeSessionRequest sends a request to the session endpoint with the given action
