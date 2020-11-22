@@ -41,9 +41,6 @@ const (
 	// Device authorization grant constants: https://tools.ietf.org/html/rfc8628#section-3.5
 	authorizationPending = "authorization_pending"
 	slowDown             = "slow_down"
-	accessDenied         = "access_denied"
-	expiredToken         = "expired_token"
-	authorizationError   = "error"
 	intervalDefault      = time.Second * 5 // https://tools.ietf.org/html/rfc8628#section-3.2
 )
 
@@ -62,7 +59,7 @@ func (t *DefaultThing) Logout() error {
 func (t *DefaultThing) makeAuthorisedRequest(f func(session session.Session) error) (err error) {
 	for i := 0; i < 2; i++ {
 		err = f(t.session)
-		if err == nil || !errors.Is(err, client.ErrUnauthorised) {
+		if err == nil || !client.CodeUnauthorized.IsWrappedIn(err) {
 			return err
 		}
 		valid, validateErr := t.session.Valid()
@@ -184,8 +181,10 @@ func (t *DefaultThing) RequestAttributes(names ...string) (response thing.Attrib
 			content = client.ApplicationJSON
 		}
 		reply, err := t.connection.Attributes(session.Token(), content, requestBody, names)
-		if err != nil {
+		if reply != nil {
 			debug.Logger.Println("RequestAttributes response: ", string(reply))
+		}
+		if err != nil {
 			return err
 		}
 		return json.Unmarshal(reply, &response.Content)
@@ -273,34 +272,35 @@ func (t *DefaultThing) RequestUserToken(authorizationResponse thing.DeviceAuthor
 	}
 	for {
 		err = t.makeAuthorisedRequest(authorisedRequest)
-		if err != nil {
+		// an error occurred, but we have no response to process
+		if err != nil && responseBytes == nil {
 			return
 		}
-		var responseObj thing.JSONContent
-		err = json.Unmarshal(responseBytes, &responseObj)
-		if err != nil {
+		// no error, so we can assume the token was issued
+		if err == nil {
+			err = json.Unmarshal(responseBytes, &tokenResponse.Content)
 			return
 		}
-		if responseError, ok := responseObj[authorizationError].(string); ok {
-			switch responseError {
-			case authorizationPending:
-				// Nothing to do, just wait the interval and request the tokens again
-			case slowDown:
-				// Increase poling time by 5 seconds, see https://tools.ietf.org/html/rfc8628#section-3.5
-				interval += intervalDefault
-			case accessDenied:
-				debug.Logger.Println("Authorization request denied: ", string(responseBytes))
-				return tokenResponse, errors.New(accessDenied)
-			case expiredToken:
-				debug.Logger.Println("Device code expired: ", string(responseBytes))
-				return tokenResponse, errors.New(expiredToken)
-			default:
-				debug.Logger.Println("Unknown authorization request error: ", string(responseBytes))
-				return tokenResponse, errors.New(responseError)
-			}
-		} else {
-			tokenResponse.Content = responseObj
+		// process the response message, the OAuth2 error is wrapped inside the "detail" section
+		var errorResponse struct {
+			Detail struct {
+				Error string `json:"error"`
+			} `json:"detail"`
+		}
+		err = json.Unmarshal(responseBytes, &errorResponse)
+		if err != nil {
+			debug.Logger.Println("Unrecognized error response: ", string(responseBytes))
 			return
+		}
+		switch errorResponse.Detail.Error {
+		case authorizationPending:
+			// Nothing to do, just wait the interval and request the tokens again
+		case slowDown:
+			// Increase poling time by 5 seconds, see https://tools.ietf.org/html/rfc8628#section-3.5
+			interval += intervalDefault
+		default:
+			debug.Logger.Println("Error response: ", string(responseBytes))
+			return tokenResponse, errors.New(errorResponse.Detail.Error)
 		}
 		time.Sleep(interval)
 	}

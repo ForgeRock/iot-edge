@@ -21,13 +21,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/go-ocf/go-coap"
+	"github.com/go-ocf/go-coap/codes"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -38,7 +38,195 @@ const (
 	ApplicationJOSE ContentType = "application/jose"
 )
 
-var ErrUnauthorised = errors.New("unauthorised")
+var (
+	// Success response codes
+	// https://tools.ietf.org/html/rfc7252#section-5.9.1
+	CodeCreated = ResponseCode{
+		HTTP:    http.StatusCreated,
+		CoAP:    codes.Created,
+		Name:    "created",
+		Success: true,
+	}
+	CodeDeleted = ResponseCode{
+		HTTP:    http.StatusNoContent,
+		CoAP:    codes.Deleted,
+		Name:    "deleted",
+		Success: true,
+	}
+	CodeValid = ResponseCode{
+		HTTP:    http.StatusNotModified,
+		CoAP:    codes.Valid,
+		Name:    "valid",
+		Success: true,
+	}
+	CodeChanged = ResponseCode{
+		HTTP:    http.StatusNoContent,
+		CoAP:    codes.Changed,
+		Name:    "changed",
+		Success: true,
+	}
+	CodeContent = ResponseCode{
+		HTTP:    http.StatusOK,
+		CoAP:    codes.Content,
+		Name:    "content",
+		Success: true,
+	}
+	// Client error codes
+	// https://tools.ietf.org/html/rfc7252#section-5.9.2
+	CodeBadRequest = ResponseCode{
+		HTTP:    http.StatusBadRequest,
+		CoAP:    codes.BadRequest,
+		Name:    "bad request",
+		Success: false,
+	}
+	CodeUnauthorized = ResponseCode{
+		HTTP:    http.StatusUnauthorized,
+		CoAP:    codes.Unauthorized,
+		Name:    "unauthorized",
+		Success: false,
+	}
+	CodeBadOption = ResponseCode{
+		HTTP:    0, // no mapping
+		CoAP:    codes.BadOption,
+		Name:    "bad option",
+		Success: false,
+	}
+	CodeForbidden = ResponseCode{
+		HTTP:    http.StatusForbidden,
+		CoAP:    codes.Forbidden,
+		Name:    "forbidden",
+		Success: false,
+	}
+	CodeNotFound = ResponseCode{
+		HTTP:    http.StatusNotFound,
+		CoAP:    codes.NotFound,
+		Name:    "not found",
+		Success: false,
+	}
+	CodeMethodNotAllowed = ResponseCode{
+		HTTP:    http.StatusMethodNotAllowed,
+		CoAP:    codes.MethodNotAllowed,
+		Name:    "method not allowed",
+		Success: false,
+	}
+	CodeNotAcceptable = ResponseCode{
+		HTTP:    http.StatusNotAcceptable,
+		CoAP:    codes.NotAcceptable,
+		Name:    "not acceptable",
+		Success: false,
+	}
+	CodePreconditionFailed = ResponseCode{
+		HTTP:    http.StatusPreconditionFailed,
+		CoAP:    codes.PreconditionFailed,
+		Name:    "precondition failed",
+		Success: false,
+	}
+	CodeRequestEntityTooLarge = ResponseCode{
+		HTTP:    http.StatusRequestEntityTooLarge,
+		CoAP:    codes.RequestEntityTooLarge,
+		Name:    "request entity too large",
+		Success: false,
+	}
+	CodeUnsupportedContentFormat = ResponseCode{
+		HTTP:    http.StatusUnsupportedMediaType,
+		CoAP:    codes.UnsupportedMediaType,
+		Name:    "unsupported content format",
+		Success: false,
+	}
+	// Server error codes
+	// https://tools.ietf.org/html/rfc7252#section-5.9.3
+	CodeInternalServerError = ResponseCode{
+		HTTP:    http.StatusInternalServerError,
+		CoAP:    codes.InternalServerError,
+		Name:    "internal server error",
+		Success: false,
+	}
+	CodeNotImplemented = ResponseCode{
+		HTTP:    http.StatusNotImplemented,
+		CoAP:    codes.NotImplemented,
+		Name:    "not implemented",
+		Success: false,
+	}
+	CodeBadGateway = ResponseCode{
+		HTTP:    http.StatusBadGateway,
+		CoAP:    codes.BadGateway,
+		Name:    "bad gateway",
+		Success: false,
+	}
+	CodeServiceUnavailable = ResponseCode{
+		HTTP:    http.StatusServiceUnavailable,
+		CoAP:    codes.ServiceUnavailable,
+		Name:    "service unavailable",
+		Success: false,
+	}
+	CodeGatewayTimeout = ResponseCode{
+		HTTP:    http.StatusGatewayTimeout,
+		CoAP:    codes.GatewayTimeout,
+		Name:    "gateway timeout",
+		Success: false,
+	}
+	CodeProxyingNotSupported = ResponseCode{
+		HTTP:    0, // no mapping
+		CoAP:    codes.ProxyingNotSupported,
+		Name:    "proxying not supported",
+		Success: false,
+	}
+)
+
+// ResponseCodes list all the mapped response codes
+var ResponseCodes = []ResponseCode{
+	CodeCreated,
+	CodeDeleted,
+	CodeValid,
+	CodeChanged,
+	CodeContent,
+	CodeBadRequest,
+	CodeUnauthorized,
+	CodeBadOption,
+	CodeForbidden,
+	CodeNotFound,
+	CodeMethodNotAllowed,
+	CodeNotAcceptable,
+	CodePreconditionFailed,
+	CodeRequestEntityTooLarge,
+	CodeUnsupportedContentFormat,
+	CodeInternalServerError,
+	CodeNotImplemented,
+	CodeBadGateway,
+	CodeServiceUnavailable,
+	CodeGatewayTimeout,
+	CodeProxyingNotSupported,
+}
+
+// ResponseCode is used to relay the outcome of HTTP/CoAP requests made to AM/Gateway
+type ResponseCode struct {
+	HTTP    int
+	CoAP    codes.Code
+	Name    string
+	Success bool
+}
+
+// IsWrappedIn will check if the given error is a ResponseError and if it wraps this ResponseCode
+func (r ResponseCode) IsWrappedIn(err error) bool {
+	if respErr, ok := err.(ResponseError); ok {
+		return r == respErr.ResponseCode
+	}
+	return false
+}
+
+// ResponseError is used to wrap a ResponseCode into an error
+type ResponseError struct {
+	ResponseCode
+	Message string
+}
+
+// Error ensures the error interface is implemented for ResponseError
+func (r ResponseError) Error() string {
+	if r.Message != "" {
+		return r.Message
+	}
+	return r.Name
+}
 
 // connection to the ForgeRock platform
 type Connection interface {

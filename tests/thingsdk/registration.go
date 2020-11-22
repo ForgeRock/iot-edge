@@ -95,7 +95,7 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 		RegisterThing(nil, nil)
 
 	_, err := builder.Create()
-	if err != client.ErrUnauthorised {
+	if !client.CodeUnauthorized.IsWrappedIn(err) {
 		anvil.DebugLogger.Printf("Expected Not Authorised; got %v", err)
 		return false
 	}

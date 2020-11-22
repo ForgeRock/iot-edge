@@ -238,18 +238,7 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 	}
 
 	b, err := c.amConnection.AccessToken(token, content, payload)
-	if err != nil {
-		if errors.Is(err, client.ErrUnauthorised) {
-			w.SetCode(codes.Unauthorized)
-		} else {
-			w.SetCode(codes.GatewayTimeout)
-		}
-		writeResponse(w, []byte(err.Error()))
-		return
-	}
-	w.SetCode(codes.Changed)
-	writeResponse(w, b)
-	debug.Logger.Println("accessTokenHandler: success")
+	handleResponse(b, err, codes.Changed, w)
 }
 
 // userCodeHandler handles user code requests
@@ -264,18 +253,7 @@ func (c *ThingGateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
 	}
 
 	b, err := c.amConnection.UserCode(token, content, payload)
-	if err != nil {
-		if errors.Is(err, client.ErrUnauthorised) {
-			w.SetCode(codes.Unauthorized)
-		} else {
-			w.SetCode(codes.GatewayTimeout)
-		}
-		writeResponse(w, []byte(err.Error()))
-		return
-	}
-	w.SetCode(codes.Changed)
-	writeResponse(w, b)
-	debug.Logger.Println("userCodeHandler: success")
+	handleResponse(b, err, codes.Changed, w)
 }
 
 // userTokenHandler handles user token requests
@@ -290,18 +268,7 @@ func (c *ThingGateway) userTokenHandler(w coap.ResponseWriter, r *coap.Request) 
 	}
 
 	b, err := c.amConnection.UserToken(token, content, payload)
-	if err != nil {
-		if errors.Is(err, client.ErrUnauthorised) {
-			w.SetCode(codes.Unauthorized)
-		} else {
-			w.SetCode(codes.GatewayTimeout)
-		}
-		writeResponse(w, []byte(err.Error()))
-		return
-	}
-	w.SetCode(codes.Changed)
-	writeResponse(w, b)
-	debug.Logger.Println("userTokenHandler: success")
+	handleResponse(b, err, codes.Changed, w)
 }
 
 // attributesHandler handles a thing attributes requests
@@ -316,18 +283,7 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 		return
 	}
 	b, err := c.amConnection.Attributes(token, format, payload, names)
-	if err != nil {
-		if errors.Is(err, client.ErrUnauthorised) {
-			w.SetCode(codes.Unauthorized)
-		} else {
-			w.SetCode(codes.GatewayTimeout)
-		}
-		writeResponse(w, []byte(err.Error()))
-		return
-	}
-	w.SetCode(codes.Changed)
-	writeResponse(w, b)
-	debug.Logger.Println("attributesHandler: success")
+	handleResponse(b, err, codes.Changed, w)
 }
 
 // sessionHandler handles a session validation request
@@ -479,6 +435,29 @@ func (c *ThingGateway) Address() string {
 		return ""
 	}
 	return c.address.String()
+}
+
+// handleResponse will write the response to the given writer if the response is not nil. It will also process the
+// response error and set the appropriate response code on the response writer.
+func handleResponse(response []byte, responseError error, successCode codes.Code, responseWriter coap.ResponseWriter) {
+	if responseError == nil {
+		responseWriter.SetCode(successCode)
+		writeResponse(responseWriter, response)
+		debug.Logger.Println("response success: ", successCode.String())
+		return
+	}
+	var responseCode codes.Code
+	if conErr, ok := responseError.(client.ResponseError); ok {
+		responseCode = conErr.CoAP
+	} else {
+		responseCode = codes.InternalServerError
+	}
+	if response == nil {
+		response = []byte(responseError.Error())
+	}
+	responseWriter.SetCode(responseCode)
+	writeResponse(responseWriter, response)
+	debug.Logger.Println("response failure: ", responseCode.String())
 }
 
 func writeResponse(w coap.ResponseWriter, response []byte) {

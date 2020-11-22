@@ -332,6 +332,7 @@ func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data an
 }
 
 // AccessTokenExpiredSession requests an access token after the current session has been 'expired'
+// We expect a new session to be created and for the request to succeed
 type AccessTokenExpiredSession struct {
 	anvil.NopSetupCleanup
 }
