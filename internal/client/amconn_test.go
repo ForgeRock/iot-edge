@@ -320,32 +320,3 @@ func TestAMClient_Attributes(t *testing.T) {
 		})
 	}
 }
-
-func Test_parseAMError(t *testing.T) {
-	amErr := amError{
-		Message: "Boom",
-		Reason:  "Bang",
-	}
-	b, err := json.Marshal(amErr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tests := []struct {
-		name     string
-		code     int
-		response []byte
-		expected string
-	}{
-		{name: "validAMErrorMessage", code: http.StatusInternalServerError, response: b, expected: fmt.Sprintf("%s: %s", amErr.Reason, amErr.Message)},
-		{name: "invalidAMErrorMessage", code: http.StatusInternalServerError, response: []byte("aaaa"), expected: fmt.Sprintf("request failed with status code %d", http.StatusInternalServerError)},
-	}
-	for _, subtest := range tests {
-		t.Run(subtest.name, func(t *testing.T) {
-			err := parseAMError(subtest.response, subtest.code)
-			if err.Error() != subtest.expected {
-				t.Errorf("expected %s, got %s", subtest.expected, err.Error())
-			}
-		})
-	}
-}

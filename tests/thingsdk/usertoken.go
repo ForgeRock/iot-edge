@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
@@ -221,6 +222,99 @@ func introspectAndVerify(device thing.Thing, tokenResponse thing.AccessTokenResp
 	sort.Strings(requestedScopes)
 	if !reflect.DeepEqual(requestedScopes, tokenScope) {
 		anvil.DebugLogger.Printf("received scopes %s not equal to requested scopes %s\n", tokenScope, requestedScopes)
+		return false
+	}
+	return true
+}
+
+// UserCodeExpiredSession requests a thing's User Code after the current session has been 'expired'
+// We expect a new session to be created and for the request to succeed
+type UserCodeExpiredSession struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *UserCodeExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *UserCodeExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := builder.Thing().
+		ConnectTo(state.URL()).
+		InRealm(state.TestRealm()).
+		WithTree(userPwdAuthTree).
+		HandleCallbacksWith(
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
+	device, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	err = device.Logout()
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed: ", err)
+		return false
+	}
+	_, err = device.RequestUserCode("publish", "subscribe")
+	if err != nil {
+		anvil.DebugLogger.Println("user code request failed: ", err)
+		return false
+	}
+	return true
+}
+
+// UserTokenExpiredSession requests a thing's User Token after the current session has been 'expired'
+// We expect a new session to be created and for the request to succeed
+type UserTokenExpiredSession struct {
+	anvil.NopSetupCleanup
+	user am.IdAttributes
+}
+
+func (t *UserTokenExpiredSession) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	t.user, err = anvil.CreateUser(state.RealmForConfiguration())
+	if err != nil {
+		anvil.DebugLogger.Println("failed to create user", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *UserTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(userPwdAuthTree)
+	builder := builder.Thing().
+		ConnectTo(state.URL()).
+		InRealm(state.TestRealm()).
+		WithTree(userPwdAuthTree).
+		HandleCallbacksWith(
+			callback.NameHandler{Name: data.Id.Name},
+			callback.PasswordHandler{Password: data.Id.Password})
+	device, err := builder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	userCode, err := device.RequestUserCode("publish", "subscribe")
+	if err != nil {
+		anvil.DebugLogger.Println("user code request failed: ", err)
+		return false
+	}
+	err = am.SendUserConsent(state.RealmForConfiguration(), t.user, userCode, "allow")
+	if err != nil {
+		anvil.DebugLogger.Println("user consent request failed: ", err)
+		return false
+	}
+	err = device.Logout()
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed: ", err)
+		return false
+	}
+	_, err = device.RequestUserToken(userCode)
+	if err != nil {
+		anvil.DebugLogger.Println("user token request failed: ", err)
 		return false
 	}
 	return true

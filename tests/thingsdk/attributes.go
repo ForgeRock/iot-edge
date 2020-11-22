@@ -162,6 +162,7 @@ func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil
 }
 
 // AttributesExpiredSession requests a thing's attributes after the current session has been 'expired'
+// We expect a new session to be created and for the request to succeed
 type AttributesExpiredSession struct {
 	anvil.NopSetupCleanup
 }

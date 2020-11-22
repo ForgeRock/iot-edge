@@ -23,6 +23,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -130,7 +131,7 @@ func (c *gatewayConnection) Authenticate(payload AuthenticatePayload) (reply Aut
 	if err != nil {
 		return reply, err
 	} else if response.Code() != codes.Valid {
-		return reply, ErrUnauthorised
+		return reply, ResponseError{ResponseCode: CodeUnauthorized}
 	}
 
 	if err = json.Unmarshal(response.Payload(), &reply); err != nil {
@@ -245,14 +246,7 @@ func (c *gatewayConnection) makeAuthorisedPost(tokenID string, endpoint string, 
 	if err != nil {
 		return nil, err
 	}
-	switch response.Code() {
-	case codes.Changed:
-		return response.Payload(), nil
-	case codes.Unauthorized:
-		return nil, ErrUnauthorised
-	default:
-		return nil, errCoAPStatusCode{response.Code(), response.Payload()}
-	}
+	return response.Payload(), errorFromCode(response.Code(), response.Payload())
 }
 
 // makeSessionRequest sends a request to the session endpoint with the given action
@@ -309,4 +303,20 @@ func (c *gatewayConnection) LogoutSession(tokenID string) (err error) {
 	default:
 		return errCoAPStatusCode{response.Code(), response.Payload()}
 	}
+}
+
+// errorFromCode will check if the CoAP code is one of the mapped ResponseCodes
+func errorFromCode(code codes.Code, response []byte) error {
+	for _, responseCode := range ResponseCodes {
+		if responseCode.CoAP == code {
+			if responseCode.Success {
+				return nil
+			}
+			return ResponseError{
+				ResponseCode: responseCode,
+				Message:      string(response),
+			}
+		}
+	}
+	return errors.New("CoAP response code not recognised, " + code.String() + ". Response: " + string(response))
 }

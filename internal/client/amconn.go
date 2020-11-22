@@ -21,6 +21,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -121,28 +122,6 @@ func (c *amConnection) ValidateSession(tokenID string) (ok bool, err error) {
 
 }
 
-// amError is used to unmarshal an AM error response
-type amError struct {
-	Code    int    `json:"code"`
-	Reason  string `json:"reason"`
-	Message string `json:"message"`
-}
-
-func (e amError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Reason, e.Message)
-}
-
-func parseAMError(response []byte, status int) error {
-	var amError amError
-	if err := json.Unmarshal(response, &amError); err != nil {
-		return fmt.Errorf("request failed with status code %d", status)
-	}
-	if amError.Code == http.StatusUnauthorized {
-		return ErrUnauthorised
-	}
-	return amError
-}
-
 // initialise checks that the server can be reached and prepares the client for further communication
 func (c *amConnection) Initialise() error {
 	info, err := c.getServerInfo()
@@ -186,7 +165,7 @@ func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply Authenti
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return reply, ErrUnauthorised
+		return reply, ResponseError{ResponseCode: CodeUnauthorized}
 	}
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -458,7 +437,7 @@ func (c *amConnection) UserToken(tokenID string, content ContentType, payload st
 	return c.makeRequest(tokenID, content, request)
 }
 
-func (c *amConnection) makeRequest(tokenID string, content ContentType, request *http.Request) (reply []byte, err error) {
+func (c *amConnection) makeRequest(tokenID string, content ContentType, request *http.Request) ([]byte, error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
 	request.Header.Set(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
@@ -473,9 +452,9 @@ func (c *amConnection) makeRequest(tokenID string, content ContentType, request 
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return nil, err
 	}
-	if response.StatusCode != http.StatusOK {
+	err = errorFromStatus(response.StatusCode, responseBody)
+	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
-		return responseBody, parseAMError(responseBody, response.StatusCode)
 	}
 	return responseBody, err
 }
@@ -484,4 +463,20 @@ func (c *amConnection) makeRequest(tokenID string, content ContentType, request 
 // This is a convenience function for functional testing.
 func SetAuthenticationTree(connection Connection, tree string) {
 	connection.(*amConnection).authTree = tree
+}
+
+// errorFromStatus will check if the HTTP status is one of the mapped ResponseCodes
+func errorFromStatus(status int, response []byte) error {
+	for _, responseCode := range ResponseCodes {
+		if responseCode.HTTP == status {
+			if responseCode.Success {
+				return nil
+			}
+			return ResponseError{
+				ResponseCode: responseCode,
+				Message:      string(response),
+			}
+		}
+	}
+	return errors.New("HTTP status not recognised, " + http.StatusText(status) + ". Response: " + string(response))
 }

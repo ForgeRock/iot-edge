@@ -110,6 +110,8 @@ var tests = []anvil.SDKTest{
 	&UserTokenDeny{},
 	&UserTokenWithUnsupportedScopes{},
 	&UserTokenWithNoScopes{},
+	&UserCodeExpiredSession{},
+	&UserTokenExpiredSession{},
 }
 
 func logFailure(path string, start time.Time, anvilDebug []byte, sdkDebug []byte) {

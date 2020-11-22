@@ -100,7 +100,7 @@ func (t *AuthenticateWithoutConfirmationKey) Run(state anvil.TestState, data anv
 		return false
 	}
 	_, err = thingJWTAuth(state, data).Create()
-	if err != client.ErrUnauthorised {
+	if !client.CodeUnauthorized.IsWrappedIn(err) {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -169,7 +169,7 @@ func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data a
 			}{"0"}
 		})
 	_, err := builder.Create()
-	if err != client.ErrUnauthorised {
+	if !client.CodeUnauthorized.IsWrappedIn(err) {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
@@ -220,7 +220,7 @@ func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.Thin
 			callback.NameHandler{Name: data.Id.Name},
 			callback.PasswordHandler{Password: "wrong"})
 	_, err := builder.Create()
-	if err != client.ErrUnauthorised {
+	if !client.CodeUnauthorized.IsWrappedIn(err) {
 		anvil.DebugLogger.Println(err)
 		return false
 	}

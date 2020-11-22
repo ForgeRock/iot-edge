@@ -19,22 +19,35 @@ package thing
 import (
 	"testing"
 
+	"github.com/ForgeRock/iot-edge/v7/internal/client"
 	"github.com/ForgeRock/iot-edge/v7/internal/mocks"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
 func TestDefaultThing_RequestUserToken(t *testing.T) {
-	errors := []string{
-		"access_denied",
-		"expired_token",
-		"unknown_error",
+	errors := []struct {
+		Response string
+		Error    client.ResponseError
+	}{
+		{
+			Response: "access_denied",
+			Error:    client.ResponseError{ResponseCode: client.CodeForbidden},
+		},
+		{
+			Response: "expired_token",
+			Error:    client.ResponseError{ResponseCode: client.CodeForbidden},
+		},
+		{
+			Response: "unknown_error",
+			Error:    client.ResponseError{ResponseCode: client.CodeForbidden},
+		},
 	}
 	for _, errorValue := range errors {
-		t.Run(errorValue, func(t *testing.T) {
+		t.Run(errorValue.Response, func(t *testing.T) {
 			dt := DefaultThing{
 				connection: &mocks.MockClient{
 					UserTokenFunc: func(string, string) ([]byte, error) {
-						return []byte("{\"error\": \"" + errorValue + "\"}"), nil
+						return []byte(`{"detail": {"error": "` + errorValue.Response + `"}}`), errorValue.Error
 					},
 				},
 				handlers: nil,
@@ -44,7 +57,7 @@ func TestDefaultThing_RequestUserToken(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected error response")
 			}
-			if errorValue != err.Error() {
+			if errorValue.Response != err.Error() {
 				t.Error("Unexpected error response: ", err)
 			}
 		})
