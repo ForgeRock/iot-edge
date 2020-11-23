@@ -96,6 +96,7 @@ var tests = []anvil.SDKTest{
 	&SimpleThingExampleTags{limitedTags: false},
 	&SimpleThingExampleTags{limitedTags: true},
 	&CertRegistrationExample{},
+	&DeviceTokenExample{},
 	&GatewayAppAuth{},
 	&GatewayAppAuthNonDefaultKID{},
 	&GatewayAppReg{},
