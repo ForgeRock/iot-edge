@@ -82,18 +82,13 @@ func loadCertificates() ([]*x509.Certificate, error) {
 	return x509.ParseCertificates(block.Bytes)
 }
 
-// certRegThing initialises a Thing with AM.
-// A successful initialisation means that the Thing has successfully registered and authenticated with AM.
+// userTokenThing initialises a Thing with AM and retrieves an access token using OAuth 2.0 device authorization grant.
+// The Thing will register and authenticate with AM and then request a user code.
+// Once the Thing is in procession of a user code, it will direct the user to authorise the token.
+// If successful, the Thing will receive an access token with the user that authorised the request as the subject.
 //
-// To create your own certificate. Open a bash terminal:
-// Choose an ID for your thing:
-//     thingName=thingOne
-// Use openssl to create a certificate signing request and a certificate:
-//     openssl req -new -sha256 -subj "/CN=${thingName}" -key ./examples/resources/eckey1.key.pem -out "${thingName}.csr.pem"
-//     openssl x509 -req -CA ./examples/resources/es256test.cert.pem -CAkey ./examples/resources/es256test.key.pem -CAcreateserial -in "${thingName}.csr.pem" -out "${thingName}.cert.pem"
-// Ensure that the ID and the path to the certificate is passed to this example:
-//     go run github.com/ForgeRock/iot-edge/v7/examples/thing/cert-registration -name "${thingName}" -certfile "${thingName}.cert.pem"
-func certRegThing() (err error) {
+// To create your own certificate, refer to the cert-registration example.
+func userTokenThing() (err error) {
 
 	u, err := url.Parse(*urlString)
 	if err != nil {
@@ -130,12 +125,23 @@ func certRegThing() (err error) {
 	}
 	fmt.Printf("Done\n")
 
-	fmt.Printf("Requesting access token... ")
-	tokenResponse, err := device.RequestAccessToken("publish")
+	fmt.Printf("Requesting user code...")
+	userCode, err := device.RequestUserCode("publish")
 	if err != nil {
 		return err
 	}
 	fmt.Println("Done")
+
+	fmt.Printf("Requesting user access token... To authorise the request, go to \n\n\t%s\n\n",
+		userCode.VerificationURIComplete)
+	thing.DebugLogger().SetOutput(ioutil.Discard) // switch off debug since user code requests are quite noisy
+	tokenResponse, err := device.RequestUserToken(userCode)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Done")
+	thing.DebugLogger().SetOutput(os.Stdout)
+
 	token, err := tokenResponse.AccessToken()
 	if err != nil {
 		return err
@@ -146,11 +152,24 @@ func certRegThing() (err error) {
 		return err
 	}
 	fmt.Println("Expires in:", expiresIn)
-	scopes, err := tokenResponse.Scope()
+
+	fmt.Printf("Introspecting access token to get more information...")
+	introspection, err := device.IntrospectAccessToken(token)
+	if err != nil {
+		return err
+	} else if !introspection.Active() {
+		return fmt.Errorf("introspection indicates that the token is inactive")
+	}
+	fmt.Println("Done")
+	scopes, err := introspection.Content.GetStringArray("scope")
 	if err != nil {
 		return err
 	}
-	fmt.Println("Scope(s):", scopes)
+	sub, err := introspection.Content.GetString("sub")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User %s has authorised the following scope(s): %s", sub, scopes)
 
 	return nil
 }
@@ -161,7 +180,7 @@ func main() {
 	// pipe debug to standard out
 	thing.DebugLogger().SetOutput(os.Stdout)
 
-	if err := certRegThing(); err != nil {
+	if err := userTokenThing(); err != nil {
 		log.Fatal(err)
 	}
 }

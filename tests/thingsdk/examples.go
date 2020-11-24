@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"io"
 	"io/ioutil"
@@ -30,9 +31,13 @@ import (
 	"time"
 
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 )
+
+var deviceCodeRegex = regexp.MustCompile(`{.*"user_code":"\w*".*}`)
 
 const (
 	nextAvailablePort     = ":0"
@@ -273,6 +278,98 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 		return false
 	}
 	return true
+}
+
+// DeviceTokenExample tests the device code and device token thing example
+type DeviceTokenExample struct {
+	anvil.NopSetupCleanup
+	user am.IdAttributes
+}
+
+func (t *DeviceTokenExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	t.user, err = anvil.CreateUser(state.RealmForConfiguration())
+	if err != nil {
+		return data, false
+	}
+
+	data.Id.Name = anvil.RandomName()
+	serverWebKey, err := anvil.CertVerificationKey()
+	if err != nil {
+		return data, false
+	}
+
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+
+	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	if err != nil {
+		return data, false
+	}
+	data.Certificates = []*x509.Certificate{certificate}
+	data.Id.ThingType = callback.TypeDevice
+	return data, true
+}
+
+func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertTree)
+
+	// encode the key to PEM
+	key, err := encodeKeyToPEM(data.Signer.Signer)
+	if err != nil {
+		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		return false
+	}
+
+	// encode the certificate to PEM
+	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data.Certificates[0].Raw})
+
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/examples/thing/user-token",
+		"-url", state.URL().String(),
+		"-realm", state.TestRealm(),
+		"-audience", state.Audience(),
+		"-tree", jwtPopRegCertTree,
+		"-name", data.Id.Name,
+		"-key", string(key),
+		"-cert", string(cert))
+
+	// process standard out to retrieve the device authorization response
+	stdout, _ := cmd.StdoutPipe()
+	result := new(bool)
+	*result = true
+	read(stdout, func(s string) {
+		anvil.DebugLogger.Print(s)
+		match := deviceCodeRegex.FindString(s)
+		if match != "" {
+			var deviceCodeResponse thing.DeviceAuthorizationResponse
+			if err := json.Unmarshal([]byte(match), &deviceCodeResponse); err != nil {
+				anvil.DebugLogger.Println(err)
+				*result = false
+				return
+			}
+
+			err = am.SendUserConsent(state.RealmForConfiguration(), t.user, deviceCodeResponse, "allow")
+			if err != nil {
+				anvil.DebugLogger.Println("user consent request failed: ", err)
+				*result = false
+			}
+		}
+	})
+	// send standard error to debugger
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
+		return false
+	}
+	return *result
 }
 
 // GatewayAppAuth tests the Gateway application with authentication only
