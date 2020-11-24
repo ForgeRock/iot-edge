@@ -33,8 +33,8 @@ import (
 
 var (
 	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-	realm     = flag.String("realm", "", "AM Realm")
-	audience  = flag.String("audience", "/example", "JWT audience")
+	realm     = flag.String("realm", "/", "AM Realm")
+	audience  = flag.String("audience", "/", "JWT audience")
 	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
 	thingName = flag.String("name", "dynamic-thing", "Thing name")
 	key       = flag.String("key", "", "The Thing's key in PEM format")
@@ -132,8 +132,8 @@ func userTokenThing() (err error) {
 	}
 	fmt.Println("Done")
 
-	fmt.Printf("Requesting user access token... To authorise the request, go to \n\n\t%s?user_code=%s\n\n",
-		userCode.VerificationURI, userCode.UserCode)
+	fmt.Printf("Requesting user access token... To authorise the request, go to \n\n\t%s\n\n",
+		userCode.VerificationURIComplete)
 	thing.DebugLogger().SetOutput(ioutil.Discard) // switch off debug since user code requests are quite noisy
 	tokenResponse, err := device.RequestUserToken(userCode)
 	if err != nil {
