@@ -82,10 +82,10 @@ func loadCertificates() ([]*x509.Certificate, error) {
 	return x509.ParseCertificates(block.Bytes)
 }
 
-// userTokenThing initialises a Thing with AM and retrieves an access token using OAuth 2.0 device flow.
+// userTokenThing initialises a Thing with AM and retrieves an access token using OAuth 2.0 device authorization grant.
 // The Thing will register and authenticate with AM and then request a user code.
 // Once the Thing is in procession of a user code, it will direct the user to authorise the token.
-// If successful, the Thing will receive a user token that contains an access token.
+// If successful, the Thing will receive an access token with the user that authorised the request as the subject.
 //
 // To create your own certificate, refer to the cert-registration example.
 func userTokenThing() (err error) {
@@ -132,7 +132,7 @@ func userTokenThing() (err error) {
 	}
 	fmt.Println("Done")
 
-	fmt.Printf("Requesting user token... To authorise the Thing, go to \n\n\t%s?user_code=%s\n\n",
+	fmt.Printf("Requesting user access token... To authorise the request, go to \n\n\t%s?user_code=%s\n\n",
 		userCode.VerificationURI, userCode.UserCode)
 	thing.DebugLogger().SetOutput(ioutil.Discard) // switch off debug since user code requests are quite noisy
 	tokenResponse, err := device.RequestUserToken(userCode)
