@@ -31,9 +31,9 @@ frame "ForgeRock Identity Platform" {
 }
 
 idm -down-> ds : Store \n Things
-idm -right-> icf : Synchronise \n Things
+idm -right-> icf : Synchronize\n Things
 icf -down-> sdk
-sdk -right-> core : Query Devices
+sdk -right-> core : Synchronize\n Devices
 core -up-> db
 
 @enduml

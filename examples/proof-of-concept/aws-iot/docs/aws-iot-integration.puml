@@ -20,6 +20,7 @@ skinparam frame {
 frame "Platform Tier" {
     frame "AWS IoT" {
         [IoT Core] as hub <<AWS>>
+        [IoT Registry] as reg <<AWS>>
         node "Custom\nAuthorizer" {
             [Lambda Function] as lamb <<AWS>>
             [Thing SDK] as service <<ForgeRock>>
@@ -29,6 +30,10 @@ frame "Platform Tier" {
         [Access Management] as am <<ForgeRock>>
         [Directory Services] as ds <<ForgeRock>>
         [Identity Management] as idm <<ForgeRock>>
+        node "Connector" {
+            [ICF Framework] as icf <<ForgeRock>>
+            [AWS SDK] as sdk <<AWS>>
+        }
     }
 }
 
@@ -38,14 +43,19 @@ frame "Edge Tier" {
     }
 }
 
+
 am -left-> ds : Store\nThings
-idm -down-> ds
-idm <-> am
+idm -down-> ds : Store\nThings
+idm - am
 device -up-> am : Register &\nAuthorize
 device -up-> hub : Publish\n(Access Token)
 hub -> lamb : Authorize
+hub -up-> reg
 lamb -down-> service : Verify\nToken
 service -> am
+idm -up-> icf : Synchronize \n Things
+icf -right-> sdk
+sdk -right-> reg : Synchronize \n Things
 
 
 @enduml

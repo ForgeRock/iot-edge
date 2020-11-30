@@ -15,15 +15,15 @@ skinparam sequence {
 }
 
 actor "User" as us
-participant Device as dv
+participant Thing as dv
 actor "Admin" as ad
 participant "FR Platform" as fr
-participant "MS Azure IoT" as az
+participant "AWS IoT" as aws
 
-ad -> az : Provision device
-fr -> az : Synchronize\ndevice twins
-az --> fr
-ad -> fr : Manage device\nconfiguration and\nrelationships
+ad -> aws : Provision device
+fr -> aws : Synchronize\nthing identities
+aws --> fr
+ad -> fr : Manage thing\nconfiguration and\nrelationships
 us -> dv : Request access
 dv -> fr : Authorize based \non relationship
 fr --> dv

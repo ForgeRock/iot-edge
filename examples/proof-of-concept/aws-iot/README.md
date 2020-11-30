@@ -11,6 +11,10 @@ configuration for [ForgeRock Things](https://backstage.forgerock.com/docs/things
 scripts for configuring AWS IoT, deploying the ForgeRock Platform to the Google Kubernetes Engine and running the
 device client.
 
+In addition to custom authentication the example also demonstrates how existing AWS IoT thing identities can be
+synchronized to the ForgeRock Platform using an ICF Connector, integrated into
+[ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7).
+
 #### Integration Components
 ![Components](docs/aws-iot-integration.png)
 
@@ -19,6 +23,13 @@ communicates directly with the ForgeRock Platform and AWS IoT in order to authen
 
 The custom authorizer Lambda function in AWS uses the Thing SDK to verify the device's access token and build an AWS
 IoT Core policy based on the scope granted to the device.
+
+The connector uses the ICF Framework and the AWS SDK to synchronize device identities that exist in the AWS IoT Registry
+to thing identities in ForgeRock Directory Services.
+
+Thing identities are stored alongside user identities in the ForgeRock Platform, which allows you to manage
+relationships between users and things. These relationships can then be used to authorize access to devices or to the
+device's resources.
 
 #### Authentication and Authorization
 ![Publish](docs/device-publish.png)
@@ -33,7 +44,19 @@ This diagram illustrates the sequence of events leading to a device publishing a
  - The AWS Lambda function uses the Thing SDK to verify the access token and then builds an AWS IoT Core policy.
  - AWS IoT Core will then use the policy to allow the device to publish messages until the policy expires.
  
+#### Relationship Management
+![](docs/device-management.png)
+
+This diagram illustrates identity synchronization and device management.
+ - A device is either dynamically provisioned to AWS IoT, or manually added by an administrator.
+ - Once provisioned, the device identity is automatically synchronized to the ForgeRock Platform.
+ - The administrator can then manage relationships between users and devices in the ForgeRock Platform or change the
+  device configuration, and it will automatically be synchronized between ForgeRock and AWS.
+ - A user may request access to a device or to a device's resources.
+ - Access is authorized by the ForgeRock Platform based on the relationship that exists between the user and the device.
+ 
 #### References
 - [AWS IoT](https://docs.aws.amazon.com/iot/latest/developerguide/what-is-aws-iot.html)
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html)
 - [AWS IoT custom authentication](https://docs.aws.amazon.com/iot/latest/developerguide/iot-custom-authentication.html)
+- [AWS SDKs](https://docs.aws.amazon.com/iot/latest/developerguide/iot-connect-service.html#iot-service-sdks)

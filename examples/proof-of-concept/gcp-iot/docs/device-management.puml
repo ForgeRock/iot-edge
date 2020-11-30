@@ -21,9 +21,9 @@ participant "FR Platform" as fr
 participant "GCP IoT Core" as gcp
 
 ad -> gcp : Create device
-fr -> gcp : Query devices
+fr -> gcp : Synchronize devices
 gcp --> fr
-ad -> fr : Manage User and \nDevice relationship
+ad -> fr : Manage device\nconfiguration and\nrelationships
 us -> dv : Request access
 dv -> fr : Authorize based \non relationship
 fr --> dv
