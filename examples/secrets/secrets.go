@@ -28,7 +28,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"os"
 	"time"
@@ -43,7 +42,8 @@ const ec256Test = `{"kty": "EC",
 	"crv": "P-256",
 	"alg": "ES256",
 	"d": "w9rAMaNcP7cA0e5SECc4Tk1PDQEY66ml9y9-6E8fmR4",
-	"x5c": ["MIIBwjCCAWkCCQCw3GyPBTSiGzAJBgcqhkjOPQQBMGoxCzAJBgNVBAYTAlVLMRAwDgYDVQQIEwdCcmlzdG9sMRAwDgYDVQQHEwdCcmlzdG9sMRIwEAYDVQQKEwlGb3JnZVJvY2sxDzANBgNVBAsTBk9wZW5BTTESMBAGA1UEAxMJZXMyNTZ0ZXN0MB4XDTE3MDIwMzA5MzQ0NloXDTIwMTAzMDA5MzQ0NlowajELMAkGA1UEBhMCVUsxEDAOBgNVBAgTB0JyaXN0b2wxEDAOBgNVBAcTB0JyaXN0b2wxEjAQBgNVBAoTCUZvcmdlUm9jazEPMA0GA1UECxMGT3BlbkFNMRIwEAYDVQQDEwllczI1NnRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3sy05tV/3YUlPBi9jZm9NVPeuBmntrtcO3NP/1HDsgLsTZsqKHD6KWIeJNRQnONcriWVaIcZYTKNykyCVUz93MAkGByqGSM49BAEDSAAwRQIgZhTox7WpCb9krZMyHfgCzHwfu0FVqaJsO2Nl2ArhCX0CIQC5GgWD5jjCRlIWSEFSDo4DZgoQFXaQkJUSUbJZYpi9dA=="]	}`
+	"x5c": ["MIIBwjCCAWkCCQCw3GyPBTSiGzAJBgcqhkjOPQQBMGoxCzAJBgNVBAYTAlVLMRAwDgYDVQQIEwdCcmlzdG9sMRAwDgYDVQQHEwdCcmlzdG9sMRIwEAYDVQQKEwlGb3JnZVJvY2sxDzANBgNVBAsTBk9wZW5BTTESMBAGA1UEAxMJZXMyNTZ0ZXN0MB4XDTE3MDIwMzA5MzQ0NloXDTIwMTAzMDA5MzQ0NlowajELMAkGA1UEBhMCVUsxEDAOBgNVBAgTB0JyaXN0b2wxEDAOBgNVBAcTB0JyaXN0b2wxEjAQBgNVBAoTCUZvcmdlUm9jazEPMA0GA1UECxMGT3BlbkFNMRIwEAYDVQQDEwllczI1NnRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3sy05tV/3YUlPBi9jZm9NVPeuBmntrtcO3NP/1HDsgLsTZsqKHD6KWIeJNRQnONcriWVaIcZYTKNykyCVUz93MAkGByqGSM49BAEDSAAwRQIgZhTox7WpCb9krZMyHfgCzHwfu0FVqaJsO2Nl2ArhCX0CIQC5GgWD5jjCRlIWSEFSDo4DZgoQFXaQkJUSUbJZYpi9dA=="]
+}`
 
 var maxSerialNumber = new(big.Int).Exp(big.NewInt(2), big.NewInt(159), nil)
 
@@ -87,19 +87,19 @@ func (s *Store) write(keySet jose.JSONWebKeySet) error {
 
 // certificateAuthority returns the CA JWK.
 // If the CA has not been explicitly set, the ec256Test key is returned by default.
-func (s *Store) certificateAuthority() *jose.JSONWebKey {
+func (s *Store) certificateAuthority() (*jose.JSONWebKey, error) {
 	if s.caJWK != nil {
 		fmt.Println("return non-default ca")
-		return s.caJWK
+		return s.caJWK, nil
 	}
 
 	ec256TestBytes := []byte(ec256Test)
 	var key jose.JSONWebKey
 	err := json.Unmarshal(ec256TestBytes, &key)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return &key
+	return &key, nil
 }
 
 func (s *Store) now() time.Time {
@@ -156,7 +156,10 @@ func (s *Store) Certificates(thingID string) ([]*x509.Certificate, error) {
 		return keys[0].Certificates, nil
 	}
 
-	caWebKey := s.certificateAuthority()
+	caWebKey, err := s.certificateAuthority()
+	if err != nil {
+		return nil, err
+	}
 	serialNumber, err := rand.Int(rand.Reader, maxSerialNumber)
 	if err != nil {
 		return nil, err
