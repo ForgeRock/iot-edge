@@ -29,7 +29,8 @@ device's resources.
 This diagram illustrates identity synchronization and device management.
  - An administrator creates a device in GCP IoT Core using the device manager.
  - Once created, the device identity is automatically synchronized to the ForgeRock Platform.
- - The administrator can then manage relationships between users and devices in the ForgeRock Platform.
+ - The administrator can then manage relationships between users and devices in the ForgeRock Platform or change the
+  device configuration, and it will automatically be synchronized between ForgeRock and GCP.
  - A user may request access to a device or to a device's resources.
  - Access is authorized by the ForgeRock Platform based on the relationship that exists between the user and the device.
  

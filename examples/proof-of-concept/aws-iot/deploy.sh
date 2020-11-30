@@ -51,6 +51,13 @@ POC_OVERLAY_DIR=$POC_DIR/forgeops
 FR_PLATFORM_PASSWORD=$(openssl rand -base64 32 | tr =/ 0 | tr l+ 1)
 
 echo "====================================================="
+echo "Deploy the connector"
+echo "====================================================="
+cd $POC_DIR/registry-connector
+./deploy.sh
+cd $POC_DIR
+
+echo "====================================================="
 echo "Deploy and configure AWS custom authorizer function"
 echo "====================================================="
 cd $POC_DIR/custom-auth/lambda
@@ -119,4 +126,7 @@ echo "~~~ Platform login details ~~~"
 echo "URL: https://$FR_FQDN/platform"
 echo "Username: amadmin"
 echo "Password: $FR_PLATFORM_PASSWORD"
+echo ""
+echo "~~~ AWS Access Key Details ~~~"
+cat $POC_DIR/registry-connector/iot-access-key.secret
 echo "====================================================="

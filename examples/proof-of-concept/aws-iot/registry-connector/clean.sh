@@ -16,22 +16,19 @@
 # limitations under the License.
 #
 
-POC_DIR=$(PWD)
-FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops/tmp
+AWS_REGISTRY_MANAGEMENT_USER="iot-registry-management-user"
+AWS_THING_NAME="f971a95b-2fc6-4ce2-aed6-84f8c6cf6b05"
 
-echo "====================================================="
-echo "Delete all the AWS deployed components"
-echo "====================================================="
-cd $POC_DIR/custom-auth/lambda
-./clean.sh
-cd $POC_DIR/registry-connector
-./clean.sh
-cd $POC_DIR
 
-echo "====================================================="
-echo "Delete all the GKE deployed components"
-echo "====================================================="
-cd "$FORGEOPS_DIR"
-skaffold delete
-cd "$FORGEOPS_DIR/bin"
-./clean.sh
+echo "Detach the management user policy"
+aws iam detach-user-policy \
+  --user-name ${AWS_REGISTRY_MANAGEMENT_USER} \
+  --policy-arn arn:aws:iam::aws:policy/AWSIoTFullAccess
+
+echo "Delete the management user [$AWS_REGISTRY_MANAGEMENT_USER]"
+aws iam delete-user \
+  --user-name ${AWS_REGISTRY_MANAGEMENT_USER}
+
+echo "Delete IoT thing [$AWS_THING_NAME]"
+aws iot delete-thing \
+    --thing-name ${AWS_THING_NAME}
