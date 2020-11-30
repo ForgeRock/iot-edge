@@ -27,36 +27,14 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
-var (
-	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-	realm     = flag.String("realm", "/", "AM Realm")
-	audience  = flag.String("audience", "/", "JWT audience")
-	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
-	thingName = flag.String("name", "dynamic-thing", "Thing name")
-	key       = flag.String("key", "", "The Thing's key in PEM format")
-	keyFile   = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
-	cert      = flag.String("cert", "", "The Thing's certificate in PEM format")
-	certFile  = flag.String("certfile", "./examples/resources/dynamic-thing.cert.pem",
-		"The file containing the Thing's certificate if it hasn't been handed directly to the function")
-)
-
-func loadKey() (crypto.Signer, error) {
+func decodePrivateKey(key string) (crypto.Signer, error) {
 	var err error
-	var keyBytes []byte
-	if *key != "" {
-		keyBytes = []byte(*key)
-	} else {
-		keyBytes, err = ioutil.ReadFile(*keyFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	block, _ := pem.Decode(keyBytes)
+	block, _ := pem.Decode([]byte(key))
 	if block == nil {
 		return nil, fmt.Errorf("unable to decode key")
 	}
@@ -67,18 +45,11 @@ func loadKey() (crypto.Signer, error) {
 	return privateKey.(crypto.Signer), nil
 }
 
-func loadCertificates() ([]*x509.Certificate, error) {
-	var err error
-	var certBytes []byte
-	if *cert != "" {
-		certBytes = []byte(*cert)
-	} else {
-		certBytes, err = ioutil.ReadFile(*certFile)
-		if err != nil {
-			return nil, err
-		}
+func decodeCertificates(certs string) ([]*x509.Certificate, error) {
+	block, _ := pem.Decode([]byte(certs))
+	if block == nil {
+		return nil, fmt.Errorf("unable to decode certificate")
 	}
-	block, _ := pem.Decode(certBytes)
 	return x509.ParseCertificates(block.Bytes)
 }
 
@@ -86,27 +57,49 @@ func loadCertificates() ([]*x509.Certificate, error) {
 // The Thing will register and authenticate with AM and then request a user code.
 // Once the Thing is in procession of a user code, it will direct the user to authorise the token.
 // If successful, the Thing will receive an access token with the user that authorised the request as the subject.
-//
-// To create your own certificate, refer to the cert-registration example.
 func userTokenThing() (err error) {
+	var (
+		urlString   = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
+		realm       = flag.String("realm", "/", "AM Realm")
+		audience    = flag.String("audience", "/", "JWT audience")
+		authTree    = flag.String("tree", "iot-tree", "Authentication tree")
+		thingName   = flag.String("name", "dynamic-thing", "Thing name")
+		key         = flag.String("key", "", "The Thing's key in PEM format")
+		cert        = flag.String("cert", "", "The Thing's certificate in PEM format")
+		secretStore = flag.String("secrets", "", "Path to pre-created secret store")
+	)
+	flag.Parse()
 
 	u, err := url.Parse(*urlString)
 	if err != nil {
 		return err
 	}
 
-	key, err := loadKey()
-	if err != nil {
-		return err
+	var signer crypto.Signer
+	var certs []*x509.Certificate
+	if *key != "" && *cert != "" {
+		signer, err = decodePrivateKey(*key)
+		if err != nil {
+			return err
+		}
+		certs, err = decodeCertificates(*cert)
+		if err != nil {
+			return err
+		}
+	} else {
+		store := secrets.Store{Path: *secretStore}
+		signer, err = store.Signer(*thingName)
+		if err != nil {
+			return err
+		}
+		certs, err = store.Certificates(*thingName)
+		if err != nil {
+			return err
+		}
 	}
 
 	// use key thumbprint as key id
-	keyID, err := thing.JWKThumbprint(key)
-	if err != nil {
-		return err
-	}
-
-	certs, err := loadCertificates()
+	keyID, err := thing.JWKThumbprint(signer)
 	if err != nil {
 		return err
 	}
@@ -115,7 +108,7 @@ func userTokenThing() (err error) {
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateThing(*thingName, *audience, keyID, key, nil).
+		AuthenticateThing(*thingName, *audience, keyID, signer, nil).
 		RegisterThing(certs, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
@@ -175,8 +168,6 @@ func userTokenThing() (err error) {
 }
 
 func main() {
-	flag.Parse()
-
 	// pipe debug to standard out
 	thing.DebugLogger().SetOutput(os.Stdout)
 

@@ -22,39 +22,18 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 
+	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
-var (
-	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-	realm     = flag.String("realm", "/", "AM Realm")
-	audience  = flag.String("audience", "/", "JWT audience")
-	authTree  = flag.String("tree", "iot-tree", "Authentication tree")
-	thingName = flag.String("name", "simple-thing", "Thing name")
-	key       = flag.String("key", "", "The Thing's key in PEM format")
-	keyID     = flag.String("keyid", "pop.cnf", "The Thing's key ID")
-	keyFile   = flag.String("keyfile", "./examples/resources/eckey1.key.pem", "The file containing the Thing's key")
-)
-
-func loadKey() (crypto.Signer, error) {
+func decodePrivateKey(key string) (crypto.Signer, error) {
 	var err error
-	var keyBytes []byte
-	if *key != "" {
-		keyBytes = []byte(*key)
-	} else {
-		keyBytes, err = ioutil.ReadFile(*keyFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	block, _ := pem.Decode(keyBytes)
+	block, _ := pem.Decode([]byte(key))
 	if block == nil {
 		return nil, fmt.Errorf("unable to decode key")
 	}
@@ -73,24 +52,44 @@ func loadKey() (crypto.Signer, error) {
 //	password: password
 // Modify the "simple-thing" entry in DS
 //	thingType: Device
-//	thingKeys: <see examples/resources/eckey1.jwks>
+//	thingKeys: <see examples/resources/public.jwks>
 func simpleThing() error {
+	var (
+		urlString   = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
+		realm       = flag.String("realm", "/", "AM Realm")
+		audience    = flag.String("audience", "/", "JWT audience")
+		authTree    = flag.String("tree", "iot-tree", "Authentication tree")
+		thingName   = flag.String("name", "simple-thing", "Thing name")
+		key         = flag.String("key", "", "The Thing's key in PEM format")
+		keyID       = flag.String("keyid", "pop.cnf", "The Thing's key ID")
+		secretStore = flag.String("secrets", "./examples/resources/example.secrets", "Path to pre-created JWK set file")
+	)
+	flag.Parse()
 
 	u, err := url.Parse(*urlString)
 	if err != nil {
 		return err
 	}
 
-	key, err := loadKey()
-	if err != nil {
-		return err
+	var signer crypto.Signer
+	if *key != "" {
+		signer, err = decodePrivateKey(*key)
+		if err != nil {
+			return err
+		}
+	} else {
+		store := secrets.Store{Path: *secretStore}
+		signer, err = store.Signer(*keyID)
+		if err != nil {
+			return err
+		}
 	}
 
 	builder := builder.Thing().
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateThing(*thingName, *audience, *keyID, key, nil)
+		AuthenticateThing(*thingName, *audience, *keyID, signer, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
 	device, err := builder.Create()
@@ -125,8 +124,6 @@ func simpleThing() error {
 }
 
 func main() {
-	flag.Parse()
-
 	// pipe debug to standard out
 	thing.DebugLogger().SetOutput(os.Stdout)
 
