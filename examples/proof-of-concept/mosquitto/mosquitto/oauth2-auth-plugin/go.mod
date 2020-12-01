@@ -1,6 +1,6 @@
 module oauth2-auth-plugin
 
-go 1.13
+go 1.15
 
 require (
 	github.com/ForgeRock/iot-edge/v7 v7.0.1-0.20201005135449-4f6c39f16220
