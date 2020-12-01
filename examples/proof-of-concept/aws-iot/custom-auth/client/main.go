@@ -21,21 +21,21 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
-	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
-	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+
+	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
+	"github.com/dgrijalva/jwt-go"
 )
 
 const (
@@ -67,8 +67,15 @@ func main() {
 	awsPublishURL = fmt.Sprintf("https://%s/topics/customauthtesting", *awsIoTEndpoint)
 
 	log.Println("Register device with id: ", deviceID)
-	signer := secrets.Signer(deviceID)
-	certificate := []*x509.Certificate{secrets.Certificate(deviceID, signer.Public())}
+	store := secrets.Store{}
+	signer, err := store.Signer(deviceID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	certificates, err := store.Certificates(deviceID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(*amBaseURL)
 	dynamicThing, err := builder.Thing().
@@ -76,7 +83,7 @@ func main() {
 		InRealm("/").
 		WithTree("RegisterThings").
 		AuthenticateThing(deviceID, "/", keyID, signer, nil).
-		RegisterThing(certificate, nil).
+		RegisterThing(certificates, nil).
 		Create()
 	if err != nil {
 		log.Fatal("Registration failed", "\nReason: ", err)

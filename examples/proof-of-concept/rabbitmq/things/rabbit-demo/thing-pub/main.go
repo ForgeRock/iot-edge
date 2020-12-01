@@ -18,7 +18,7 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
+	"flag"
 	"fmt"
 	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
@@ -38,9 +38,18 @@ func main() {
 	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
 
 	// ForgeRock connection information
-	thingID := "47cf707c-80c1-4816-b067-99db2a443113"
-	signer := secrets.Signer(thingID)
-	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
+	thingID := flag.String("name", "47cf707c-80c1-4816-b067-99db2a443113", "Thing name")
+	flag.Parse()
+
+	store := secrets.Store{}
+	signer, err := store.Signer(*thingID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	certificates, err := store.Certificates(*thingID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
 
@@ -54,14 +63,14 @@ func main() {
 		ConnectTo(amURL).
 		InRealm("/").
 		WithTree("RegisterThings").
-		AuthenticateThing(thingID, "/", keyID, signer, nil).
-		RegisterThing(certificate, nil).
+		AuthenticateThing(*thingID, "/", keyID, signer, nil).
+		RegisterThing(certificates, nil).
 		Create()
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(thingID, " registration successful")
+	log.Println(*thingID, " registration successful")
 
 	connOpts := mqtt.NewClientOptions().
 		AddBroker(server).
@@ -79,7 +88,7 @@ func main() {
 			log.Fatal(err)
 		}
 		log.Printf("Providing the OAuth 2.0 access token as password: %s", password)
-		return thingID, password
+		return *thingID, password
 	})
 
 	tlsConfig := &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert}

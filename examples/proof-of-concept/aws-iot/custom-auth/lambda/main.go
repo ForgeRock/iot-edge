@@ -18,18 +18,18 @@ package main
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
-	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
-	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"github.com/aws/aws-lambda-go/lambda"
 	"log"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var awsPublishResource string
@@ -132,8 +132,15 @@ func introspect(authorizationTokenJson string) (introspection thing.Introspectio
 		return
 	}
 	thingID := "572ddcde-1532-4175-861b-0622ac2f3bf3"
-	signer := secrets.Signer(thingID)
-	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
+	store := secrets.Store{}
+	signer, err := store.Signer(thingID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	certificates, err := store.Certificates(thingID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(authorizationToken.AmURL)
 	service, err := builder.Thing().
@@ -142,7 +149,7 @@ func introspect(authorizationTokenJson string) (introspection thing.Introspectio
 		InRealm("/").
 		WithTree("RegisterThings").
 		AuthenticateThing(thingID, "/", keyID, signer, nil).
-		RegisterThing(certificate, nil).
+		RegisterThing(certificates, nil).
 		Create()
 	if err != nil {
 		return

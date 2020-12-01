@@ -26,11 +26,7 @@ typedef const char const_char;
 */
 import "C"
 import (
-	"crypto/x509"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
-	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
-	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -40,6 +36,10 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
+	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
 const (
@@ -117,8 +117,15 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 	// ForgeRock connection information
 	// Can be passed to the plugin via Mosquitto configuration
 	thingID := "572ddcde-1532-4175-861b-0622ac2f3bf3"
-	signer := secrets.Signer(thingID)
-	certificate := []*x509.Certificate{secrets.Certificate(thingID, signer.Public())}
+	store := secrets.Store{}
+	signer, err := store.Signer(thingID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	certificates, err := store.Certificates(thingID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
 	amRealm := os.Getenv("AM_REALM")
@@ -135,7 +142,7 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 			InRealm(amRealm).
 			WithTree(amTree).
 			AuthenticateThing(thingID, amRealm, keyID, signer, nil).
-			RegisterThing(certificate, nil).
+			RegisterThing(certificates, nil).
 			Create()
 		if err == nil {
 			break
