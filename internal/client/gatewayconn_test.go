@@ -93,6 +93,15 @@ func testUserTokenCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux)
 	return mux
 }
 
+func testIntrospectionCOAPMux(code codes.Code, response []byte) (mux *coap.ServeMux) {
+	mux = coap.NewServeMux()
+	mux.HandleFunc("/introspect", func(w coap.ResponseWriter, r *coap.Request) {
+		w.SetCode(code)
+		_, _ = w.Write(response)
+	})
+	return mux
+}
+
 type testCOAPServer struct {
 	config *dtls.Config
 	mux    *coap.ServeMux
@@ -440,6 +449,51 @@ func TestGatewayClient_UserToken(t *testing.T) {
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
 			err := testGatewayClientUserToken(subtest.client, subtest.server)
+			if subtest.successful && err != nil {
+				t.Error(err)
+			}
+			if !subtest.successful && err == nil {
+				t.Error("Expected an error")
+			}
+		})
+	}
+}
+
+func testGatewayClientIntrospection(client *gatewayConnection, server *testCOAPServer) (err error) {
+	if server != nil {
+		var cancel func()
+		client.address, cancel, err = server.Start()
+		if err != nil {
+			panic(err)
+		}
+		defer cancel()
+	}
+
+	err = client.Initialise()
+	if err != nil {
+		return err
+	}
+	_, err = client.IntrospectAccessToken("token", ApplicationJOSE, "signedWT")
+	return err
+}
+
+func TestGatewayClient_Introspection(t *testing.T) {
+	cert, _ := frcrypto.PublicKeyCertificate(testGenerateSigner())
+
+	tests := []struct {
+		name       string
+		successful bool
+		client     *gatewayConnection
+		server     *testCOAPServer
+	}{
+		{name: "success", successful: true, client: &gatewayConnection{key: testGenerateSigner()},
+			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testIntrospectionCOAPMux(codes.Changed, []byte("{}"))}},
+		{name: "unexpected-code", client: &gatewayConnection{key: testGenerateSigner()},
+			server: &testCOAPServer{config: dtlsServerConfig(cert), mux: testIntrospectionCOAPMux(codes.BadGateway, []byte("{}"))}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			err := testGatewayClientIntrospection(subtest.client, subtest.server)
 			if subtest.successful && err != nil {
 				t.Error(err)
 			}

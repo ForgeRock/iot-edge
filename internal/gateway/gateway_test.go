@@ -356,6 +356,45 @@ func TestGatewayServer_UserToken(t *testing.T) {
 	}
 }
 
+func testGatewayServerIntrospectAccessToken(t *testing.T, m *mocks.MockClient, content client.ContentType, payload string) (reply []byte, err error) {
+	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	gateway := testGateway(m)
+	if err := gateway.StartCOAPServer(":0", serverKey); err != nil {
+		panic(err)
+	}
+	defer gateway.ShutdownCOAPServer()
+
+	return gatewayConnection(t, gateway).IntrospectAccessToken("", content, payload)
+}
+
+func TestGatewayServer_IntrospectAccessToken(t *testing.T) {
+	tests := []struct {
+		name       string
+		successful bool
+		connection *mocks.MockClient
+		content    client.ContentType
+		payload    string
+	}{
+		{name: "success-jose", successful: true, connection: &mocks.MockClient{}, content: client.ApplicationJOSE, payload: ".eyJjc3JmIjoiMTIzNDUifQ."},
+		{name: "success-json", successful: true, connection: &mocks.MockClient{}, content: client.ApplicationJSON, payload: "{}"},
+		{name: "not-a-valid-jwt", connection: &mocks.MockClient{}, content: client.ApplicationJOSE, payload: "eyJjc3JmIjoiMTIzNDUifQ"},
+		{name: "am-client-returns-error", content: client.ApplicationJOSE, payload: ".eyJjc3JmIjoiMTIzNDUifQ.", connection: &mocks.MockClient{IntrospectAccessTokenFunc: func(string, string) (bytes []byte, err error) {
+			return nil, errors.New("AM access token error")
+		}}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			_, err := testGatewayServerIntrospectAccessToken(t, subtest.connection, subtest.content, subtest.payload)
+			if subtest.successful && err != nil {
+				t.Error(err)
+			}
+			if !subtest.successful && err == nil {
+				t.Error("Expected an error")
+			}
+		})
+	}
+}
+
 func TestGatewayServer_Address(t *testing.T) {
 	gateway := testGateway(&mocks.MockClient{})
 	// before the server has started, the address is the empty string

@@ -27,6 +27,7 @@ import (
 type AMInfoResponse struct {
 	Realm          string
 	AccessTokenURL string
+	IntrospectURL  string
 	AttributesURL  string
 	ThingsVersion  string
 	UserCodeURL    string

@@ -332,30 +332,15 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 func (c *ThingGateway) introspectHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("introspectHandler")
 
-	coapFormat, ok := r.Msg.Option(coap.ContentFormat).(coap.MediaType)
-	if !ok || coapFormat != coap.AppJSON {
-		w.SetCode(codes.BadRequest)
-		writeResponse(w, []byte("missing/incorrect content format"))
-		return
-	}
-
-	var request client.IntrospectPayload
-	err := json.Unmarshal(r.Msg.Payload(), &request)
+	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
 	if err != nil {
 		w.SetCode(codes.BadRequest)
 		writeResponse(w, []byte(err.Error()))
 		return
 	}
 
-	introspection, err := c.amConnection.IntrospectAccessToken(request.Token)
-	if err != nil {
-		w.SetCode(codes.GatewayTimeout)
-		writeResponse(w, []byte(err.Error()))
-		return
-	}
-	w.SetCode(codes.Changed)
-	writeResponse(w, introspection)
-	debug.Logger.Println("introspectHandler: success")
+	b, err := c.amConnection.IntrospectAccessToken(token, content, payload)
+	handleResponse(b, err, codes.Changed, w)
 }
 
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {

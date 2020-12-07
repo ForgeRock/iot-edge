@@ -211,6 +211,9 @@ func TestAMClient_AMInfo(t *testing.T) {
 	if info.AttributesURL != client.attributesURL(nil) {
 		t.Error("incorrect attributes endpoint url")
 	}
+	if info.IntrospectURL != client.introspectURL() {
+		t.Error("incorrect introspection endpoint url")
+	}
 }
 
 func testAccessTokenHTTPMux(code int, response []byte) (mux *http.ServeMux) {

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/clock"
+	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
@@ -53,14 +54,14 @@ func returnToPresent() {
 
 // IntrospectAccessToken checks that a valid access token can be introspected
 type IntrospectAccessToken struct {
-	clientBased         bool
-	alg                 jose.SignatureAlgorithm
+	restricted          bool // true if the Thing authenticates with PoP
+	tokenType           anvil.AccessTokenType
 	originalOAuthConfig []byte
 }
 
 func (t *IntrospectAccessToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
-	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.RealmForConfiguration(), t.clientBased, t.alg)
+	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.RealmForConfiguration(), t.tokenType)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to modify OAuth 2.0 provider", err)
 		return data, false
@@ -75,8 +76,20 @@ func (t *IntrospectAccessToken) Setup(state anvil.TestState) (data anvil.ThingDa
 }
 
 func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := thingJWTAuth(state, data)
-	device, err := builder.Create()
+	var b thing.Builder
+	if t.restricted {
+		b = thingJWTAuth(state, data)
+	} else {
+		state.SetGatewayTree(userPwdAuthTree)
+		b = builder.Thing().
+			ConnectTo(state.URL()).
+			InRealm(state.TestRealm()).
+			WithTree(userPwdAuthTree).
+			HandleCallbacksWith(
+				callback.NameHandler{Name: data.Id.Name},
+				callback.PasswordHandler{Password: data.Id.Password})
+	}
+	device, err := b.Create()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
@@ -104,52 +117,38 @@ func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData)
 }
 
 func (t IntrospectAccessToken) Cleanup(state anvil.TestState, data anvil.ThingData) error {
+	state.SetGatewayTree(jwtPopRegCertTree)
 	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
 }
 
 func (t *IntrospectAccessToken) NameSuffix() string {
-	if !t.clientBased {
-		return "CTSBased"
+	name := "NonRestricted"
+	if t.restricted {
+		name = "Restricted"
 	}
-	return "ClientBased" + string(t.alg)
-}
-
-// IntrospectAccessTokenFailure checks that introspection fails gracefully for unsupported cases
-// Currently unsupported:
-// * CTS-based tokens
-// * Symmetrically signed tokens
-type IntrospectAccessTokenFailure struct {
-	IntrospectAccessToken
-}
-
-func (t *IntrospectAccessTokenFailure) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := thingJWTAuth(state, data)
-	device, err := builder.Create()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	accessToken, err := getAccessToken(device)
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-
-	nearFuture()
-	defer returnToPresent()
-
-	_, err = device.IntrospectAccessToken(accessToken)
-	if err == nil {
-		anvil.DebugLogger.Println("expected failure")
-		return false
-	}
-	anvil.DebugLogger.Println(err)
-	return true
+	return name + t.tokenType.Name()
 }
 
 // IntrospectAccessTokenExpired tests that local introspection returns inactive if the token has expired
 type IntrospectAccessTokenExpired struct {
-	IntrospectAccessToken
+	anvil.NopSetupCleanup
+	originalOAuthConfig []byte
+}
+
+func (t *IntrospectAccessTokenExpired) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.RealmForConfiguration(), anvil.ClientSignedTokenType(jose.ES256))
+	if err != nil {
+		anvil.DebugLogger.Println("failed to modify OAuth 2.0 provider", err)
+		return data, false
+	}
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
 }
 
 func (t *IntrospectAccessTokenExpired) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -182,10 +181,14 @@ func (t *IntrospectAccessTokenExpired) Run(state anvil.TestState, data anvil.Thi
 	return true
 }
 
+func (t IntrospectAccessTokenExpired) Cleanup(state anvil.TestState, data anvil.ThingData) error {
+	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
+}
+
 // IntrospectAccessTokenPremature tests that local introspection returns inactive if the token has not reached its
 // not before time yet
 type IntrospectAccessTokenPremature struct {
-	IntrospectAccessToken
+	IntrospectAccessTokenExpired
 }
 
 func (t *IntrospectAccessTokenPremature) Run(state anvil.TestState, data anvil.ThingData) bool {

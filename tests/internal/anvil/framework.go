@@ -286,13 +286,39 @@ func subConfig(config map[string]json.RawMessage, key string) (sub map[string]js
 	return sub, err
 }
 
+// AccessTokenType is used to configure the type of OAuth2 access token issues by AM
+type AccessTokenType struct {
+	name string
+	alg  jose.SignatureAlgorithm
+}
+
+func (a AccessTokenType) Name() string {
+	return a.name
+}
+
+var (
+	// CTS based (stateful) access token type
+	CTS = AccessTokenType{name: "CTS"}
+	// Client based (stateless) encrypted access token type
+	ClientEncrypted = AccessTokenType{name: "ClientEncrypted"}
+)
+
+// ClientSignedTokenType returns a client based (stateless) signed token type
+func ClientSignedTokenType(alg jose.SignatureAlgorithm) AccessTokenType {
+	return AccessTokenType{
+		name: "ClientSigned" + string(alg),
+		alg:  alg,
+	}
+}
+
 // ModifyOAuth2Provider changes the OAuth 2.0 access tokens issued by AM
 // Returns the original configuration so that the provider can be restored
-func ModifyOAuth2Provider(realm string, clientBased bool, signingAlgorithm jose.SignatureAlgorithm) (original []byte, err error) {
+func ModifyOAuth2Provider(realm string, tokenType AccessTokenType) (original []byte, err error) {
 	const (
 		coreKey     = "coreOAuth2Config"
 		advancedKey = "advancedOAuth2Config"
 	)
+	clientBased := tokenType != CTS
 	original, err = am.GetService(realm, oauth2Service)
 	var config, coreConfig, advancedConfig map[string]json.RawMessage
 	err = json.Unmarshal(original, &config)
@@ -314,7 +340,12 @@ func ModifyOAuth2Provider(realm string, clientBased bool, signingAlgorithm jose.
 	if err != nil {
 		return original, err
 	}
-	advancedConfig["tokenSigningAlgorithm"], _ = json.Marshal(signingAlgorithm)
+	if tokenType == ClientEncrypted {
+		advancedConfig["tokenEncryptionEnabled"], _ = json.Marshal(true)
+	}
+	if tokenType.alg != "" {
+		advancedConfig["tokenSigningAlgorithm"], _ = json.Marshal(tokenType.alg)
+	}
 	newAdvanced, err := json.Marshal(advancedConfig)
 	if err != nil {
 		return original, err

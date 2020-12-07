@@ -24,13 +24,14 @@ import (
 
 // MockClient mocks a client.Connection
 type MockClient struct {
-	AuthenticateFunc func(client.AuthenticatePayload) (client.AuthenticatePayload, error)
-	AMInfoFunc       func() (client.AMInfoResponse, error)
-	AMInfoSet        client.AMInfoResponse
-	AccessTokenFunc  func(string, string) ([]byte, error)
-	AttributesFunc   func(string, string, []string) ([]byte, error)
-	UserCodeFunc     func(string, string) ([]byte, error)
-	UserTokenFunc    func(string, string) ([]byte, error)
+	AuthenticateFunc          func(client.AuthenticatePayload) (client.AuthenticatePayload, error)
+	AMInfoFunc                func() (client.AMInfoResponse, error)
+	AMInfoSet                 client.AMInfoResponse
+	AccessTokenFunc           func(string, string) ([]byte, error)
+	AttributesFunc            func(string, string, []string) ([]byte, error)
+	UserCodeFunc              func(string, string) ([]byte, error)
+	UserTokenFunc             func(string, string) ([]byte, error)
+	IntrospectAccessTokenFunc func(string, string) ([]byte, error)
 }
 
 func (m *MockClient) ValidateSession(tokenID string) (ok bool, err error) {
@@ -71,7 +72,10 @@ func (m *MockClient) AccessToken(tokenID string, _ client.ContentType, payload s
 	return []byte("{}"), nil
 }
 
-func (m *MockClient) IntrospectAccessToken(token string) (introspection []byte, err error) {
+func (m *MockClient) IntrospectAccessToken(tokenID string, content client.ContentType, payload string) (introspection []byte, err error) {
+	if m.IntrospectAccessTokenFunc != nil {
+		return m.IntrospectAccessTokenFunc(tokenID, payload)
+	}
 	return introspect.InactiveIntrospectionBytes, nil
 }
 
