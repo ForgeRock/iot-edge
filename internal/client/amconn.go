@@ -29,6 +29,7 @@ import (
 
 	"github.com/ForgeRock/iot-edge/v7/internal/debug"
 	"github.com/ForgeRock/iot-edge/v7/internal/introspect"
+	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -317,6 +318,14 @@ func (c *amConnection) userTokenURL() string {
 	return c.baseURL + "/json/things/*?" + q
 }
 
+func (c *amConnection) introspectURL() string {
+	q := "_action=introspect_token"
+	if c.realm != "" {
+		q += "&realm=" + c.realm
+	}
+	return c.baseURL + "/json/things/*?" + q
+}
+
 func (c *amConnection) attributesURL(names []string) string {
 	q := make([]string, 0)
 	if c.realm != "" {
@@ -338,6 +347,7 @@ func (c *amConnection) AMInfo() (info AMInfoResponse, err error) {
 	return AMInfoResponse{
 		Realm:          c.realm,
 		AccessTokenURL: c.accessTokenURL(),
+		IntrospectURL:  c.introspectURL(),
 		AttributesURL:  c.attributesURL(nil),
 		ThingsVersion:  thingsEndpointVersion,
 		UserCodeURL:    c.userCodeURL(),
@@ -355,9 +365,10 @@ func (c *amConnection) AccessToken(tokenID string, content ContentType, payload 
 	return c.makeRequest(tokenID, content, request)
 }
 
-// IntrospectAccessToken introspects an access token locally
-func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte, err error) {
-	object, err := jose.ParseSigned(token)
+// introspectAccessTokenLocally tries to introspect an access token locally
+// Will only work for client based (stateless) asymmetrically signed access tokens
+func (c *amConnection) introspectAccessTokenLocally(payload IntrospectPayload) (introspection []byte, err error) {
+	object, err := jose.ParseSigned(payload.Token)
 	if err != nil {
 		return introspection, err
 	}
@@ -405,6 +416,34 @@ func (c *amConnection) IntrospectAccessToken(token string) (introspection []byte
 		return introspect.InactiveIntrospectionBytes, nil
 	}
 	return introspect.AddActive(introspection)
+}
+
+// IntrospectAccessToken introspects an access token
+func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType, payload string) (introspection []byte, err error) {
+	var token IntrospectPayload
+	switch content {
+	case ApplicationJOSE:
+		err = jws.ExtractClaims(payload, &token)
+	case ApplicationJSON:
+		err = json.Unmarshal([]byte(payload), &token)
+	}
+	if err != nil {
+		return introspection, err
+	}
+
+	// try local introspection
+	introspection, err = c.introspectAccessTokenLocally(token)
+	if err == nil {
+		return introspection, nil
+	}
+
+	// request AM to introspect the token
+	request, err := http.NewRequest(http.MethodPost, c.introspectURL(), strings.NewReader(payload))
+	if err != nil {
+		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
+		return introspection, err
+	}
+	return c.makeRequest(tokenID, content, request)
 }
 
 // attributes makes a thing attributes request with the given session token and payload

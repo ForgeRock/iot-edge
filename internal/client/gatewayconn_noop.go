@@ -46,7 +46,7 @@ func (c *gatewayConnection) AccessToken(tokenID string, content ContentType, pay
 	return reply, errCOAPNotBuilt
 }
 
-func (c *gatewayConnection) IntrospectAccessToken(token string) (introspection []byte, err error) {
+func (c *gatewayConnection) IntrospectAccessToken(tokenID string, content ContentType, payload string) (introspection []byte, err error) {
 	return introspection, errCOAPNotBuilt
 }
 

@@ -249,7 +249,7 @@ type Connection interface {
 	AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error)
 
 	// IntrospectAccessToken makes a request to introspect an access token
-	IntrospectAccessToken(token string) (introspection []byte, err error)
+	IntrospectAccessToken(tokenID string, content ContentType, payload string) (introspection []byte, err error)
 
 	// attributes makes a thing attributes request with the given session token and payload
 	Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error)

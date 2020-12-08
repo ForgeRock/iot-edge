@@ -139,12 +139,38 @@ func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.Acce
 }
 
 func (t *DefaultThing) IntrospectAccessToken(token string) (introspection thing.IntrospectionResponse, err error) {
-	b, err := t.connection.IntrospectAccessToken(token)
-	if err != nil {
-		debug.Logger.Println("Introspection error", err)
-		return introspection, err
-	}
-	err = json.Unmarshal(b, &introspection.Content)
+	var requestBody string
+	var content client.ContentType
+	payload := client.IntrospectPayload{Token: token}
+
+	err = t.makeAuthorisedRequest(func(session session.Session) error {
+		if popSession, ok := session.(*isession.PoPSession); ok {
+			info, err := t.connection.AMInfo()
+			if err != nil {
+				return err
+			}
+			requestBody, err = signedJWTBody(popSession, info.IntrospectURL, info.ThingsVersion, payload)
+			if err != nil {
+				return err
+			}
+			content = client.ApplicationJOSE
+		} else {
+			b, err := json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			requestBody = string(b)
+			content = client.ApplicationJSON
+		}
+		reply, err := t.connection.IntrospectAccessToken(session.Token(), content, requestBody)
+		if reply != nil {
+			debug.Logger.Println("IntrospectAccessToken response: ", string(reply))
+		}
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(reply, &introspection.Content)
+	})
 	return introspection, err
 }
 
