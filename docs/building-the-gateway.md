@@ -1,6 +1,6 @@
-# Building the Thing Gateway
+# Building the IoT Gateway
 
-ForgeRock does not deliver binaries for the Thing Gateway as there are simply too many operating system and
+ForgeRock does not deliver binaries for the IoT Gateway as there are simply too many operating system and
 architecture combinations to support. One of the reasons we chose the Go programming language is for its easy to use
 build tooling and great support for cross-compilation to target systems.  
 

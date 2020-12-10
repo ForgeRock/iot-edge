@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package anvil runs functional tests for the Thing SDK
+// Package anvil runs functional tests for the IoT SDK
 package anvil
 
 import (
@@ -430,8 +430,8 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 	return x509.ParseCertificate(cert)
 }
 
-// TestThingGateway creates a test Thing Gateway
-func TestThingGateway(u *url.URL, realm string, audience string, authTree string, dnsConfigured bool) (*gateway.ThingGateway, error) {
+// TestGateway creates a test IoT Gateway
+func TestGateway(u *url.URL, realm string, audience string, authTree string, dnsConfigured bool) (*gateway.Gateway, error) {
 	jwk, signer, err := ConfirmationKey(jose.ES256)
 	if err != nil {
 		return nil, err
@@ -450,7 +450,7 @@ func TestThingGateway(u *url.URL, realm string, audience string, authTree string
 	if !dnsConfigured {
 		testRealm = realm
 	}
-	return gateway.NewThingGateway(u.String(), testRealm, authTree, StdTimeOut, []callback.Handler{
+	return gateway.New(u.String(), testRealm, authTree, StdTimeOut, []callback.Handler{
 		callback.AuthenticateHandler{
 			Audience: audience,
 			ThingID:  attributes.Name,
@@ -470,7 +470,7 @@ type ThingData struct {
 type TestState interface {
 	// RealmForConfiguration returns the realm that can be used for test setup, validation and clean up
 	RealmForConfiguration() string
-	// TestRealm returns the test realm that should be passed to the Thing SDK
+	// TestRealm returns the test realm that should be passed to the IoT SDK
 	TestRealm() string
 	// Audience returns the JWT audience for the current test realm
 	Audience() string
@@ -478,7 +478,7 @@ type TestState interface {
 	ClientType() string
 	// URL of the current test server (AM or Gateway)
 	URL() *url.URL
-	// SetGatewayTree sets the auth tree used by the test Thing Gateway
+	// SetGatewayTree sets the auth tree used by the test IoT Gateway
 	SetGatewayTree(tree string)
 }
 
@@ -516,35 +516,35 @@ func (a *AMTestState) Audience() string {
 	return a.TestAudience
 }
 
-// ThingGatewayTestState contains data and methods for testing the Thing Gateway client
-type ThingGatewayTestState struct {
-	ThingGateway *gateway.ThingGateway
+// GatewayTestState contains data and methods for testing the IoT Gateway client
+type GatewayTestState struct {
+	Gateway      *gateway.Gateway
 	Realm        string
 	TestAudience string
 }
 
-func (i *ThingGatewayTestState) SetGatewayTree(tree string) {
-	gateway.SetAuthenticationTree(i.ThingGateway, tree)
+func (i *GatewayTestState) SetGatewayTree(tree string) {
+	gateway.SetAuthenticationTree(i.Gateway, tree)
 }
 
-func (i *ThingGatewayTestState) URL() *url.URL {
-	u, _ := url.Parse("coap://" + i.ThingGateway.Address())
+func (i *GatewayTestState) URL() *url.URL {
+	u, _ := url.Parse("coap://" + i.Gateway.Address())
 	return u
 }
 
-func (i *ThingGatewayTestState) ClientType() string {
+func (i *GatewayTestState) ClientType() string {
 	return GatewayClientType
 }
 
-func (i *ThingGatewayTestState) RealmForConfiguration() string {
+func (i *GatewayTestState) RealmForConfiguration() string {
 	return i.Realm
 }
 
-func (i *ThingGatewayTestState) TestRealm() string {
+func (i *GatewayTestState) TestRealm() string {
 	return ""
 }
 
-func (i *ThingGatewayTestState) Audience() string {
+func (i *GatewayTestState) Audience() string {
 	return i.TestAudience
 }
 

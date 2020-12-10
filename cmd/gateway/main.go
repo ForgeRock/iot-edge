@@ -94,7 +94,7 @@ func (o commandlineOpts) String() string {
 		o.URL, o.Realm, o.Tree, o.Name, o.Address, o.KeyFile, o.KeyID, o.CertFile, o.Timeout, o.Debug)
 }
 
-// runGateway initialises and runs a Thing Gateway
+// runGateway initialises and runs an IoT Gateway
 func runGateway() error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -145,9 +145,9 @@ func runGateway() error {
 		})
 
 	}
-	thingGateway := gateway.NewThingGateway(opts.URL, opts.Realm, opts.Tree, opts.Timeout, callbacks)
+	iotGateway := gateway.New(opts.URL, opts.Realm, opts.Tree, opts.Timeout, callbacks)
 
-	err = thingGateway.Initialise()
+	err = iotGateway.Initialise()
 	if err != nil {
 		return err
 	}
@@ -156,15 +156,15 @@ func runGateway() error {
 	if err != nil {
 		return err
 	}
-	err = thingGateway.StartCOAPServer(opts.Address, serverKey)
+	err = iotGateway.StartCOAPServer(opts.Address, serverKey)
 	if err != nil {
 		return err
 	}
-	defer thingGateway.ShutdownCOAPServer()
+	defer iotGateway.ShutdownCOAPServer()
 
-	fmt.Println("Thing Gateway server started.")
+	fmt.Println("IoT Gateway server started.")
 	<-signals
-	fmt.Println("Thing Gateway server shutting down.")
+	fmt.Println("IoT Gateway server shutting down.")
 	return nil
 }
 

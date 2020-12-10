@@ -7,7 +7,7 @@ This PoC illustrates how access control within the [RabbitMQ](http://www.rabbitm
 ensuring that only authenticated things can publish or subscribe to authorised topics.
 The PoC is built on top of
 [ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7/index-forgeops.html) with added
-configuration for [ForgeRock Things](https://backstage.forgerock.com/docs/things/7). 
+configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/things/7).
 RabbitMQ is configured to use the [OAuth 2.0 (JWT) Token Authorisation Backend](https://github.com/rabbitmq/rabbitmq-auth-backend-oauth2) 
 which ships with RabbitMQ since version 3.8. 
 The configuration changes can be summarised as:

@@ -308,7 +308,7 @@ type amConnection struct {
 	accessTokenJWKS jose.JSONWebKeySet
 }
 
-// gatewayConnection contains information for connecting to the Thing Gateway via COAP
+// gatewayConnection contains information for connecting to the IoT Gateway via COAP
 type gatewayConnection struct {
 	address string
 	timeout time.Duration

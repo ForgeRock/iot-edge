@@ -3,8 +3,8 @@
 [![Lint](https://github.com/ForgeRock/iot-edge/workflows/golangci-lint/badge.svg)](https://github.com/ForgeRock/iot-edge/actions?query=workflow%3Agolangci-lint)
 [![go test](https://github.com/ForgeRock/iot-edge/workflows/go-test/badge.svg)](https://github.com/ForgeRock/iot-edge/actions?query=workflow%3Ago-test)
 
-# ForgeRock Things
+# ForgeRock IoT
 
-ForgeRock Things is an open source project containing the IoT edge tier components of the ForgeRock Identity Platform.
+ForgeRock IoT is an open source project containing the IoT edge tier components of the ForgeRock Identity Platform.
 
-For more information about ForgeRock Things and how to use it, please refer to the [product documentation](https://backstage.forgerock.com/docs/things/7/evaluation-guide/). 
+For more information about ForgeRock IoT and how to use it, please refer to the [product documentation](https://backstage.forgerock.com/docs/things/7/evaluation-guide/).

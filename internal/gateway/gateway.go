@@ -47,11 +47,11 @@ import (
 // The CoAP response status codes follow the CoAP-HTTP proxy guidance in the CoAP specification
 // https://tools.ietf.org/html/rfc7252#section-10.1
 
-// ErrCOAPServerAlreadyStarted indicates that a CoAP server has already been started by the Thing Gateway
+// ErrCOAPServerAlreadyStarted indicates that a CoAP server has already been started by the IoT Gateway
 var ErrCOAPServerAlreadyStarted = errors.New("CoAP server has already been started")
 
-// ThingGateway represents the Thing Gateway
-type ThingGateway struct {
+// Gateway represents the IoT Gateway
+type Gateway struct {
 	gatewayThing     thing.Thing
 	authCache        *tokencache.Cache
 	callbackHandlers []callback.Handler
@@ -67,9 +67,9 @@ type ThingGateway struct {
 	timeout      time.Duration
 }
 
-// NewThingGateway creates a new Thing Gateway
-func NewThingGateway(baseURL string, realm string, authTree string, timeout time.Duration, handlers []callback.Handler) *ThingGateway {
-	return &ThingGateway{
+// New creates a new IoT Gateway
+func New(baseURL string, realm string, authTree string, timeout time.Duration, handlers []callback.Handler) *Gateway {
+	return &Gateway{
 		authCache:        tokencache.New(5*time.Minute, 10*time.Minute),
 		amURL:            baseURL,
 		realm:            realm,
@@ -79,8 +79,8 @@ func NewThingGateway(baseURL string, realm string, authTree string, timeout time
 	}
 }
 
-// Initialise the Thing Gateway
-func (c *ThingGateway) Initialise() error {
+// Initialise the IoT Gateway
+func (c *Gateway) Initialise() error {
 	amURL, err := url.Parse(c.amURL)
 	if err != nil {
 		return err
@@ -106,12 +106,12 @@ func (c *ThingGateway) Initialise() error {
 
 // SetAuthenticationTree changes the authentication tree that the gateway was created with.
 // This is a convenience function for functional testing.
-func SetAuthenticationTree(c *ThingGateway, tree string) {
+func SetAuthenticationTree(c *Gateway, tree string) {
 	client.SetAuthenticationTree(c.amConnection, tree)
 }
 
 // authenticate a Thing with AM using the given payload
-func (c *ThingGateway) authenticate(auth client.AuthenticatePayload) (reply client.AuthenticatePayload, err error) {
+func (c *Gateway) authenticate(auth client.AuthenticatePayload) (reply client.AuthenticatePayload, err error) {
 	if auth.AuthIDKey != "" {
 		auth.AuthId, _ = c.authCache.Get(auth.AuthIDKey)
 	}
@@ -145,7 +145,7 @@ func (c *ThingGateway) authenticate(auth client.AuthenticatePayload) (reply clie
 var heartBeat time.Duration = time.Millisecond * 100
 
 // authenticateHandler handles authentication requests
-func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) authenticateHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("authenticateHandler")
 	var auth client.AuthenticatePayload
 	if err := json.Unmarshal(r.Msg.Payload(), &auth); err != nil {
@@ -176,7 +176,7 @@ func (c *ThingGateway) authenticateHandler(w coap.ResponseWriter, r *coap.Reques
 }
 
 // amInfoHandler handles AM Info requests
-func (c *ThingGateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) amInfoHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("amInfoHandler")
 	info, err := c.amConnection.AMInfo()
 	if err != nil {
@@ -227,7 +227,7 @@ func decodeThingEndpointRequest(msg coap.Message) (token string, content client.
 }
 
 // accessTokenHandler handles access token requests
-func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("accessTokenHandler")
 
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
@@ -242,7 +242,7 @@ func (c *ThingGateway) accessTokenHandler(w coap.ResponseWriter, r *coap.Request
 }
 
 // userCodeHandler handles user code requests
-func (c *ThingGateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("userCodeHandler")
 
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
@@ -257,7 +257,7 @@ func (c *ThingGateway) userCodeHandler(w coap.ResponseWriter, r *coap.Request) {
 }
 
 // userTokenHandler handles user token requests
-func (c *ThingGateway) userTokenHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) userTokenHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("userTokenHandler")
 
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
@@ -272,7 +272,7 @@ func (c *ThingGateway) userTokenHandler(w coap.ResponseWriter, r *coap.Request) 
 }
 
 // attributesHandler handles a thing attributes requests
-func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("attributesHandler")
 	names := r.Msg.Query()
 
@@ -287,7 +287,7 @@ func (c *ThingGateway) attributesHandler(w coap.ResponseWriter, r *coap.Request)
 }
 
 // sessionHandler handles a session validation request
-func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("sessionHandler")
 
 	var token client.SessionToken
@@ -329,7 +329,7 @@ func (c *ThingGateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 }
 
 // introspectHandler handles an introspect OAuth2 access token request
-func (c *ThingGateway) introspectHandler(w coap.ResponseWriter, r *coap.Request) {
+func (c *Gateway) introspectHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("introspectHandler")
 
 	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
@@ -351,8 +351,8 @@ func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
 	}
 }
 
-// StartCOAPServer starts a COAP server within the Thing Gateway
-func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error {
+// StartCOAPServer starts a COAP server within the IoT Gateway
+func (c *Gateway) StartCOAPServer(address string, key crypto.Signer) error {
 	if c.coapServer != nil {
 		return ErrCOAPServerAlreadyStarted
 	}
@@ -401,7 +401,7 @@ func (c *ThingGateway) StartCOAPServer(address string, key crypto.Signer) error 
 }
 
 // ShutdownCOAPServer gracefully shuts the COAP server down
-func (c *ThingGateway) ShutdownCOAPServer() {
+func (c *Gateway) ShutdownCOAPServer() {
 	if c.coapServer == nil {
 		return
 	}
@@ -415,7 +415,7 @@ func (c *ThingGateway) ShutdownCOAPServer() {
 }
 
 // Address returns in string form the address that it is listening on.
-func (c *ThingGateway) Address() string {
+func (c *Gateway) Address() string {
 	if c.address == nil {
 		return ""
 	}

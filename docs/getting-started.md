@@ -4,26 +4,26 @@
 
 <img src="iot-edge-components.svg" width="400"/>
 
-### Thing SDK
+### IoT SDK
 
-The _Thing SDK_ enables a _thing_, which can be either a physical _device_ or a software _service_, to register and
+The _IoT SDK_ enables a _thing_, which can be either a physical _device_ or a software _service_, to register and
 authenticate without human interaction. Once registered, the _thing_ will be represented by a digital identity in the
-ForgeRock Identity Platform and can authenticate itself in order to interact with the platform tier. The Thing SDK
-can communicate directly with the platform using HTTP(S) or via the Thing Gateway using CoAP(S).
+ForgeRock Identity Platform and can authenticate itself in order to interact with the platform tier. The IoT SDK
+can communicate directly with the platform using HTTP(S) or via the IoT Gateway using CoAP(S).
 
-### Thing Gateway
-The _Thing Gateway_ is an application that enables more constrained devices to interact with the ForgeRock Identity
+### IoT Gateway
+The _IoT Gateway_ is an application that enables more constrained devices to interact with the ForgeRock Identity
 Platform by acting as a proxy between a _thing_ and the Platform.
 
-## Evaluate ForgeRock Things
+## Evaluate ForgeRock IoT
 
 This section covers the tasks you need to quickly get a test or demo environment running. It will guide you through
-configuring ForgeRock Access Management (AM) and running the Thing SDK and Gateway examples.
+configuring ForgeRock Access Management (AM) and running the IoT SDK and Gateway examples.
 
 ### Install prerequisite software
 
-The Thing SDK and Gateway has been developed in the Go programming language and to run the examples you require
-[Go 1.13 or later](https://golang.org/doc/install).
+The IoT SDK and Gateway has been developed in the Go programming language and to run the examples you require
+[Go 1.15 or later](https://golang.org/doc/install).
 
 You also require [Git](https://git-scm.com/) for downloading the source code and running the examples.  
 
@@ -71,7 +71,7 @@ and add the mapping: _Secret ID_: `am.services.iot.cert.verification`, _Alias_: 
 this example is one of the test certificates (es256test) that AM includes by default. This mapping tells the
 _Register Thing_ node what key to use when verifying the registration certificate.
 
-### Run the Thing SDK examples
+### Run the IoT SDK examples
 
 #### Manual Registration
 
@@ -114,9 +114,9 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
     -certfile "./examples/resources/dynamic-thing.cert.pem"
 ```
 
-### Run the Thing Gateway examples
+### Run the IoT Gateway examples
 
-The [Thing Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM,
+The [IoT Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM,
 which similar to a Thing, can be manually or dynamically registered. When manually registered, the gateway requires an
 asymmetric key pair for signing. When dynamically registered, the gateway requires an asymmetric key pair for signing,
 and a CA signed X.509 certificate containing the key pair's public key. 
@@ -143,7 +143,7 @@ Run the gateway:
     -d
 ```
 
-The message `Thing Gateway server started` will appear if the `manual-gateway` has started up and authenticated itself
+The message `IoT Gateway server started` will appear if the `manual-gateway` has started up and authenticated itself
 successfully.
 
 In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-the-thing-gateway).
@@ -169,16 +169,16 @@ Run the gateway:
     -d
 ```
 
-The message `Thing Gateway server started` will appear if the gateway has started up, registered and authenticated
+The message `IoT Gateway server started` will appear if the gateway has started up, registered and authenticated
 itself successfully.
 
 In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-the-thing-gateway).
 
 To stop the gateway process, press `Ctrl+C` in the window where the process is running.
 
-#### Connect to the Thing Gateway
+#### Connect to the IoT Gateway
 
-This example will connect a thing to the Thing Gateway. Once the thing has connected it will authenticate and request
+This example will connect a thing to the IoT Gateway. Once the thing has connected it will authenticate and request
 an access token.
 
 Before running the example, [register the thing manually](getting-started.md#register-identity) using `gateway-thing`
@@ -250,6 +250,6 @@ curl -v --request PUT "http://am.localtest.me:8080/am/json/realms/root/users/${I
 
 ## Next Steps
 
-#### [Develop a client application with the Thing SDK](develop-a-client-application.md)
+#### [Develop a client application with the IoT SDK](develop-a-client-application.md)
 
-#### [Build the Thing Gateway for your target system](building-the-gateway.md)
+#### [Build the IoT Gateway for your target system](building-the-gateway.md)

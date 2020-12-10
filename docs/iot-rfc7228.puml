@@ -22,16 +22,16 @@ frame "Platform Tier" {
 }
 frame "Edge Tier" {
     frame "Class 1 Device" {
-        [Thing SDK] as gc
+        [IoT SDK] as gc
     }
     frame "Class 2 Device" {
-        [Thing SDK] as ac
+        [IoT SDK] as ac
     }
     frame "Class 0 Device" {
         [Bespoke Software] as cc <<third party>>
     }
     frame "Gateway Device" {
-        [Thing Gateway] as gt
+        [IoT Gateway] as gt
     }
 }
 gt -up-> fr : HTTP/TLS

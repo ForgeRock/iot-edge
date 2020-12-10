@@ -171,7 +171,7 @@ func TestGatewayClient_Initialise(t *testing.T) {
 	}
 }
 
-// checks that multiple Thing Gateway Clients can be initialised concurrently
+// checks that multiple IoT Gateway Clients can be initialised concurrently
 func TestGatewayClient_Initialise_Concurrent(t *testing.T) {
 	t.Skip("Concurrent DTLS handshakes fail")
 

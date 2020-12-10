@@ -140,7 +140,7 @@ func (c *gatewayConnection) Authenticate(payload AuthenticatePayload) (reply Aut
 	return reply, nil
 }
 
-// AMInfo makes a request to the Thing Gateway for AM related information
+// AMInfo makes a request to the IoT Gateway for AM related information
 func (c *gatewayConnection) AMInfo() (info AMInfoResponse, err error) {
 	conn, err := c.dial()
 	if err != nil {
@@ -164,7 +164,7 @@ func (c *gatewayConnection) AMInfo() (info AMInfoResponse, err error) {
 }
 
 // AccessToken makes an access token request with the given session token and payload
-// SSO token is extracted from signed JWT by Thing Gateway
+// SSO token is extracted from signed JWT by IoT Gateway
 func (c *gatewayConnection) AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
 	return c.makeAuthorisedPost(tokenID, "/accesstoken", content, payload, nil)
 }
@@ -175,19 +175,19 @@ func (c *gatewayConnection) IntrospectAccessToken(tokenID string, content Conten
 }
 
 // Attributes makes a thing attributes request with the given payload
-// SSO token is extracted from signed JWT by Thing Gateway
+// SSO token is extracted from signed JWT by the IoT Gateway
 func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	return c.makeAuthorisedPost(tokenID, "/attributes", content, payload, names)
 }
 
 // UserCode makes an user code request with the given session token and payload
-// SSO token is extracted from signed JWT by Thing Gateway
+// SSO token is extracted from signed JWT by the IoT Gateway
 func (c *gatewayConnection) UserCode(tokenID string, content ContentType, payload string) (reply []byte, err error) {
 	return c.makeAuthorisedPost(tokenID, "/usercode", content, payload, nil)
 }
 
 // UserToken makes an user token request with the given session token and payload
-// SSO token is extracted from signed JWT by Thing Gateway
+// SSO token is extracted from signed JWT by the IoT Gateway
 func (c *gatewayConnection) UserToken(tokenID string, content ContentType, payload string) (reply []byte, err error) {
 	return c.makeAuthorisedPost(tokenID, "/usertoken", content, payload, nil)
 }
