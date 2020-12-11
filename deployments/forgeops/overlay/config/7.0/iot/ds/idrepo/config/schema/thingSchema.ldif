@@ -3,7 +3,7 @@ changetype: modify
 add: objectClasses
 objectClasses: ( demo-thing
   NAME 'demo-thing'
-  DESC 'Auxiliary class for ForgeRock IoT'
+  DESC 'Auxiliary class for ForgeRock Things'
   SUP top
   AUXILIARY
   MAY (  serialNumber $ ipHostNumber $ macAddress ))
