@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	execDir     = "./tests/thingsdk"
+	execDir     = "./tests/iotsdk"
 	testdataDir = execDir + "/testdata"
 	debugDir    = execDir + "/debug"
 
@@ -210,10 +210,10 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 		DNSConfigured: realm.dnsConfigured,
 	})
 
-	fmt.Printf("\n-- Running Thing Gateway COAP Connection Tests --\n\n")
+	fmt.Printf("\n-- Running IoT Gateway COAP Connection Tests --\n\n")
 
-	// run the Thing Gateway
-	gateway, err := anvil.TestThingGateway(realm.u, realm.name, realm.audience, jwtPopAuthTree, realm.dnsConfigured)
+	// run the IoT Gateway
+	gateway, err := anvil.TestGateway(realm.u, realm.name, realm.audience, jwtPopAuthTree, realm.dnsConfigured)
 	if err != nil {
 		return false, err
 	}
@@ -229,8 +229,8 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 	defer gateway.ShutdownCOAPServer()
 
 	result = runAllTestsForContext(
-		&anvil.ThingGatewayTestState{
-			ThingGateway: gateway,
+		&anvil.GatewayTestState{
+			Gateway:      gateway,
 			Realm:        realm.name,
 			TestAudience: realm.audience,
 		}) && result
@@ -241,7 +241,7 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 func runTests() (err error) {
 	fmt.Println()
 	fmt.Println("=====================")
-	fmt.Println("-- Thing SDK Tests --")
+	fmt.Println("-- IoT SDK Tests --")
 	fmt.Println("=====================")
 
 	// delete old debug files by removing the debug directory

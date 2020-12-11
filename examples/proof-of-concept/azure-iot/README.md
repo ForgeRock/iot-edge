@@ -9,7 +9,7 @@ The goal of this integration is to prove the aforementioned concept. It uses an
 [ICF Connector](https://backstage.forgerock.com/docs/idm/7/connector-reference/) to query device identities in
 Azure IoT Hub and synchronize and map them to things in the ForgeRock Platform. The integration is built on top of
 [ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7/index-forgeops.html) with added
-configuration for [ForgeRock Things](https://backstage.forgerock.com/docs/things/7) and the ICF Connector, integrated
+configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/things/7) and the ICF Connector, integrated
 into [ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7).
 
 #### Integration Components

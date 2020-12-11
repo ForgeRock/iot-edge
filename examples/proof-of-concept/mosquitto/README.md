@@ -7,9 +7,9 @@ This PoC illustrates how access control within the [Mosquitto](https://mosquitto
 ensuring that only authenticated things can publish or subscribe to authorised topics.
 The PoC is built on top of
 [ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7/index-forgeops.html) with added
-configuration for [ForgeRock Things](https://backstage.forgerock.com/docs/things/7). 
+configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/things/7).
 Mosquitto is configured to use an external module for authentication and access control.
-This example module uses the ForgeRock Thing SDK to provide OAuth 2.0 access token authorisation.
+This example module uses the ForgeRock IoT SDK to provide OAuth 2.0 access token authorisation.
 
 #### Integrated Components
 

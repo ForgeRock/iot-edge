@@ -1,4 +1,4 @@
-# Develop a client application with the Thing SDK
+# Develop a client application with the IoT SDK
 
 This example will show you how to create a client application for a thing called _Gopher_. The thing will be
 manually registered in AM and authenticated with a username/password authentication flow.

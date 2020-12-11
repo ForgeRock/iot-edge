@@ -23,7 +23,7 @@ frame "Platform Tier" {
         [IoT Registry] as reg <<AWS>>
         node "Custom\nAuthorizer" {
             [Lambda Function] as lamb <<AWS>>
-            [Thing SDK] as service <<ForgeRock>>
+            [IoT SDK] as service <<ForgeRock>>
         }
     }
     frame "ForgeRock Identity Platform" {
@@ -39,7 +39,7 @@ frame "Platform Tier" {
 
 frame "Edge Tier" {
     frame "Device" {
-        [Thing SDK] as device <<ForgeRock>>
+        [IoT SDK] as device <<ForgeRock>>
     }
 }
 

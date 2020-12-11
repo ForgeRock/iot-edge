@@ -17,9 +17,9 @@
 // Package thing provides an SDK for devices and services (things) to interact with the ForgeRock Identity Platform.
 // Use it to authenticate and authorize things and access their digital identities.
 //
-// Thing SDK
+// IoT SDK
 //
-// The Thing SDK allows things to connect to the ForgeRock Identity Platform either directly or via the Thing Gateway.
+// The IoT SDK allows things to connect to the ForgeRock Identity Platform either directly or via the IoT Gateway.
 // Things can perform tasks like register, authenticate, authorize and interact with their digital identity.
 //
 // This is an example of using the SDK to register with the platform through Access Management's (AM) authentication

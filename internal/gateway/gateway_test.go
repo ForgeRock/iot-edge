@@ -38,8 +38,8 @@ import (
 	"github.com/pion/dtls/v2"
 )
 
-func testGateway(client *mocks.MockClient) *ThingGateway {
-	return &ThingGateway{
+func testGateway(client *mocks.MockClient) *Gateway {
+	return &Gateway{
 		amConnection: client,
 		authCache:    tokencache.New(5*time.Minute, 10*time.Minute),
 	}
@@ -69,7 +69,7 @@ func TestGateway_Authenticate_AuthIdKey_Is_Not_Sent(t *testing.T) {
 	}
 }
 
-// check that the Auth Id is not returned by the Thing Gateway to the Thing
+// check that the Auth Id is not returned by the IoT Gateway to the Thing
 func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	authId := "12345"
 	mockClient := &mocks.MockClient{
@@ -85,7 +85,7 @@ func TestGateway_Authenticate_AuthId_Is_Not_Returned(t *testing.T) {
 	}
 }
 
-// check that the Auth Id is cached by the Thing Gateway
+// check that the Auth Id is cached by the IoT Gateway
 func TestGateway_Authenticate_AuthId_Is_Cached(t *testing.T) {
 	authId := "12345"
 	mockClient := &mocks.MockClient{
@@ -399,7 +399,7 @@ func TestGatewayServer_Address(t *testing.T) {
 	gateway := testGateway(&mocks.MockClient{})
 	// before the server has started, the address is the empty string
 	if gateway.Address() != "" {
-		t.Errorf("Thing Gateway has CoAP address %s before it is started", gateway.Address())
+		t.Errorf("IoT Gateway has CoAP address %s before it is started", gateway.Address())
 	}
 
 	serverKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -418,7 +418,7 @@ func TestGatewayServer_Address(t *testing.T) {
 	gateway.ShutdownCOAPServer()
 	// after the server has started, the address is the empty string
 	if gateway.Address() != "" {
-		t.Errorf("Thing Gateway has CoAP address %s after it was stopped", gateway.Address())
+		t.Errorf("IoT Gateway has CoAP address %s after it was stopped", gateway.Address())
 	}
 }
 
@@ -510,7 +510,7 @@ func TestGateway_ShutdownCOAPServer(t *testing.T) {
 
 var clientKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
-func gatewayConnection(t *testing.T, gateway *ThingGateway) client.Connection {
+func gatewayConnection(t *testing.T, gateway *Gateway) client.Connection {
 	gwURL, _ := url.Parse("coap://" + gateway.Address())
 	connection, err := client.NewConnection().
 		ConnectTo(gwURL).

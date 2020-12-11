@@ -19,14 +19,14 @@ skinparam frame {
 
 frame "Edge Tier" {
     frame "Service" {
-        [Thing SDK] as gc2
+        [IoT SDK] as gc2
         [Resource Server] as rs <<third party>>
     }
     frame "Gateway Device" {
-        [Thing Gateway] as gt
+        [IoT Gateway] as gt
     }
     frame "Device" {
-        [Thing SDK] as gc1
+        [IoT SDK] as gc1
     }
 }
 frame "Platform Tier" {

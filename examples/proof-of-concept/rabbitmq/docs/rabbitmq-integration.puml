@@ -20,7 +20,7 @@ skinparam frame {
 
 frame "Edge Tier" {
     frame "Device" {
-        [Thing SDK] as ac
+        [IoT SDK] as ac
         [MQTT Client] as mc <<third party>>
     }
 }

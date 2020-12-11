@@ -83,7 +83,7 @@ type Thing interface {
 type Builder interface {
 
 	// ConnectTo the server at the given URL.
-	// Supports http(s) for connecting to AM and coap(s) for connecting to the Thing Gateway.
+	// Supports http(s) for connecting to AM and coap(s) for connecting to the IoT Gateway.
 	// When connecting to AM, the URL should be either the top level realm in AM or the DNS alias of a sub realm.
 	ConnectTo(url *url.URL) Builder
 
@@ -94,11 +94,11 @@ type Builder interface {
 	//  - a sub-realm of alfheim called "svartalfheim": "/alfheim/svartalfheim"
 	//
 	// The realm should not be set if a DNS alias is being used to connect to AM.
-	// The realm is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
+	// The realm is not required if the thing is connecting to the IoT Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
 
 	// WithTree sets the name of the AM authentication tree that will be used to register and authenticate the thing.
-	// The tree is not required if the thing is connecting to the Thing Gateway. If provided it will be ignored.
+	// The tree is not required if the thing is connecting to the IoT Gateway. If provided it will be ignored.
 	WithTree(tree string) Builder
 
 	// AsService registers the thing as a service. By default, a thing is registered as a device.
@@ -121,7 +121,7 @@ type Builder interface {
 	// match those configured in the AM authentication tree.
 	HandleCallbacksWith(handlers ...callback.Handler) Builder
 
-	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the Thing Gateway.
+	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the IoT Gateway.
 	TimeoutRequestAfter(time.Duration) Builder
 
 	// Create a Thing instance and make an authentication request to AM. The callback handlers and information provided

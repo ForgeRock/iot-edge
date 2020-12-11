@@ -24,7 +24,7 @@ Management's _Register Thing_ Node.
 
 ## Use Case 5: Constrained Devices
 In the following diagram the device classification in [RFC-7228](https://tools.ietf.org/html/rfc7228#section-3) is used
-to demonstrate how devices with different network capabilities may use the Thing SDK and Thing Gateway.
+to demonstrate how devices with different network capabilities may use the IoT SDK and IoT Gateway.
 
 <img src="iot-rfc7228.png" width="600"/>
 

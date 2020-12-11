@@ -39,22 +39,22 @@ type Session interface {
 type Builder interface {
 
 	// ConnectTo the server at the given URL.
-	// Supports http(s) for connecting to AM and coap(s) for connecting to the Thing Gateway.
+	// Supports http(s) for connecting to AM and coap(s) for connecting to the IoT Gateway.
 	ConnectTo(url *url.URL) Builder
 
 	// InRealm specifies the path to the AM realm in which to authenticate.
-	// The realm is not required if connecting to the Thing Gateway. If provided it will be ignored.
+	// The realm is not required if connecting to the IoT Gateway. If provided it will be ignored.
 	InRealm(realm string) Builder
 
 	// WithTree sets the name of the AM authentication tree that will be used for authentication.
-	// The tree is not required if connecting to the Thing Gateway. If provided it will be ignored.
+	// The tree is not required if connecting to the IoT Gateway. If provided it will be ignored.
 	WithTree(tree string) Builder
 
 	// AuthenticateWith the supplied callback handlers when creating the session. The provided handlers must
 	// match those configured in the AM authentication tree.
 	AuthenticateWith(handlers ...callback.Handler) Builder
 
-	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the Thing Gateway.
+	// TimeoutRequestAfter sets the timeout on the communications between the Thing and AM or the IoT Gateway.
 	TimeoutRequestAfter(d time.Duration) Builder
 
 	// Create a Session instance and make an authentication request to AM. The callback handlers provided

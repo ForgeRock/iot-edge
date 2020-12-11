@@ -41,7 +41,7 @@ var deviceCodeRegex = regexp.MustCompile(`{.*"user_code":"\w*".*}`)
 
 const (
 	nextAvailablePort     = ":0"
-	gatewayStartupMessage = "Thing Gateway server started"
+	gatewayStartupMessage = "IoT Gateway server started"
 )
 
 func read(reader io.Reader, f func(string)) {
@@ -390,7 +390,7 @@ func (t *GatewayAppAuth) Setup(state anvil.TestState) (data anvil.ThingData, ok 
 
 func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
 	if state.ClientType() == anvil.GatewayClientType {
-		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
+		// as this example involves a IoT Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}
 
@@ -465,7 +465,7 @@ func (t *GatewayAppAuthNonDefaultKID) Setup(state anvil.TestState) (data anvil.T
 
 func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.ThingData) bool {
 	if state.ClientType() == anvil.GatewayClientType {
-		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
+		// as this example involves a IoT Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}
 
@@ -550,7 +550,7 @@ func (t *GatewayAppReg) Setup(state anvil.TestState) (data anvil.ThingData, ok b
 
 func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
 	if state.ClientType() == anvil.GatewayClientType {
-		// as this example involves a Thing Gateway there is no benefit of running it again during the gateway test set
+		// as this example involves a IoT Gateway there is no benefit of running it again during the gateway test set
 		return true
 	}
 
