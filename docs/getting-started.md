@@ -91,7 +91,7 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
     -audience "/" \
     -realm "/" \
     -tree "auth-tree" \
-    -keyfile "./examples/resources/eckey1.key.pem"
+    -secrets "./examples/resources/example.secrets"
 ```
 
 #### Dynamic Registration
@@ -109,9 +109,7 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
     -url "http://am.localtest.me:8080/am" \
     -audience "/" \
     -realm "/" \
-    -tree "reg-tree" \
-    -keyfile "./examples/resources/eckey1.key.pem" \
-    -certfile "./examples/resources/dynamic-thing.cert.pem"
+    -tree "reg-tree"
 ```
 
 ### Run the IoT Gateway examples
