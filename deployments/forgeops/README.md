@@ -1,4 +1,4 @@
-# ForgeOps for Things
+# ForgeOps for IoT
 
 This directory contains resources for deploying Things with the ForgeRock Identity Platform to Kubernetes using ForgeOps.
 
