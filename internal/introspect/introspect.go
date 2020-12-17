@@ -22,6 +22,8 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/internal/clock"
 )
 
+const Skew int64 = 60
+
 // InactiveIntrospectionBytes contains the standard introspection for an inactive token
 var InactiveIntrospectionBytes = []byte(`{"active":false}`)
 
@@ -47,6 +49,11 @@ func AddActive(b []byte) ([]byte, error) {
 	return json.Marshal(claims)
 }
 
+type timeClaims struct {
+	Exp int64 `json:"exp"`
+	Nbf int64 `json:"nbf"`
+}
+
 // ValidNow returns true if the expired and not before claims indicate that the token is valid for the current local
 // time. From RFC7519:
 //   processing of the "exp" claim requires that the current date/time
@@ -54,13 +61,10 @@ func AddActive(b []byte) ([]byte, error) {
 //   processing of the "nbf" claim requires that the current date/time
 //   MUST be after or equal to listed in the "nbf" claim
 func ValidNow(b []byte) bool {
-	claims := struct {
-		Exp int64 `json:"exp"`
-		Nbf int64 `json:"nbf"`
-	}{}
+	var claims timeClaims
 	if err := json.Unmarshal(b, &claims); err != nil {
 		return false
 	}
 	now := clock.Clock().Unix()
-	return now < claims.Exp && now >= claims.Nbf
+	return now < (claims.Exp+Skew) && now >= (claims.Nbf-Skew)
 }
