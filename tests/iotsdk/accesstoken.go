@@ -208,12 +208,21 @@ func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject strin
 		return false
 	}
 	claims := &jwt.Claims{}
-	if err := accessJWT.UnsafeClaimsWithoutVerification(claims); err != nil {
+	custom := struct {
+		SubjectName string `json:"subname,omitempty"`
+	}{}
+	if err := accessJWT.UnsafeClaimsWithoutVerification(claims, &custom); err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if claims.Subject != subject {
-		anvil.DebugLogger.Printf("access token subject, %s, not equal to thing ID, %s\n", claims.Subject, subject)
+	compoundSub := "(usr!"+subject+")"
+	if claims.Subject != subject && claims.Subject != compoundSub {
+		anvil.DebugLogger.Printf("access token sub, %s, not equal to thing ID, %s, or compound ID, %s\n",
+			claims.Subject, subject, compoundSub)
+		return false
+	}
+	if custom.SubjectName != "" && custom.SubjectName != subject {
+		anvil.DebugLogger.Printf("access token subname, %s, not equal to thing ID, %s\n", custom.SubjectName, subject)
 		return false
 	}
 	receivedScopes, err := response.Scope()
