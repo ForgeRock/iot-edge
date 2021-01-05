@@ -1,5 +1,5 @@
 # This image includes a fix for THINGS-27
-FROM gcr.io/forgerock-io/am-base:7.1.0-0f75e679c9134d75bac58600bf24f225a1c73e45
+FROM gcr.io/forgerock-io/am-base:7.1.0-669fcd78994096d21c5da6ea46044be9bcf51523
 USER root
 
 RUN apt-get update && apt-get install -y git
