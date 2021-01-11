@@ -351,7 +351,7 @@ func jwksMUX(kid string, key crypto.Signer, alg jose.SignatureAlgorithm) (*http.
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/keys", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Write(keySet)
+		_, _ = writer.Write(keySet)
 	})
 	return mux, nil
 }
@@ -413,7 +413,7 @@ func TestAMConnection_IntrospectAccessToken_Locally(t *testing.T) {
 	// create demo AM server
 	mux := testServerInfoHTTPMux(http.StatusOK, testServerInfo())
 	mux.HandleFunc("/oauth2/.well-known/openid-configuration", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Write([]byte(fmt.Sprintf(`{"jwks_uri":"%s/keys"}`, keyServer.URL)))
+		_, _ = writer.Write([]byte(fmt.Sprintf(`{"jwks_uri":"%s/keys"}`, keyServer.URL)))
 	})
 	server := httptest.NewTLSServer(mux)
 	defer server.Close()

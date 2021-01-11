@@ -18,8 +18,9 @@ package introspect
 
 import (
 	"encoding/json"
-	"github.com/ForgeRock/iot-edge/v7/internal/clock"
 	"strings"
+
+	"github.com/ForgeRock/iot-edge/v7/internal/clock"
 )
 
 const Skew int64 = 60
