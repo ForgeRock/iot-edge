@@ -17,13 +17,25 @@
 package client
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/ForgeRock/iot-edge/v7/internal/jws"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var (
@@ -319,6 +331,143 @@ func TestAMClient_Attributes(t *testing.T) {
 			}
 			if !subtest.successful && err == nil {
 				t.Error("Expected an error")
+			}
+		})
+	}
+}
+
+func newSigner(kid string, key crypto.Signer) (jose.Signer, error) {
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("kid", kid)
+	return jws.NewSigner(key, opts)
+}
+
+func jwksMUX(kid string, key crypto.Signer, alg jose.SignatureAlgorithm) (*http.ServeMux, error) {
+	keySet, err := json.Marshal(jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{{KeyID: kid, Key: key.Public(), Algorithm: string(alg), Use: "sig"}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/keys", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write(keySet)
+	})
+	return mux, nil
+}
+
+// dummyAccessToken creates a dummy OAuth 2 access token
+func dummyAccessToken(signer jose.Signer, nbf time.Time, exp time.Time, scopes []string) string {
+	builder := jwt.Signed(signer).Claims(struct {
+		Sub   string   `json:"sub"`
+		Exp   int64    `json:"exp"`
+		Nbf   int64    `json:"nbf"`
+		Scope []string `json:"scope"`
+	}{
+		Sub:   "thing",
+		Nbf:   nbf.Unix(),
+		Exp:   exp.Unix(),
+		Scope: scopes,
+	})
+	token, err := builder.CompactSerialize()
+	if err != nil {
+		log.Fatal(err)
+	}
+	b, _ := json.Marshal(IntrospectPayload{
+		Token: token,
+	})
+	return string(b)
+}
+
+// use local introspection if the AM introspection endpoint can't be reached
+func TestAMConnection_IntrospectAccessToken_Locally(t *testing.T) {
+	kid := "pop.cnf"
+	validKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spoofKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	validSigner, err := newSigner(kid, validKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spoofSigner, err := newSigner(kid, spoofKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unknownSigner, err := newSigner("unknown.kid", spoofKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// create a key server to serve up the JWK set
+	keyMux, err := jwksMUX(kid, validKey, jose.ES256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyServer := httptest.NewServer(keyMux)
+
+	// create demo AM server
+	mux := testServerInfoHTTPMux(http.StatusOK, testServerInfo())
+	mux.HandleFunc("/oauth2/.well-known/openid-configuration", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte(fmt.Sprintf(`{"jwks_uri":"%s/keys"}`, keyServer.URL)))
+	})
+	server := httptest.NewTLSServer(mux)
+	defer server.Close()
+
+	c := &amConnection{
+		baseURL:  server.URL,
+		realm:    testRealm,
+		authTree: testTree,
+	}
+
+	testSetRootCAs(c, server)
+	err = c.Initialise()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// kill key server
+	keyServer.Close()
+
+	scopes := []string{"publish", "subscribe"}
+
+	tests := []struct {
+		name    string
+		payload string
+		active  bool
+	}{
+		{name: "active", active: true,
+			payload: dummyAccessToken(validSigner, time.Now().Add(-time.Hour), time.Now().Add(time.Hour), scopes)},
+		{name: "expired", active: false,
+			payload: dummyAccessToken(validSigner, time.Now().Add(-2*time.Hour), time.Now().Add(-time.Hour), scopes)},
+		{name: "premature", active: false,
+			payload: dummyAccessToken(validSigner, time.Now().Add(time.Hour), time.Now().Add(2*time.Hour), scopes)},
+		{name: "spoof_signer", active: false,
+			payload: dummyAccessToken(spoofSigner, time.Now().Add(-time.Hour), time.Now().Add(time.Hour), scopes)},
+		{name: "unknown_signer", active: false,
+			payload: dummyAccessToken(unknownSigner, time.Now().Add(-time.Hour), time.Now().Add(time.Hour), scopes)},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			introspectionBytes, err := c.IntrospectAccessToken("ssoToken", ApplicationJSON, subtest.payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var introspection struct {
+				Active bool   `json:"active"`
+				Scope  string `json:"scope"` // scopes are return in a space-separated string
+			}
+			if err = json.Unmarshal(introspectionBytes, &introspection); err != nil {
+				t.Fatal(err)
+			}
+			if introspection.Active != subtest.active {
+				t.Errorf("Expected active = %v", subtest.active)
+			}
+			if subtest.active && !reflect.DeepEqual(scopes, strings.Fields(introspection.Scope)) {
+				t.Errorf("expected %v; got %v", scopes, strings.Fields(introspection.Scope))
 			}
 		})
 	}

@@ -18,6 +18,7 @@ package introspect
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 
@@ -58,6 +59,37 @@ func TestValidNow(t *testing.T) {
 			actual := ValidNow(subtest.claims)
 			if subtest.expected != actual {
 				t.Errorf("expected: %v, actual %v", subtest.expected, actual)
+			}
+		})
+	}
+}
+
+func TestCreateFromJWT(t *testing.T) {
+	tests := []struct {
+		name          string
+		claims        []byte
+		introspection map[string]interface{}
+	}{
+		{name: "no-scopes", claims: []byte(`{}`),
+			introspection: map[string]interface{}{"active": true}},
+		{name: "single-scope", claims: []byte(`{"scope":["one"]}`),
+			introspection: map[string]interface{}{"active": true, "scope": "one"}},
+		{name: "multiple-scopes", claims: []byte(`{"scope":["one","two"]}`),
+			introspection: map[string]interface{}{"active": true, "scope": "one two"}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			b, err := CreateFromJWT(subtest.claims)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var introspection map[string]interface{}
+			err = json.Unmarshal(b, &introspection)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(introspection, subtest.introspection) {
+				t.Errorf("expected %v; got %v", subtest.introspection, introspection)
 			}
 		})
 	}

@@ -127,6 +127,11 @@ func (i IntrospectionResponse) Active() bool {
 	return active
 }
 
+func (i IntrospectionResponse) Scopes() []string {
+	scopes, _ := i.Content.GetString("scope")
+	return strings.Fields(scopes)
+}
+
 type readError struct {
 	key string
 }

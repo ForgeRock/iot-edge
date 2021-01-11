@@ -18,6 +18,7 @@ package thing
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -148,4 +149,57 @@ func TestJSONContent_GetStringArray(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIntrospectionResponse_Active(t *testing.T) {
+	introspection := IntrospectionResponse{
+		Content: make(JSONContent),
+	}
+	tests := []struct {
+		name   string
+		active bool
+	}{
+		{name: "true", active: true},
+		{name: "false", active: false},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			introspection.Content["active"] = subtest.active
+			if introspection.Active() != subtest.active {
+				t.Errorf("expected %v; got %v", subtest.active, introspection.Active())
+			}
+		})
+	}
+}
+
+func TestIntrospectionResponse_Scopes(t *testing.T) {
+	introspection := IntrospectionResponse{
+		Content: make(JSONContent),
+	}
+	tests := []struct {
+		name   string
+		scopes []string
+	}{
+		{name: "missing", scopes: nil},
+		{name: "empty", scopes: []string{}},
+		{name: "single", scopes: []string{"one"}},
+		{name: "multiple", scopes: []string{"one", "two"}},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			var expected []string
+			if subtest.scopes == nil {
+				expected = []string{}
+				delete(introspection.Content, "scope")
+			} else {
+				expected = subtest.scopes
+				introspection.Content["scope"] = strings.Join(expected, " ")
+			}
+			scopes := introspection.Scopes()
+			if !reflect.DeepEqual(expected, scopes) {
+				t.Errorf("expected %v; got %v", expected, scopes)
+			}
+		})
+	}
+
 }

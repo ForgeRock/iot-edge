@@ -393,7 +393,8 @@ func (c *amConnection) introspectAccessTokenLocally(payload IntrospectPayload) (
 		debug.Logger.Println("updating JSON web key set")
 		err = c.updateJSONWebKeySet()
 		if err != nil {
-			return introspection, err
+			debug.Logger.Printf("unknown access token key: %s. Cannot update jwks; %s", header.KeyID, err)
+			return introspect.InactiveIntrospectionBytes, nil
 		}
 		keys = c.accessTokenJWKS.Key(header.KeyID)
 		if len(keys) == 0 {
@@ -402,20 +403,20 @@ func (c *amConnection) introspectAccessTokenLocally(payload IntrospectPayload) (
 			return introspect.InactiveIntrospectionBytes, nil
 		}
 	}
-	for _, key := range keys {
-		introspection, err = object.Verify(key)
-		if err == nil {
-			break
-		}
+	if len(keys) > 1 {
+		debug.Logger.Println("Received multiple keys for a single KID; using first key only")
 	}
+	introspection, err = object.Verify(keys[0])
 	if err != nil {
-		return introspection, err
+		debug.Logger.Printf("Cryptographic verification failed; %s", err)
+		return introspect.InactiveIntrospectionBytes, nil
 	}
+
 	if !introspect.ValidNow(introspection) {
 		debug.Logger.Printf("not within the valid time period of the token")
 		return introspect.InactiveIntrospectionBytes, nil
 	}
-	return introspect.AddActive(introspection)
+	return introspect.CreateFromJWT(introspection)
 }
 
 // IntrospectAccessToken introspects an access token
@@ -431,19 +432,19 @@ func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType
 		return introspection, err
 	}
 
-	// try local introspection
-	introspection, err = c.introspectAccessTokenLocally(token)
-	if err == nil {
-		return introspection, nil
-	}
-
 	// request AM to introspect the token
 	request, err := http.NewRequest(http.MethodPost, c.introspectURL(), strings.NewReader(payload))
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return introspection, err
 	}
-	return c.makeRequest(tokenID, content, request)
+	introspection, err = c.makeRequest(tokenID, content, request)
+	if err == nil {
+		return introspection, err
+	}
+
+	// try local introspection
+	return c.introspectAccessTokenLocally(token)
 }
 
 // attributes makes a thing attributes request with the given session token and payload

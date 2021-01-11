@@ -204,17 +204,14 @@ func introspectAndVerify(device thing.Thing, tokenResponse thing.AccessTokenResp
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	tokenScope, err := intro.Content.GetStringArray("scope")
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
+	tokenScope := intro.Scopes()
+
 	tokenSub, err := intro.Content.GetString("sub")
 	if err != nil {
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	compoundSub := "(usr!"+subject+")"
+	compoundSub := "(usr!" + subject + ")"
 	if tokenSub != subject && tokenSub != compoundSub {
 		anvil.DebugLogger.Printf("access token sub, %s, not equal to thing ID, %s, or compound ID, %s\n",
 			tokenSub, subject, compoundSub)
