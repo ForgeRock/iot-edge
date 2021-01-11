@@ -154,10 +154,7 @@ func userTokenThing() (err error) {
 		return fmt.Errorf("introspection indicates that the token is inactive")
 	}
 	fmt.Println("Done")
-	scopes, err := introspection.Content.GetStringArray("scope")
-	if err != nil {
-		return err
-	}
+	scopes := introspection.Scopes()
 	sub, err := introspection.Content.GetString("sub")
 	if err != nil {
 		return err

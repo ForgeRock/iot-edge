@@ -365,6 +365,11 @@ func RestoreOAuth2Service(realm string, config []byte) error {
 	return err
 }
 
+// RevokeAccessToken uses the custom OAuth 2.0 client to revoke the access token
+func RevokeAccessToken(realm string, token string) error {
+	return am.RevokeAccessToken(realm, "thing-oauth2-client", "a@xoS2#7M6hFChR#d4$%", token)
+}
+
 // DeleteRealms deletes all the realms in the id slice from the AM instance
 // Assumes that the ids are in an order that can be safely deleted e.g. children before parents
 func DeleteRealms(ids []string) (err error) {

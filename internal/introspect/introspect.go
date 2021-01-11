@@ -18,6 +18,7 @@ package introspect
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/clock"
 )
@@ -38,13 +39,25 @@ func IsActive(b []byte) bool {
 	return introspection.Active
 }
 
-// AddActive modifies the claims to indicate that the token is currently active
-func AddActive(b []byte) ([]byte, error) {
+// CreateFromJWT converts a valid JWT access token into an active token introspection.
+func CreateFromJWT(b []byte) ([]byte, error) {
 	var claims map[string]interface{}
 	err := json.Unmarshal(b, &claims)
 	if err != nil {
 		return b, err
 	}
+	if _, ok := claims["scope"]; ok {
+		// extract the scope array and convert to space-separated string
+		var scopeContainer struct {
+			Scope []string `json:"scope"`
+		}
+		err = json.Unmarshal(b, &scopeContainer)
+		if err != nil {
+			return b, err
+		}
+		claims["scope"] = strings.Join(scopeContainer.Scope, " ")
+	}
+
 	claims["active"] = true
 	return json.Marshal(claims)
 }

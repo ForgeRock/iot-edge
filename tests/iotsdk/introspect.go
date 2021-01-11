@@ -118,104 +118,6 @@ func (t *IntrospectAccessToken) NameSuffix() string {
 	return name + t.tokenType.Name()
 }
 
-// IntrospectAccessTokenExpired tests that local introspection returns inactive if the token has expired
-type IntrospectAccessTokenExpired struct {
-	anvil.NopSetupCleanup
-	originalOAuthConfig []byte
-}
-
-func (t *IntrospectAccessTokenExpired) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.RealmForConfiguration(), anvil.ClientSignedTokenType(jose.ES256))
-	if err != nil {
-		anvil.DebugLogger.Println("failed to modify OAuth 2.0 provider", err)
-		return data, false
-	}
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	data.Id.ThingType = callback.TypeDevice
-	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
-}
-
-func (t *IntrospectAccessTokenExpired) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := thingJWTAuth(state, data)
-	device, err := builder.Create()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	accessToken, err := getAccessToken(device)
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-
-	clock.Clock = func() time.Time {
-		return time.Now().Add(24 * time.Hour)
-	}
-	defer returnToPresent()
-
-	introspection, err := device.IntrospectAccessToken(accessToken)
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	if introspection.Active() {
-		anvil.DebugLogger.Println("expected active = false")
-		return false
-	}
-	return true
-}
-
-func (t IntrospectAccessTokenExpired) Cleanup(state anvil.TestState, data anvil.ThingData) error {
-	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
-}
-
-// IntrospectAccessTokenPremature tests that local introspection returns inactive if the token has not reached its
-// not before time yet
-type IntrospectAccessTokenPremature struct {
-	IntrospectAccessTokenExpired
-}
-
-func (t *IntrospectAccessTokenPremature) Run(state anvil.TestState, data anvil.ThingData) bool {
-	builder := thingJWTAuth(state, data)
-	thing, err := builder.Create()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	response, err := thing.RequestAccessToken("publish", "subscribe")
-	if err != nil {
-		anvil.DebugLogger.Println("access token request failed", err)
-		return false
-	}
-
-	accessToken, err := response.AccessToken()
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-
-	clock.Clock = func() time.Time {
-		return time.Now().Add(-24 * time.Hour)
-	}
-	defer returnToPresent()
-
-	introspection, err := thing.IntrospectAccessToken(accessToken)
-	if err != nil {
-		anvil.DebugLogger.Println(err)
-		return false
-	}
-	if introspection.Active() {
-		anvil.DebugLogger.Println("expected active = false")
-		return false
-	}
-	return true
-}
-
 // createFakeAccessToken creates a fake client-based token
 func createFakeAccessToken() (token string, err error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -245,7 +147,7 @@ func createFakeAccessToken() (token string, err error) {
 	return builder.CompactSerialize()
 }
 
-// IntrospectFakeAccessToken checks thhat an inactive introspection is returned for a fake access token
+// IntrospectFakeAccessToken checks that an inactive introspection is returned for a fake access token
 type IntrospectFakeAccessToken struct {
 	anvil.NopSetupCleanup
 }
@@ -280,6 +182,109 @@ func (t *IntrospectFakeAccessToken) Run(state anvil.TestState, data anvil.ThingD
 	}
 	if introspection.Active() {
 		anvil.DebugLogger.Println("expected active = false")
+		return false
+	}
+	return true
+}
+
+// IntrospectAccessTokenFromCustomClient checks that a valid access token from a custom client can be introspected
+type IntrospectAccessTokenFromCustomClient struct {
+	anvil.NopSetupCleanup
+	originalOAuthConfig []byte
+}
+
+func (t *IntrospectAccessTokenFromCustomClient) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	t.originalOAuthConfig, err = anvil.ModifyOAuth2Provider(state.RealmForConfiguration(),
+		anvil.ClientSignedTokenType(jose.ES256))
+	if err != nil {
+		anvil.DebugLogger.Println("failed to modify OAuth 2.0 provider", err)
+		return data, false
+	}
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	data.Id.ThingOAuth2ClientName = "thing-oauth2-client"
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *IntrospectAccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.ThingData) bool {
+	b := thingJWTAuth(state, data)
+	device, err := b.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	response, err := device.RequestAccessToken("create", "modify")
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	accessToken, err := response.AccessToken()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	introspection, err := device.IntrospectAccessToken(accessToken)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if !introspection.Active() {
+		anvil.DebugLogger.Println("expected active = true")
+		return false
+	}
+	return true
+}
+
+func (t IntrospectAccessTokenFromCustomClient) Cleanup(state anvil.TestState, data anvil.ThingData) error {
+	state.SetGatewayTree(jwtPopRegCertTree)
+	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
+}
+
+// IntrospectRevokedAccessToken checks that a revoked access token is introspected as inactive if the SDK is online
+type IntrospectRevokedAccessToken struct {
+	IntrospectAccessTokenFromCustomClient
+}
+
+func (t *IntrospectRevokedAccessToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	b := thingJWTAuth(state, data)
+	device, err := b.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	response, err := device.RequestAccessToken("create", "modify")
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	accessToken, err := response.AccessToken()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	err = anvil.RevokeAccessToken(state.RealmForConfiguration(), accessToken)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	introspection, err := device.IntrospectAccessToken(accessToken)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if introspection.Active() {
+		anvil.DebugLogger.Println("expected active = false")
+		anvil.DebugLogger.Println(introspection)
 		return false
 	}
 	return true

@@ -638,3 +638,25 @@ func SendUserConsent(realm string, user IdAttributes, userCode thing.DeviceAutho
 	}
 	return fmt.Errorf("request failed with unrecognised response: " + string(responseBodyBytes))
 }
+
+// RevokeAccessToken calls AM to revoke the access token
+func RevokeAccessToken(realm string, clientName string, clientPassword string, token string) error {
+	request, err := http.NewRequest(http.MethodPost,
+		fmt.Sprintf("%s/oauth2/token/revoke?realm=%s", AMURL, realm),
+		strings.NewReader("token="+token))
+	if err != nil {
+		return err
+	}
+	request.Header.Set(headerContentType, "application/x-www-form-urlencoded")
+	// username and password has to be url.QueryEscape when used for OAuth2
+	request.SetBasicAuth(url.QueryEscape(clientName), url.QueryEscape(clientPassword))
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != http.StatusOK {
+		dumpHTTPRoundTrip(request, response)
+		return fmt.Errorf("unexpected status code: %v", response.StatusCode)
+	}
+	return nil
+}
