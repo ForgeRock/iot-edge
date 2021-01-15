@@ -2,8 +2,8 @@
     "dashboard" : {
         "widgets" : [
             {
-                "type": "Welcome",
-                "size": "large"
+                "type" : "Welcome",
+                "size" : "large"
             }
         ]
     },
@@ -109,6 +109,20 @@
                     "size" : "large"
                 }
             ]
+        },
+        {
+            "name" : "Relationships",
+            "isDefault" : false,
+            "widgets" : [
+                {
+                    "type" : "relationship",
+                    "size" : "large",
+                    "chartType" : "collapsibleTree",
+                    "defaultObject" : "thing",
+                    "searchProperty" : "cn"
+                }
+            ],
+            "embeddedDashboard" : false
         }
     ]
 }
