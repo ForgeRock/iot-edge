@@ -9,7 +9,7 @@
         },
         "subjectMapping" : [
           {
-            "queryOnResource": "managed/user",
+            "queryOnResource": "managed/{{resourceType}}",
             "propertyMapping": {
               "sub": "_id"
             },

@@ -777,6 +777,55 @@
                         "usageDescription" : null,
                         "isPersonal" : true
                     },
+                    "authzRoles" : {
+                        "description" : "Authorization Roles",
+                        "title" : "Authorization Roles",
+                        "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:Thing:authzRoles",
+                        "viewable" : true,
+                        "type" : "array",
+                        "userEditable" : false,
+                        "returnByDefault" : false,
+                        "usageDescription" : "",
+                        "isPersonal" : false,
+                        "items" : {
+                            "type" : "relationship",
+                            "title" : "Authorization Roles Items",
+                            "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:Thing:authzRoles:items",
+                            "reverseRelationship" : true,
+                            "reversePropertyName" : "authzMembers",
+                            "validate" : true,
+                            "properties" : {
+                                "_ref" : {
+                                    "description" : "References a relationship from a managed object",
+                                    "type" : "string"
+                                },
+                                "_refProperties" : {
+                                    "description" : "Supports metadata within the relationship",
+                                    "type" : "object",
+                                    "title" : "Authorization Roles Items _refProperties",
+                                    "properties" : {
+                                        "_id" : {
+                                            "description" : "_refProperties object ID",
+                                            "type" : "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "resourceCollection" : [
+                                {
+                                    "path" : "internal/role",
+                                    "label" : "Internal Role",
+                                    "conditionalAssociationField" : "condition",
+                                    "query" : {
+                                        "queryFilter" : "true",
+                                        "fields" : [
+                                            "name"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    },
                     "accountStatus" : {
                         "title" : "Status",
                         "description" : "Status",
@@ -984,6 +1033,7 @@
                     "_id",
                     "cn",
                     "accountStatus",
+                    "authzRoles",
                     "thingType",
                     "thingKeys",
                     "thingConfig",
