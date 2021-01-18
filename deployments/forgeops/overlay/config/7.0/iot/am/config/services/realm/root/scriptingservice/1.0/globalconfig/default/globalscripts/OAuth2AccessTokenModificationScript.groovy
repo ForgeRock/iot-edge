@@ -29,6 +29,14 @@ import groovy.json.JsonSlurper
  * When adding/updating fields make sure that the token size remains within client/user-agent limits.
  */
 
+def attributes = identity.getAttributes(["thingType"].toSet())
+
+if (attributes["thingType"]) {
+  accessToken.setField('resourceType', 'thing')
+} else {
+  accessToken.setField('resourceType', 'user')
+}
+
 /*
 //Field to always include in token
 accessToken.setField("hello", "world")
