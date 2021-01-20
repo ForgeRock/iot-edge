@@ -15,7 +15,7 @@
       "sectorIdentifierUri" : null,
       "tokenEndpointAuthMethod" : "client_secret_basic",
       "isConsentImplied" : false,
-      "grantTypes" : [ "urn:ietf:params:oauth:grant-type:jwt-bearer" ],
+      "grantTypes" : [ "urn:ietf:params:oauth:grant-type:jwt-bearer", "urn:ietf:params:oauth:grant-type:device_code" ],
       "updateAccessToken" : null,
       "requestUris" : [ ],
       "logoUri" : [ ],
