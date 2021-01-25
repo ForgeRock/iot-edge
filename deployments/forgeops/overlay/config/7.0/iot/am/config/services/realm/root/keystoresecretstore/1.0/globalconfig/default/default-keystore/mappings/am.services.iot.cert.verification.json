@@ -16,7 +16,7 @@
       "name" : "KeyStoreSecretStore",
       "collection" : false
     },
-    "aliases" : [ "es256test" ],
+    "aliases" : [ "es256iot" ],
     "secretId" : "am.services.iot.cert.verification"
   }
 }

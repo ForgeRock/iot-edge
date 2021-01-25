@@ -513,7 +513,6 @@
                 "nativeId" : false,
                 "objectClasses": [
                     "inetOrgPerson",
-                    "demo-thing",
                     "fr-idm-managed-user-explicit",
                     "fr-iot",
                     "inetuser"
@@ -564,17 +563,9 @@
                         "type": "simple",
                         "ldapAttribute": "thingConfig"
                     },
-                    "ipHostNumber": {
+                    "thingProperties": {
                         "type": "simple",
-                        "ldapAttribute": "ipHostNumber"
-                    },
-                    "macAddress": {
-                        "type": "simple",
-                        "ldapAttribute": "macAddress"
-                    },
-                    "serialNumber": {
-                        "type": "simple",
-                        "ldapAttribute": "serialNumber"
+                        "ldapAttribute": "thingProperties"
                     }
                 }
             }

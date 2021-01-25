@@ -20,6 +20,7 @@
     "oauthJwtIssuerName" : "forgerock-iot-jwt-issuer",
     "createOAuthClient" : false,
     "oauthClientName" : "forgerock-iot-oauth2-client",
+    "oauthSubjectAttribute" : "uid",
     "attributeAllowlist" : [ "thingConfig" ]
   }
 }

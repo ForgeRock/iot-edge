@@ -1,5 +1,8 @@
-# This image includes a fix for THINGS-27
-FROM gcr.io/forgerock-io/am-base:7.1.0-669fcd78994096d21c5da6ea46044be9bcf51523
+# Bleeding edge AM docker image:
+FROM gcr.io/forgerock-io/am-base/docker-build:latest
+# Platform integration tested AM docker image:
+# FROM gcr.io/forgerock-io/am-base/pit1:latest
+
 USER root
 
 RUN apt-get update && apt-get install -y git

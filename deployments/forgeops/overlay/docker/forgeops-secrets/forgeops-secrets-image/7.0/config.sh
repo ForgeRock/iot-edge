@@ -141,8 +141,8 @@ keytoolgen -importpass -alias configstorepwd $(useRandomPass ds-passwords/dirman
 genRSA rsajwtsigningkey 2048
 genRSA selfserviceenctest 2048
 genKey selfservicesigntest HmacSHA256 256
-#genEC es256test 256
-keytool -importcert -file /opt/gen/7.0/es256test.cer ${KS_PROPS} -alias es256test -noprompt
+genEC es256test 256
+keytool -importcert -file /opt/gen/7.0/es256iot.cer ${KS_PROPS} -alias es256iot -noprompt
 genEC es384test 384
 genEC es512test 521
 

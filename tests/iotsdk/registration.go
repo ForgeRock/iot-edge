@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package main
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"strings"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
@@ -102,7 +103,7 @@ func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingD
 	return true
 }
 
-// RegisterDeviceWithAttributes tests the dynamic registration of a device with custom sttributes
+// RegisterDeviceWithAttributes tests the dynamic registration of a device with custom attributes
 type RegisterDeviceWithAttributes struct {
 	anvil.NopSetupCleanup
 }
@@ -129,13 +130,22 @@ func (t *RegisterDeviceWithAttributes) Setup(state anvil.TestState) (data anvil.
 }
 
 func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.ThingData) bool {
-	// 'serialNumber' is mapped to 'employeeNumber' in the registration node
-	sdkAttribute := struct {
+	type Properties struct {
+		IPAddress    string `json:"ipAddress"`
+		MACAddress   string `json:"macAddress"`
 		SerialNumber string `json:"serialNumber"`
-	}{SerialNumber: "987654321"}
-	amAttribute := struct {
-		EmployeeNumber []string `json:"employeeNumber"`
-	}{}
+	}
+	deviceProps := Properties{
+		IPAddress:    "123.12.34.56",
+		MACAddress:   "00:25:96:FF:FE:12:34:56",
+		SerialNumber: "091238653509134865",
+	}
+	props, _ := json.Marshal(deviceProps)
+	sdkAttribute := struct {
+		ThingProperties string `json:"thingProperties"`
+	}{
+		ThingProperties: string(props),
+	}
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
 		ConnectTo(state.URL()).
@@ -145,17 +155,29 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 		RegisterThing(data.Certificates, func() interface{} {
 			return sdkAttribute
 		})
-	_, err := builder.Create()
+	device, err := builder.Create()
 	if err != nil {
 		return false
 	}
-	err = anvil.GetIdentityAttributes(state.TestRealm(), data.Id.Name, &amAttribute)
+	deviceAttrs, err := device.RequestAttributes()
 	if err != nil {
-		anvil.DebugLogger.Printf("Getting attribute %s failed; %s", amAttribute, err)
 		return false
 	}
-	if len(amAttribute.EmployeeNumber) == 0 || amAttribute.EmployeeNumber[0] != sdkAttribute.SerialNumber {
-		anvil.DebugLogger.Printf("Expected attribute value %s; got %s", sdkAttribute.SerialNumber, amAttribute)
+	thingProps, err := deviceAttrs.GetFirst("thingProperties")
+	if err != nil {
+		anvil.DebugLogger.Printf("Getting thing properties failed; %s", deviceAttrs, err)
+		return false
+	}
+	var readProps Properties
+	err = json.Unmarshal([]byte(thingProps), &readProps)
+	if err != nil {
+		anvil.DebugLogger.Printf("Unmarshalling properties failed ; %s", thingProps, err)
+		return false
+	}
+	if readProps.IPAddress != deviceProps.IPAddress ||
+		readProps.MACAddress != deviceProps.MACAddress ||
+		readProps.SerialNumber != deviceProps.SerialNumber {
+		anvil.DebugLogger.Printf("Expected attribute value %v; got %s", sdkAttribute, thingProps)
 		return false
 	}
 	return true
@@ -197,20 +219,21 @@ func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) b
 		RegisterThing(data.Certificates, nil).
 		AsService()
 
-	_, err := builder.Create()
+	service, err := builder.Create()
 	if err != nil {
 		return false
 	}
-	var amAttribute struct {
-		ThingType []string
-	}
-	err = anvil.GetIdentityAttributes(state.RealmForConfiguration(), data.Id.Name, &amAttribute)
+	serviceAttrs, err := service.RequestAttributes()
 	if err != nil {
-		anvil.DebugLogger.Printf("Getting attribute %s failed; %s", amAttribute, err)
 		return false
 	}
-	if len(amAttribute.ThingType) == 0 || strings.ToLower(amAttribute.ThingType[0]) != "service" {
-		anvil.DebugLogger.Printf("Expected thing type service; got %s", amAttribute)
+	thingType, err := serviceAttrs.GetFirst("thingType")
+	if err != nil {
+		anvil.DebugLogger.Printf("Getting thing type failed; %s", serviceAttrs, err)
+		return false
+	}
+	if strings.ToLower(thingType) != "service" {
+		anvil.DebugLogger.Printf("Expected thing type service; got %s", thingType)
 		return false
 	}
 	return true

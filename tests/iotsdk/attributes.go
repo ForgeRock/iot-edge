@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ func (t *AttributesWithNoFilter) Run(state anvil.TestState, data anvil.ThingData
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	return id == data.Id.Name && thingConfig == data.Id.ThingConfig && thingType == string(data.Id.ThingType)
+	return id == data.Id.ID && thingConfig == data.Id.ThingConfig && thingType == string(data.Id.ThingType)
 }
 
 // AttributesWithFilter requests a filtered list of the thing's allowed attributes, which is configured in the
@@ -100,7 +100,7 @@ func (t *AttributesWithFilter) Run(state anvil.TestState, data anvil.ThingData) 
 		anvil.DebugLogger.Println("expected thingType to be filtered out")
 		return false
 	}
-	return id == data.Id.Name && thingConfig == data.Id.ThingConfig
+	return id == data.Id.ID && thingConfig == data.Id.ThingConfig
 }
 
 func doSetup(state anvil.TestState) (data anvil.ThingData, ok bool) {
@@ -158,7 +158,7 @@ func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	return id == data.Id.Name && thingConfig == data.Id.ThingConfig && thingType == string(data.Id.ThingType)
+	return id == data.Id.ID && thingConfig == data.Id.ThingConfig && thingType == string(data.Id.ThingType)
 }
 
 // AttributesExpiredSession requests a thing's attributes after the current session has been 'expired'
