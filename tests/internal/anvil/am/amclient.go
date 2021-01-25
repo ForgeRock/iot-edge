@@ -38,15 +38,17 @@ import (
 // Base AM URL
 var AMURL = URL("am")
 
+// AM admin's password
+var AdminPassword = "password"
+
 const (
 	// HTTP header keys
 	headerContentType = "Content-Type"
 	headerCookie      = "iPlanetDirectoryPro"
 	headerAPIVersion  = "Accept-API-Version"
 	headerIfNotMatch  = "If-None-Match"
-	// AM admin's credentials
+	// AM admin's username
 	adminUsername = "amadmin"
-	adminPassword = "password"
 	// endpoint versions
 	realmConfigEndpointVersion = "protocol=2.0,resource=1.0"
 	realmConfigReadVersion     = "protocol=1.0,resource=1.0"
@@ -244,7 +246,7 @@ func get(endpoint string, version string) (reply []byte, err error) {
 func getSSOToken() (token string, err error) {
 	attributes := IdAttributes{
 		Name:     adminUsername,
-		Password: adminPassword,
+		Password: AdminPassword,
 	}
 	return getSSOTokenForIdentity("/", attributes)
 }
@@ -374,6 +376,7 @@ func UpdateRealm(properties RealmProperties) (err error) {
 // IdAttributes contains identity attributes
 type IdAttributes struct {
 	Name                  string             `json:"username"`
+	ID                    string             `json:"_id,omitempty"`
 	Password              string             `json:"userPassword,omitempty"`
 	ThingType             callback.ThingType `json:"thingType,omitempty"`
 	ThingKeys             jose.JSONWebKeySet `json:"thingKeys,omitempty"`
@@ -387,16 +390,27 @@ func (id IdAttributes) String() string {
 }
 
 // CreateIdentity creates an identity in the the given realm using the supplied attributes
-func CreateIdentity(realm string, attributes IdAttributes) error {
+func CreateIdentity(realm string, attributes IdAttributes) (IdAttributes, error) {
 	payload, err := json.Marshal(attributes)
 	if err != nil {
-		return err
+		return attributes, err
 	}
-	_, err = crestCreate(
+	response, err := crestCreate(
 		AMURL+"/json/users?realm="+realm,
 		userEndpointVersion,
 		bytes.NewBuffer(payload))
-	return err
+	if err != nil {
+		return attributes, err
+	}
+	respAttrs := struct {
+		ID []string `json:"_id"`
+	}{}
+	err = json.Unmarshal(response, &respAttrs)
+	if err != nil {
+		return attributes, err
+	}
+	attributes.ID = respAttrs.ID[0]
+	return attributes, nil
 }
 
 // GetIdentity gets the identity from AM

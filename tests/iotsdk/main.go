@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,16 @@ import (
 
 const (
 	execDir     = "."
-	testdataDir = execDir + "/testdata"
+	testdataDir = execDir + "/testdata/am"
 	debugDir    = execDir + "/debug"
 	examplesDir = execDir + "/../../examples"
 	gatewayDir  = execDir + "/../../cmd/gateway"
 
 	// Auth trees
-	jwtPopAuthTree             = "Anvil-JWT-Auth"
-	jwtPopAuthTreeCustomClaims = "Anvil-JWT-Auth-Custom-Claims"
-	jwtPopRegCertTree          = "Anvil-JWT-Reg-Cert"
-	userPwdAuthTree            = "Anvil-User-Pwd"
+	jwtPopAuthTree             = "AnvilJWTAuth"
+	jwtPopAuthTreeCustomClaims = "AnvilJWTAuthCustomClaims"
+	jwtPopRegCertTree          = "AnvilJWTRegCert"
+	userPwdAuthTree            = "AnvilUserPwd"
 )
 
 // define the full test set
@@ -240,20 +240,7 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 	return result, nil
 }
 
-func runTests() (err error) {
-	fmt.Println()
-	fmt.Println("=====================")
-	fmt.Println("-- IoT SDK Tests --")
-	fmt.Println("=====================")
-
-	// delete old debug files by removing the debug directory
-	err = os.RemoveAll(debugDir)
-	if err != nil {
-		return err
-	}
-
-	am.DebugLogger = anvil.ProgressLogger
-
+func runAMTests() (err error) {
 	err = anvil.CreateCertVerificationMapping()
 	if err != nil {
 		return err
@@ -340,8 +327,61 @@ func runTests() (err error) {
 	return nil
 }
 
+func runPlatformTests() (err error) {
+	if *amURL == "" || *amPassword == "" {
+		return fmt.Errorf("platform URL and password must be specified")
+	}
+	u, err := url.Parse(*amURL)
+	if err != nil {
+		return err
+	}
+	am.AMURL = *amURL
+	am.AdminPassword = *amPassword
+	pass, err := runAllTestsForRealm(realmInfo{
+		description: "root",
+		name: anvil.RootRealm,
+		audience: anvil.RootRealm,
+		u: u,
+	})
+	if err != nil {
+		return err
+	}
+	if !pass {
+		return fmt.Errorf("test FAILURE")
+	}
+	return nil
+}
+
+func runTests() (err error) {
+	fmt.Println()
+	fmt.Println("=====================")
+	fmt.Println("-- IoT SDK Tests --")
+	fmt.Println("=====================")
+
+	// delete old debug files by removing the debug directory
+	err = os.RemoveAll(debugDir)
+	if err != nil {
+		return err
+	}
+
+	am.DebugLogger = anvil.ProgressLogger
+
+	if *deployment == "platform" {
+		fmt.Printf("\n\n-- Running Platform Tests --\n\n")
+		return runPlatformTests()
+	}
+	if *deployment == "am" {
+		fmt.Printf("\n\n-- Running Standalone AM Tests --\n\n")
+		return runAMTests()
+	}
+	return fmt.Errorf("deployment value must be 'am' or 'platform'")
+}
+
 var (
-	container = flag.String("container", "am", "The name of the AM container")
+	container  = flag.String("container", "am", "The name of the AM container.")
+	deployment = flag.String("deployment", "am", "The deployment against which Anvil will run: 'am' or 'platform'.")
+	amURL      = flag.String("url", "", "The AM URL of the platform deployment.")
+	amPassword = flag.String("password", "", "The AM password for 'amadmin' of the platform deployment.")
 )
 
 func main() {

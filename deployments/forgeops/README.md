@@ -32,3 +32,19 @@ Username: amadmin
 Password: jvswdgsoe0bdbzf4r0kgaa00
 =====================================================
 ```
+
+### Run Functional Tests
+
+The functional test framework, Anvil, can be run against the ForgeOps IoT Platform to verify that all the IoT SDK and
+IoT Gateway features work correctly.
+
+Start the platform before running the tests:
+```
+./run.sh $(PWD)/../../tests/iotsdk/testdata/forgeops 1zeAyq0jCGV8jpVaesXS3q3dKm8qWiI6dZ1GBS2M1Ds0
+```
+
+Run the functional tests:
+```
+cd ../../
+./run.sh anvil -deployment=platform -url=https://iot.iam.example.com/am -password=1zeAyq0jCGV8jpVaesXS3q3dKm8qWiI6dZ1GBS2M1Ds0
+```

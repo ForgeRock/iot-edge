@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ func (t *UserTokenAllow) Run(state anvil.TestState, data anvil.ThingData) bool {
 		anvil.DebugLogger.Println("user token request failed: ", err)
 		return false
 	}
-	return introspectAndVerify(device, userToken, t.user.Name, "publish", "subscribe")
+	return introspectAndVerify(device, userToken, t.user.ID, "publish", "subscribe")
 }
 
 // UserTokenDeny requests an access token for a user, but the user does not consent to the token being issued.
@@ -170,7 +170,7 @@ func (t *UserTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingData)
 		anvil.DebugLogger.Println("user token request failed: ", err)
 		return false
 	}
-	return introspectAndVerify(device, userToken, t.user.Name, "subscribe")
+	return introspectAndVerify(device, userToken, t.user.ID, "subscribe")
 }
 
 func createDeviceAndUser(state anvil.TestState) (user am.IdAttributes, data anvil.ThingData, ok bool) {
@@ -213,13 +213,13 @@ func introspectAndVerify(device thing.Thing, tokenResponse thing.AccessTokenResp
 	}
 	compoundSub := "(usr!" + subject + ")"
 	if tokenSub != subject && tokenSub != compoundSub {
-		anvil.DebugLogger.Printf("access token sub, %s, not equal to thing ID, %s, or compound ID, %s\n",
+		anvil.DebugLogger.Printf("access token sub, %s, not equal to user ID, %s, or compound ID, %s\n",
 			tokenSub, subject, compoundSub)
 		return false
 	}
 	tokenSubname, _ := intro.Content.GetString("subname")
 	if tokenSubname != "" && tokenSubname != subject {
-		anvil.DebugLogger.Printf("access token subname, %s, not equal to thing ID, %s\n", tokenSubname, subject)
+		anvil.DebugLogger.Printf("access token subname, %s, not equal to user ID, %s\n", tokenSubname, subject)
 		return false
 	}
 	sort.Strings(tokenScope)

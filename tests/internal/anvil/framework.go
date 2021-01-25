@@ -423,7 +423,7 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 		&x509.Certificate{
 			SerialNumber: serialNumber,
 			Subject:      pkix.Name{CommonName: thingID},
-			NotBefore:    time.Now(),
+			NotBefore:    time.Now().Add(-24 * time.Hour),
 			NotAfter:     time.Now().Add(24 * time.Hour),
 		},
 		caWebKey.Certificates[0],
@@ -447,7 +447,7 @@ func TestGateway(u *url.URL, realm string, audience string, authTree string, dns
 		ThingType: "gateway",
 		ThingKeys: jwk,
 	}
-	err = am.CreateIdentity(realm, attributes)
+	attributes, err = am.CreateIdentity(realm, attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -589,7 +589,9 @@ func CreateIdentity(realm string, data ThingData) (ThingData, bool) {
 	if data.Id.Password == "" {
 		data.Id.Password = "5tr0ngG3n3r@ted"
 	}
-	return data, am.CreateIdentity(realm, data.Id) == nil
+	var err error
+	data.Id, err = am.CreateIdentity(realm, data.Id)
+	return data, err == nil
 }
 
 // CreateUser creates a human identity in AM with a unique name.
@@ -598,19 +600,7 @@ func CreateUser(realm string) (am.IdAttributes, error) {
 		Name:     RandomName(),
 		Password: "5tr0ngG3n3r@ted",
 	}
-	return attributes, am.CreateIdentity(realm, attributes)
-}
-
-// GetIdentityAttributes gets the identity and unmarshals its attributes into the supplied struct
-func GetIdentityAttributes(realm, name string, attributes interface{}) error {
-	response, err := am.GetIdentity(realm, name)
-	if err != nil {
-		return err
-	}
-	if err = json.Unmarshal(response, &attributes); err != nil {
-		return err
-	}
-	return nil
+	return am.CreateIdentity(realm, attributes)
 }
 
 // resultSprint formats the result string output for a test

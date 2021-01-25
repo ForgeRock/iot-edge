@@ -1,0 +1,26 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "ScriptedDecisionNode",
+    "entityId" : "default/7f3011bd-9cac-4dbd-9ec1-df34aca6eb90",
+    "uid" : "ou=7f3011bd-9cac-4dbd-9ec1-df34aca6eb90,ou=default,ou=OrganizationConfig,ou=1.0,ou=ScriptedDecisionNode,ou=services,ou=am-config",
+    "sunServiceID" : "instance",
+    "objectClass" : [ "top", "sunServiceComponent" ],
+    "pathParams" : { },
+    "ou" : [ "7f3011bd-9cac-4dbd-9ec1-df34aca6eb90" ]
+  },
+  "data" : {
+    "_id" : "default/7f3011bd-9cac-4dbd-9ec1-df34aca6eb90",
+    "_type" : {
+      "_id" : "ScriptedDecisionNode",
+      "name" : "ScriptedDecisionNode",
+      "collection" : false
+    },
+    "outcomes": [
+      "true",
+      "false"
+    ],
+    "script": "6e822929-a6b8-4ee0-af4b-11815ad6340c",
+    "inputs": ["org.forgerock.am.iot.jwt.pop.verified_claims"]
+  }
+}

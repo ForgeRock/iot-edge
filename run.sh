@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2020 ForgeRock AS
+# Copyright 2020-2021 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ set -e
 case "$1" in
 anvil)
   # Run the IoT SDK tests
-  cd tests/iotsdk && go run . && cd - &>/dev/null
+  cd tests/iotsdk && go run . "${@:2}" && cd - &>/dev/null
 	;;
 test)
   # Run the IoT unit tests
