@@ -119,7 +119,7 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/examples/thing/simple",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
@@ -187,7 +187,7 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "-tags", tags,
-		"github.com/ForgeRock/iot-edge/v7/examples/thing/simple",
+		"github.com/ForgeRock/iot-edge/examples/thing/simple",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
@@ -264,7 +264,7 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/examples/thing/cert-registration",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
@@ -339,7 +339,7 @@ func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/examples/thing/user-token",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/user-token",
 		"-url", state.URL().String(),
 		"-realm", state.TestRealm(),
 		"-audience", state.Audience(),
