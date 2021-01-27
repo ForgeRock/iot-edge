@@ -1,4 +1,4 @@
-module github.com/ForgeRock/iot-edge/v7/examples
+module github.com/ForgeRock/iot-edge/examples
 
 go 1.15
 
