@@ -54,6 +54,7 @@
           "failure" : "e301438c-0bd0-429c-ab0c-66126501069a"
         }
       }
-    }
+    },
+    "identityResource" : "managed/thing"
   }
 }

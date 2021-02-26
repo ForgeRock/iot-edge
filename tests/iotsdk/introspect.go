@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,12 @@ func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData)
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if !introspection.Active() {
+	active, err := introspection.Active()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if !active {
 		anvil.DebugLogger.Println("expected active = true")
 		return false
 	}
@@ -180,8 +185,14 @@ func (t *IntrospectFakeAccessToken) Run(state anvil.TestState, data anvil.ThingD
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if introspection.Active() {
+	active, err := introspection.Active()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if active {
 		anvil.DebugLogger.Println("expected active = false")
+		anvil.DebugLogger.Println(introspection)
 		return false
 	}
 	return true
@@ -235,7 +246,12 @@ func (t *IntrospectAccessTokenFromCustomClient) Run(state anvil.TestState, data 
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if !introspection.Active() {
+	active, err := introspection.Active()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if !active {
 		anvil.DebugLogger.Println("expected active = true")
 		return false
 	}
@@ -282,7 +298,12 @@ func (t *IntrospectRevokedAccessToken) Run(state anvil.TestState, data anvil.Thi
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	if introspection.Active() {
+	active, err := introspection.Active()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if active {
 		anvil.DebugLogger.Println("expected active = false")
 		anvil.DebugLogger.Println(introspection)
 		return false

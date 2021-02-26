@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ package main
 import (
 	"crypto"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/url"
-	"os"
 
 	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
@@ -104,7 +103,7 @@ func userTokenThing() (err error) {
 		return err
 	}
 
-	builder := builder.Thing().
+	deviceBuilder := builder.Thing().
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
@@ -112,62 +111,85 @@ func userTokenThing() (err error) {
 		RegisterThing(certs, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
-	device, err := builder.Create()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Done\n")
-
-	fmt.Printf("Requesting user code...")
-	userCode, err := device.RequestUserCode("publish")
+	device, err := deviceBuilder.Create()
 	if err != nil {
 		return err
 	}
 	fmt.Println("Done")
 
+	fmt.Printf("\nRequesting user code... ")
+	userCode, err := device.RequestUserCode("publish", "subscribe")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Done\n", "User code response:", jsonString(userCode, false))
+
 	fmt.Printf("Requesting user access token... To authorise the request, go to \n\n\t%s\n\n",
 		userCode.VerificationURIComplete)
-	thing.DebugLogger().SetOutput(ioutil.Discard) // switch off debug since user code requests are quite noisy
 	tokenResponse, err := device.RequestUserToken(userCode)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Done")
-	thing.DebugLogger().SetOutput(os.Stdout)
+	fmt.Println("Done\n", "Access token response:", jsonString(tokenResponse.Content, true))
 
 	token, err := tokenResponse.AccessToken()
 	if err != nil {
 		return err
 	}
-	fmt.Println("Access token:", token)
-	expiresIn, err := tokenResponse.ExpiresIn()
-	if err != nil {
+	if introspect(token, device) != nil {
 		return err
 	}
-	fmt.Println("Expires in:", expiresIn)
 
-	fmt.Printf("Introspecting access token to get more information...")
-	introspection, err := device.IntrospectAccessToken(token)
+	refreshToken, err := tokenResponse.RefreshToken()
 	if err != nil {
-		return err
-	} else if !introspection.Active() {
-		return fmt.Errorf("introspection indicates that the token is inactive")
+		return fmt.Errorf("no refresh token found in access token response")
 	}
-	fmt.Println("Done")
-	scopes := introspection.Scopes()
-	sub, err := introspection.Content.GetString("sub")
+	fmt.Printf("\nRequesting access token refresh... ")
+	tokenResponse, err = device.RefreshAccessToken(refreshToken, "publish")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("User %s has authorised the following scope(s): %s", sub, scopes)
+	fmt.Println("Done\n", "Access token response:", jsonString(tokenResponse.Content, true))
+
+	token, err = tokenResponse.AccessToken()
+	if err != nil {
+		return err
+	}
+	if introspect(token, device) != nil {
+		return err
+	}
 
 	return nil
 }
 
-func main() {
-	// pipe debug to standard out
-	thing.DebugLogger().SetOutput(os.Stdout)
+func introspect(token string, device thing.Thing) error {
+	fmt.Printf("\nIntrospecting access token to get more information... ")
+	introspection, err := device.IntrospectAccessToken(token)
+	if err != nil {
+		return err
+	}
+	active, err := introspection.Active()
+	if err != nil {
+		return err
+	}
+	if !active {
+		return fmt.Errorf("introspection indicates that the token is inactive")
+	}
+	fmt.Println("Done\n", "Introspection response:", jsonString(introspection.Content, true))
+	return nil
+}
 
+func jsonString(v interface{}, indented bool) string {
+	var js []byte
+	if indented {
+		js, _ = json.MarshalIndent(v, " ", "    ")
+	} else {
+		js, _ = json.Marshal(v)
+	}
+	return string(js)
+}
+
+func main() {
 	if err := userTokenThing(); err != nil {
 		log.Fatal(err)
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,16 @@ func signedJWTBody(session *isession.PoPSession, url string, version string, bod
 
 func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.AccessTokenResponse, err error) {
 	payload := client.GetAccessTokenPayload{Scope: scopes}
+	return t.accessToken(payload)
+}
+
+func (t *DefaultThing) RefreshAccessToken(refreshToken string, scopes ...string) (response thing.AccessTokenResponse,
+	err error) {
+	payload := client.GetAccessTokenPayload{Scope: scopes, RefreshToken: refreshToken}
+	return t.accessToken(payload)
+}
+
+func (t *DefaultThing) accessToken(payload client.GetAccessTokenPayload) (response thing.AccessTokenResponse, err error) {
 	var requestBody string
 	var content client.ContentType
 
