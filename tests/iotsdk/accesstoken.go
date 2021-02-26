@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package main
 
 import (
+	"crypto/x509"
 	"reflect"
 	"sort"
 	"strings"
@@ -58,7 +59,7 @@ func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.Thing
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "publish", "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, "publish", "subscribe")
 }
 
 // AccessTokenWithASubsetOfScopes requests an access token for a thing with specified scopes. The scopes are a
@@ -90,7 +91,7 @@ func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.T
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "publish")
+	return verifyAccessTokenResponse(response, data.Id.ID, "publish")
 }
 
 // AccessTokenWithUnsupportedScopes requests an access token for a thing with specified scopes. The scopes do not
@@ -155,7 +156,7 @@ func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingDat
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, "subscribe")
 }
 
 func (t *AccessTokenWithNoScopes) NameSuffix() string {
@@ -193,7 +194,7 @@ func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.Thin
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "create", "modify", "delete")
+	return verifyAccessTokenResponse(response, data.Id.ID, "create", "modify", "delete")
 }
 
 func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject string, requestedScopes ...string) bool {
@@ -305,7 +306,7 @@ func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "publish", "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, "publish", "subscribe")
 }
 
 // AccessTokenWithNoScopesNonRestricted requests an access token with no scopes using a non-restricted session token
@@ -337,7 +338,7 @@ func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data an
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.Name, "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, "subscribe")
 }
 
 // AccessTokenExpiredSession requests an access token after the current session has been 'expired'
@@ -378,4 +379,171 @@ func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingD
 		return false
 	}
 	return true
+}
+
+// AccessTokenRefresh requests an access and refresh token and then uses the refresh token to refresh the access token.
+type AccessTokenRefresh struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AccessTokenRefresh) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *AccessTokenRefresh) Run(state anvil.TestState, data anvil.ThingData) bool {
+	thingBuilder := thingJWTAuth(state, data)
+	device, err := thingBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	scope := []string{"publish", "subscribe"}
+	accessToken, err := device.RequestAccessToken(scope...)
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	if !verifyAccessTokenResponse(accessToken, data.Id.ID, scope...) {
+		return false
+	}
+	refreshToken, err := accessToken.RefreshToken()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to read refresh token", err)
+		return false
+	}
+	newAccessToken, err := device.RefreshAccessToken(refreshToken, scope...)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to refresh access token", err)
+		return false
+	}
+	return verifyAccessTokenResponse(newAccessToken, data.Id.ID, scope...)
+}
+
+// UnauthorisedAccessTokenRefresh requests an access and refresh token for a device A and then tries to use the refresh
+// token from device B. Device B should not be authorised to refresh the access token.
+type UnauthorisedAccessTokenRefresh struct {
+	anvil.NopSetupCleanup
+	bData anvil.ThingData
+}
+
+func (t *UnauthorisedAccessTokenRefresh) Setup(state anvil.TestState) (aData anvil.ThingData, ok bool) {
+	var err error
+	aData.Id.ThingKeys, aData.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return aData, false
+	}
+	aData.Id.ThingType = callback.TypeDevice
+	t.bData = anvil.ThingData{}
+	t.bData.Id.ThingKeys, t.bData.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return aData, false
+	}
+	t.bData.Id.ThingType = callback.TypeDevice
+	if t.bData, ok = anvil.CreateIdentity(state.RealmForConfiguration(), t.bData); !ok {
+		return aData, false
+	}
+	return anvil.CreateIdentity(state.RealmForConfiguration(), aData)
+}
+
+func (t *UnauthorisedAccessTokenRefresh) Run(state anvil.TestState, aData anvil.ThingData) bool {
+	aBuilder := thingJWTAuth(state, aData)
+	deviceA, err := aBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	bBuilder := thingJWTAuth(state, t.bData)
+	deviceB, err := bBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	scope := []string{"publish", "subscribe"}
+	accessToken, err := deviceA.RequestAccessToken(scope...)
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	if !verifyAccessTokenResponse(accessToken, aData.Id.ID, scope...) {
+		return false
+	}
+	refreshToken, err := accessToken.RefreshToken()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to read refresh token", err)
+		return false
+	}
+	_, err = deviceB.RefreshAccessToken(refreshToken, scope...)
+	if err != nil && strings.Contains(err.Error(), "invalid_grant") {
+		return true
+	}
+	anvil.DebugLogger.Println("expected token refresh to fail")
+	return false
+}
+
+// AccessTokenAfterDynamicRegistration tests that a valid access token can be issued after the dynamic registration of
+// a device.
+type AccessTokenAfterDynamicRegistration struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AccessTokenAfterDynamicRegistration) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.Name = anvil.RandomName()
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	serverWebKey, err := anvil.CertVerificationKey()
+	if err != nil {
+		return data, false
+	}
+
+	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	if err != nil {
+		return data, false
+	}
+	data.Certificates = []*x509.Certificate{certificate}
+	return data, true
+}
+
+func (t *AccessTokenAfterDynamicRegistration) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertTree)
+	thingBuilder := builder.Thing().
+		ConnectTo(state.URL()).
+		InRealm(state.TestRealm()).
+		WithTree(jwtPopRegCertTree).
+		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, nil)
+	device, err := thingBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	scope := []string{"publish", "subscribe"}
+	response, err := device.RequestAccessToken(scope...)
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	attrs, err := device.RequestAttributes()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to retrieve device ID", err)
+		return false
+	}
+	deviceID, err := attrs.ID()
+	if err != nil {
+		anvil.DebugLogger.Println("_id not found in attributes", err)
+		return false
+	}
+	return verifyAccessTokenResponse(response, deviceID, scope...)
 }

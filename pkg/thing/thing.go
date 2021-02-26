@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,12 @@ type Thing interface {
 	// if they are configured in the thing's associated OAuth 2.0 Client in AM. If no scopes are provided then the token
 	// will include the default scopes configured in the OAuth 2.0 Client.
 	RequestAccessToken(scopes ...string) (response AccessTokenResponse, err error)
+
+	// RefreshAccessToken refreshes an OAuth 2.0 access token using the given refresh token. The new access
+	// token will have the same scope as the original token by default. Provide a subset of the original scopes to have
+	// a reduced set of scopes in the new access token. The thing requesting the refresh must be the same thing that
+	// requested the original access token.
+	RefreshAccessToken(refreshToken string, scopes ...string) (response AccessTokenResponse, err error)
 
 	// IntrospectAccessToken introspects an OAuth 2.0 access token for a thing as defined by rfc7662.
 	// Supports only client-based OAuth 2.0 tokens signed with an asymmetric key.

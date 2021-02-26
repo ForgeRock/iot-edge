@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,11 @@ func (a AccessTokenResponse) AccessToken() (string, error) {
 	return a.Content.GetString("access_token")
 }
 
+// RefreshToken returns the refresh token contained in an AccessTokenResponse.
+func (a AccessTokenResponse) RefreshToken() (string, error) {
+	return a.Content.GetString("refresh_token")
+}
+
 // ExpiresIn returns the lifetime in seconds of the access token contained in an AccessTokenResponse.
 func (a AccessTokenResponse) ExpiresIn() (float64, error) {
 	return a.Content.GetNumber("expires_in")
@@ -85,7 +90,7 @@ func (a AccessTokenResponse) Scope() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(scope, " "), nil
+	return strings.Fields(scope), nil
 }
 
 // AttributesResponse contains the response received from AM after a successful request for thing attributes.
@@ -122,14 +127,17 @@ type IntrospectionResponse struct {
 }
 
 // Active returns true if the introspection indicates that the presented token is currently active.
-func (i IntrospectionResponse) Active() bool {
-	active, _ := i.Content.GetBool("active")
-	return active
+func (i IntrospectionResponse) Active() (bool, error) {
+	return i.Content.GetBool("active")
 }
 
-func (i IntrospectionResponse) Scopes() []string {
-	scopes, _ := i.Content.GetString("scope")
-	return strings.Fields(scopes)
+// Scope returns the scopes of the token represented by the IntrospectionResponse.
+func (i IntrospectionResponse) Scope() ([]string, error) {
+	scope, err := i.Content.GetString("scope")
+	if err != nil {
+		return nil, err
+	}
+	return strings.Fields(scope), nil
 }
 
 type readError struct {

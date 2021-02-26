@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ type AuthenticatePayload struct {
 }
 
 type GetAccessTokenPayload struct {
-	Scope []string `json:"scope,omitempty"`
+	Scope        []string `json:"scope,omitempty"`
+	RefreshToken string   `json:"refresh_token,omitempty"`
 }
 
 // SessionToken holds a session token

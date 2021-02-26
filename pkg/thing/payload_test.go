@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,8 +165,9 @@ func TestIntrospectionResponse_Active(t *testing.T) {
 	for _, subtest := range tests {
 		t.Run(subtest.name, func(t *testing.T) {
 			introspection.Content["active"] = subtest.active
-			if introspection.Active() != subtest.active {
-				t.Errorf("expected %v; got %v", subtest.active, introspection.Active())
+			active, _ := introspection.Active()
+			if active != subtest.active {
+				t.Errorf("expected %v; got %v", subtest.active, active)
 			}
 		})
 	}
@@ -189,13 +190,13 @@ func TestIntrospectionResponse_Scopes(t *testing.T) {
 		t.Run(subtest.name, func(t *testing.T) {
 			var expected []string
 			if subtest.scopes == nil {
-				expected = []string{}
+				expected = nil
 				delete(introspection.Content, "scope")
 			} else {
 				expected = subtest.scopes
 				introspection.Content["scope"] = strings.Join(expected, " ")
 			}
-			scopes := introspection.Scopes()
+			scopes, _ := introspection.Scope()
 			if !reflect.DeepEqual(expected, scopes) {
 				t.Errorf("expected %v; got %v", expected, scopes)
 			}
