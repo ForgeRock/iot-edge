@@ -1,0 +1,33 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+actor "User" as usr
+actor "Thing" as thing
+participant "Access Management" as am
+
+thing -> am : register & authenticate
+am --> thing : session token
+thing -> am : get user & device code
+am --> thing : user & device code
+thing -> usr : verification URL & user code
+loop
+    thing -> am : poll for authorization with device code
+    am --> thing : return authorization_pending
+end
+usr -> am : authenticate & approve access
+am --> thing : user access token
+
+@enduml
