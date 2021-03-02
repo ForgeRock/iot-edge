@@ -112,6 +112,28 @@ Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thi
     -tree "reg-tree"
 ```
 
+#### User Token Request
+
+<img src="user-token-request.png" width="550"/></br>
+
+This example will create a new identity for a thing using dynamic registration and authenticate it. Once authenticated,
+it will request a user access token using the OAuth 2.0 Device Authorization Grant. This access token authorizes the
+thing to access a user's resources, or act on behalf of the user, as specified by the scope granted by the user. The
+example demonstrates how the thing can manage the access token's lifecycle by introspecting and refreshing the token.
+
+Requesting a user token requires a user to be registered and authenticated before approving the request. Upon
+running the example the user will be given a URL to go to in order to perform the authorization.
+
+Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/user-token/main.go):
+```bash
+./run.sh example "thing/user-token" \
+    -name "user-authorized-thing" \
+    -url "http://am.localtest.me:8080/am" \
+    -audience "/" \
+    -realm "/" \
+    -tree "reg-tree"
+```
+
 ### Run the IoT Gateway examples
 
 The [IoT Gateway](https://github.com/ForgeRock/iot-edge/blob/master/cmd/gateway/main.go) has its own identity in AM,

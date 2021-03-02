@@ -144,7 +144,7 @@ func userTokenThing() (err error) {
 	if err != nil {
 		return fmt.Errorf("no refresh token found in access token response")
 	}
-	fmt.Printf("\nRequesting access token refresh... ")
+	fmt.Printf("\nRefreshing access token with reduced scope... ")
 	tokenResponse, err = device.RefreshAccessToken(refreshToken, "publish")
 	if err != nil {
 		return err
