@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2020 ForgeRock AS
+# Copyright 2020-2021 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ set -e
 BASE_OVERLAY_DIR=$(PWD)/overlay
 CUSTOM_OVERLAY_DIR=
 DEPLOY_DIR=$(PWD)/tmp
-# The characters =/l+ are replaced with 1 or 0 for readability and regex substitution
-PLATFORM_PASSWORD=$(openssl rand -base64 32 | tr =/ 0 | tr l+ 1)
+PLATFORM_PASSWORD=
+SECRETS_DIR=$(PWD)/secrets
+CONFIG_PROFILE=cdk
 
 if [ -n "$1" ]; then
   CUSTOM_OVERLAY_DIR=$1
@@ -38,14 +39,22 @@ echo "Clone ForgeOps"
 echo "====================================================="
 rm -rf "${DEPLOY_DIR}" && mkdir "$DEPLOY_DIR" && cd "$DEPLOY_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
-git checkout tags/2020.08.07-ZucchiniRicotta.1
+git checkout release/7.1.0
+
+echo "====================================================="
+echo "Overlay base and custom files"
+echo "====================================================="
+cp -rf "$BASE_OVERLAY_DIR"/* "$DEPLOY_DIR"
+if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
+  cp -rf  "$CUSTOM_OVERLAY_DIR"/* "$DEPLOY_DIR"
+fi
 
 echo "====================================================="
 echo "Start and configure Minikube"
 echo "====================================================="
-minikube start --memory=12288 --cpus=3 --disk-size=40g --vm-driver=virtualbox --bootstrapper kubeadm --kubernetes-version=1.17.4
+minikube start --memory=12288 --cpus=3 --disk-size=40g --cni=true --vm=true --driver=virtualbox --bootstrapper kubeadm --kubernetes-version=stable
 minikube addons enable ingress
-minikube ssh sudo ip link set docker0 promisc on
+"$DEPLOY_DIR"/bin/secret-agent install
 
 echo "====================================================="
 echo "Create 'iot' namespace"
@@ -62,36 +71,25 @@ eval $(minikube docker-env)
 skaffold config set --kube-context minikube local-cluster true
 
 echo "====================================================="
-echo "Overlay base and custom files"
-echo "====================================================="
-cp -rf "$BASE_OVERLAY_DIR"/* "$DEPLOY_DIR"
-if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
-  cp -rf  "$CUSTOM_OVERLAY_DIR"/* "$DEPLOY_DIR"
-fi
-
-echo "====================================================="
-echo "Substitute platform password"
-echo "====================================================="
-sed -i '' "s/&{platform.password}/$PLATFORM_PASSWORD/g" "$DEPLOY_DIR/config/7.0/iot/am/config/services/realm/root/sunidentityrepositoryservice/1.0/organizationconfig/default/opendj.json"
-
-echo "====================================================="
-echo "Initialise 'iot' configuration"
-echo "====================================================="
-"$DEPLOY_DIR"/bin/config.sh init --profile iot --version 7.0
-"$DEPLOY_DIR"/bin/config.sh init --profile iot --component ds --version 7.0
-
-echo "====================================================="
-echo "Configure global password"
-echo "====================================================="
-password_file="$DEPLOY_DIR/docker/forgeops-secrets/forgeops-secrets-image/config/OVERRIDE_ALL_PASSWORDS.txt"
-touch "$password_file"
-echo "$PLATFORM_PASSWORD" > "$password_file"
-
-echo "====================================================="
 echo "Clean out existing pods for 'iot' namespace"
 echo "====================================================="
 skaffold delete
-"$DEPLOY_DIR"/bin/clean.sh
+
+echo "====================================================="
+echo "Apply IoT secrets"
+echo "====================================================="
+if [ -n "$PLATFORM_PASSWORD" ]; then
+  kubectl delete secret am-env-secrets || true
+  kubectl create secret generic am-env-secrets --from-literal=AM_PASSWORDS_AMADMIN_CLEAR=$PLATFORM_PASSWORD
+fi
+kubectl apply --filename $SECRETS_DIR/iot-secrets.yaml
+kubectl create --filename $SECRETS_DIR/iot-secret-agent-configuration.yaml
+
+echo "====================================================="
+echo "Initialise '$CONFIG_PROFILE' configuration profile"
+echo "====================================================="
+"$DEPLOY_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --version 7.0
+"$DEPLOY_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --component ds --version 7.0
 
 echo "====================================================="
 echo "Run the platform"
@@ -113,5 +111,6 @@ echo "====================================================="
 echo "~~~ Platform login details ~~~"
 echo "URL: https://iot.iam.example.com/platform"
 echo "Username: amadmin"
-echo "Password: $PLATFORM_PASSWORD"
+echo "Password: $($DEPLOY_DIR/bin/print-secrets amadmin)"
+echo "DS Password: $($DEPLOY_DIR/bin/print-secrets dsadmin)"
 echo "====================================================="

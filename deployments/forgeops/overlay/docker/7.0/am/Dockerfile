@@ -1,11 +1,12 @@
-# Bleeding edge AM docker image:
-FROM gcr.io/forgerock-io/am-base/docker-build:latest
-# Platform integration tested AM docker image:
-# FROM gcr.io/forgerock-io/am-base/pit1:latest
-
+FROM gcr.io/forgerock-io/am-base:7.1.0
 USER root
 
-RUN apt-get update && apt-get install -y git
+ENV DEBIAN_FRONTEND=noninteractive
+ENV APT_OPTS="--no-install-recommends --yes"
+RUN apt-get update \
+        && apt-get install -y git \
+        && apt-get clean \
+        && rm -r /var/lib/apt/lists /var/cache/apt/archives
 
 USER forgerock
 
