@@ -547,3 +547,54 @@ func (t *AccessTokenAfterDynamicRegistration) Run(state anvil.TestState, data an
 	}
 	return verifyAccessTokenResponse(response, deviceID, scope...)
 }
+
+// RequestIDToken uses the Open ID scope to request an id token along with an access token.
+type RequestIDToken struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *RequestIDToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *RequestIDToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	device, err := thingJWTAuth(state, data).Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	response, err := device.RequestAccessToken(thing.OpenIDScope)
+	if err != nil {
+		anvil.DebugLogger.Println("access token request failed", err)
+		return false
+	}
+	token, err := response.IDToken()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	idJWT, err := jwt.ParseSigned(token)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	claims := &jwt.Claims{}
+	if err := idJWT.UnsafeClaimsWithoutVerification(claims); err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if claims.Subject != data.Id.ID {
+		anvil.DebugLogger.Printf("id token sub, %s, not equal to device ID, %s\n",
+			claims.Subject, data.Id.Name)
+		return false
+	}
+	return true
+}
+

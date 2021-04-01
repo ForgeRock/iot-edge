@@ -30,6 +30,9 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
+// OpenIDScope is the scope value used in OpenID Connect requests
+const OpenIDScope = "openid"
+
 // DebugLogger is the destination of all SDK debug information. The logger is muted by default. Redirect the debug
 // output by assigning your own logger to this variable or setting the output writer, for example:
 //
@@ -60,8 +63,10 @@ type Thing interface {
 	RefreshAccessToken(refreshToken string, scopes ...string) (response AccessTokenResponse, err error)
 
 	// IntrospectAccessToken introspects an OAuth 2.0 access token for a thing as defined by rfc7662.
-	// Supports only client-based OAuth 2.0 tokens signed with an asymmetric key.
 	IntrospectAccessToken(token string) (introspection IntrospectionResponse, err error)
+
+	// IDTokenInfo retrieves the validated claims from an OpenID Connect ID token.
+	IDTokenInfo(token string) (introspection TokenInfoResponse, err error)
 
 	// RequestAttributes requests the attributes with the specified names associated with the thing's identity.
 	// If no names are specified then all the allowed attributes will be returned.

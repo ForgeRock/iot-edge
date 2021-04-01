@@ -78,7 +78,7 @@
       "clientName" : [ ],
       "defaultScopes" : [ "subscribe" ],
       "agentgroup" : null,
-      "scopes" : [ "publish", "subscribe" ],
+      "scopes" : [ "publish", "subscribe", "openid" ],
       "userpassword" : "password"
     },
     "coreUmaClientConfig" : {

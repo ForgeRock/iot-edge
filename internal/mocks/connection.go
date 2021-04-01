@@ -32,6 +32,7 @@ type MockClient struct {
 	UserCodeFunc              func(string, string) ([]byte, error)
 	UserTokenFunc             func(string, string) ([]byte, error)
 	IntrospectAccessTokenFunc func(string, string) ([]byte, error)
+	IntrospectIDTokenFunc     func(string, string) ([]byte, error)
 }
 
 func (m *MockClient) ValidateSession(tokenID string) (ok bool, err error) {
@@ -77,6 +78,13 @@ func (m *MockClient) IntrospectAccessToken(tokenID string, content client.Conten
 		return m.IntrospectAccessTokenFunc(tokenID, payload)
 	}
 	return introspect.InactiveIntrospectionBytes, nil
+}
+
+func (m *MockClient) IDTokenInfo(tokenID string, content client.ContentType, payload string) (introspection []byte, err error) {
+	if m.IntrospectIDTokenFunc != nil {
+		return m.IntrospectIDTokenFunc(tokenID, payload)
+	}
+	return []byte("{}"), nil
 }
 
 func (m *MockClient) Attributes(tokenID string, _ client.ContentType, payload string, names []string) (reply []byte, err error) {

@@ -22,7 +22,8 @@
     "scopes": {
       "value": [
         "publish",
-        "subscribe"
+        "subscribe",
+        "openid"
       ],
       "inherited": false
     },

@@ -93,6 +93,11 @@ func (a AccessTokenResponse) Scope() ([]string, error) {
 	return strings.Fields(scope), nil
 }
 
+// IDToken returns the id token contained in an AccessTokenResponse.
+func (a AccessTokenResponse) IDToken() (string, error) {
+	return a.Content.GetString("id_token")
+}
+
 // AttributesResponse contains the response received from AM after a successful request for thing attributes.
 // The name of the attribute is the same as the LDAP identity attribute name. The response will contain the thing ID
 // and may have multiple values for a single attribute, for example:
@@ -138,6 +143,16 @@ func (i IntrospectionResponse) Scope() ([]string, error) {
 		return nil, err
 	}
 	return strings.Fields(scope), nil
+}
+
+// TokenInfoResponse contains the validated claims retrieved from an OpenID Connect ID token.
+type TokenInfoResponse struct {
+	Content JSONContent
+}
+
+// Subject returns the Subject Identifier of the ID token represented by the TokenInfoResponse
+func (t TokenInfoResponse) Subject() (string, error) {
+	return t.Content.GetString("sub")
 }
 
 type readError struct {
