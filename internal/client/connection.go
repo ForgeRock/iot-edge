@@ -251,6 +251,9 @@ type Connection interface {
 	// IntrospectAccessToken makes a request to introspect an access token
 	IntrospectAccessToken(tokenID string, content ContentType, payload string) (introspection []byte, err error)
 
+	// IDTokenInfo retrieves the validated claims from an OpenID Connect ID token.
+	IDTokenInfo(tokenID string, content ContentType, payload string) (info []byte, err error)
+
 	// attributes makes a thing attributes request with the given session token and payload
 	Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error)
 

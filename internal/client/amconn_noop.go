@@ -50,6 +50,10 @@ func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType
 	return introspection, errHTTPNotBuilt
 }
 
+func (c *amConnection) IDTokenInfo(tokenID string, content ContentType, payload string) (info []byte, err error) {
+	return info, errHTTPNotBuilt
+}
+
 func (c amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	return reply, errHTTPNotBuilt
 }

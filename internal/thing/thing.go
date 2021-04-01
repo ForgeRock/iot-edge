@@ -184,6 +184,42 @@ func (t *DefaultThing) IntrospectAccessToken(token string) (introspection thing.
 	return introspection, err
 }
 
+func (t *DefaultThing) IDTokenInfo(token string) (introspection thing.TokenInfoResponse, err error) {
+	var requestBody string
+	var content client.ContentType
+	payload := client.IntrospectPayload{Token: token}
+
+	err = t.makeAuthorisedRequest(func(session session.Session) error {
+		if popSession, ok := session.(*isession.PoPSession); ok {
+			info, err := t.connection.AMInfo()
+			if err != nil {
+				return err
+			}
+			requestBody, err = signedJWTBody(popSession, info.IntrospectURL, info.ThingsVersion, payload)
+			if err != nil {
+				return err
+			}
+			content = client.ApplicationJOSE
+		} else {
+			b, err := json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			requestBody = string(b)
+			content = client.ApplicationJSON
+		}
+		reply, err := t.connection.IDTokenInfo(session.Token(), content, requestBody)
+		if reply != nil {
+			debug.Logger.Println("IntrospectAccessToken response: ", string(reply))
+		}
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(reply, &introspection.Content)
+	})
+	return introspection, err
+}
+
 func (t *DefaultThing) RequestAttributes(names ...string) (response thing.AttributesResponse, err error) {
 	err = t.makeAuthorisedRequest(func(session session.Session) error {
 		var requestBody string

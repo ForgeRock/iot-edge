@@ -343,6 +343,21 @@ func (c *Gateway) introspectHandler(w coap.ResponseWriter, r *coap.Request) {
 	handleResponse(b, err, codes.Changed, w)
 }
 
+// idTokenInfoHandler handles an OpenID Connect ID token information request
+func (c *Gateway) idTokenInfoHandler(w coap.ResponseWriter, r *coap.Request) {
+	debug.Logger.Println("idTokenInfoHandler")
+
+	token, content, payload, err := decodeThingEndpointRequest(r.Msg)
+	if err != nil {
+		w.SetCode(codes.BadRequest)
+		writeResponse(w, []byte(err.Error()))
+		return
+	}
+
+	b, err := c.amConnection.IDTokenInfo(token, content, payload)
+	handleResponse(b, err, codes.Changed, w)
+}
+
 func dtlsServerConfig(cert ...tls.Certificate) *dtls.Config {
 	return &dtls.Config{
 		Certificates:         cert,
@@ -367,6 +382,7 @@ func (c *Gateway) StartCOAPServer(address string, key crypto.Signer) error {
 	mux.HandleFunc("/usercode", c.userCodeHandler)
 	mux.HandleFunc("/usertoken", c.userTokenHandler)
 	mux.HandleFunc("/introspect", c.introspectHandler)
+	mux.HandleFunc("/idTokenInfo", c.idTokenInfoHandler)
 	mux.HandleFunc("/attributes", c.attributesHandler)
 	mux.HandleFunc("/session", c.sessionHandler)
 

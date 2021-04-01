@@ -174,6 +174,11 @@ func (c *gatewayConnection) IntrospectAccessToken(tokenID string, content Conten
 	return c.makeAuthorisedPost(tokenID, "/introspect", content, payload, nil)
 }
 
+// IDTokenInfo retrieves the validated claims from an OpenID Connect ID token.
+func (c *gatewayConnection) IDTokenInfo(tokenID string, content ContentType, payload string) (info []byte, err error) {
+	return c.makeAuthorisedPost(tokenID, "/idTokenInfo", content, payload, nil)
+}
+
 // Attributes makes a thing attributes request with the given payload
 // SSO token is extracted from signed JWT by the IoT Gateway
 func (c *gatewayConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {

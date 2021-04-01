@@ -310,3 +310,78 @@ func (t *IntrospectRevokedAccessToken) Run(state anvil.TestState, data anvil.Thi
 	}
 	return true
 }
+
+// IDTokenInfo checks that the claims from a valid id token can be retrieved
+type IDTokenInfo struct {
+	anvil.NopSetupCleanup
+	restricted          bool // true if the Thing authenticates with PoP
+}
+
+func (t *IDTokenInfo) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *IDTokenInfo) Run(state anvil.TestState, data anvil.ThingData) bool {
+	var b thing.Builder
+	if t.restricted {
+		b = thingJWTAuth(state, data)
+	} else {
+		state.SetGatewayTree(userPwdAuthTree)
+		b = builder.Thing().
+			ConnectTo(state.URL()).
+			InRealm(state.TestRealm()).
+			WithTree(userPwdAuthTree).
+			HandleCallbacksWith(
+				callback.NameHandler{Name: data.Id.Name},
+				callback.PasswordHandler{Password: data.Id.Password})
+	}
+	device, err := b.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	response, err := device.RequestAccessToken(thing.OpenIDScope)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	idToken, err := response.IDToken()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	info, err := device.IDTokenInfo(idToken)
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	anvil.DebugLogger.Println(info)
+
+	subject, err := info.Subject()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+	if subject != data.Id.ID {
+		anvil.DebugLogger.Printf("expected subject %s to equal ID %s", subject, data.Id.ID)
+		return false
+
+	}
+	return true
+}
+
+func (t *IDTokenInfo) NameSuffix() string {
+	name := "NonRestricted"
+	if t.restricted {
+		name = "Restricted"
+	}
+	return name
+}

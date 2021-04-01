@@ -365,26 +365,26 @@ func (c *amConnection) AccessToken(tokenID string, content ContentType, payload 
 	return c.makeRequest(tokenID, content, request)
 }
 
-// introspectAccessTokenLocally tries to introspect an access token locally
-// Will only work for client based (stateless) asymmetrically signed access tokens
-func (c *amConnection) introspectAccessTokenLocally(payload IntrospectPayload) (introspection []byte, err error) {
+// verifySignedJWT parses and validates a signed JWT
+// Will only work for client based (stateless) asymmetrically signed JWT
+func (c *amConnection) verifySignedJWT(payload IntrospectPayload) (claims []byte, err error) {
 	object, err := jose.ParseSigned(payload.Token)
 	if err != nil {
-		return introspection, err
+		return claims, err
 	}
 	if len(object.Signatures) == 0 {
-		return introspection, fmt.Errorf("expected at least one signature header")
+		return claims, fmt.Errorf("expected at least one signature header")
 	}
 	header := object.Signatures[0].Header
 
 	// can not introspect symmetrically signed tokens locally
 	switch jose.SignatureAlgorithm(header.Algorithm) {
 	case jose.HS256, jose.HS384, jose.HS512:
-		return introspection, fmt.Errorf("symmetrically signed tokens unsupported")
+		return claims, fmt.Errorf("symmetrically signed tokens unsupported")
 	}
 
 	if header.KeyID == "" {
-		return introspection, fmt.Errorf("no kid")
+		return claims, fmt.Errorf("no kid")
 	}
 	keys := c.accessTokenJWKS.Key(header.KeyID)
 
@@ -393,30 +393,26 @@ func (c *amConnection) introspectAccessTokenLocally(payload IntrospectPayload) (
 		debug.Logger.Println("updating JSON web key set")
 		err = c.updateJSONWebKeySet()
 		if err != nil {
-			debug.Logger.Printf("unknown access token key: %s. Cannot update jwks; %s", header.KeyID, err)
-			return introspect.InactiveIntrospectionBytes, nil
+			return nil, fmt.Errorf("unknown access token key: %s. Cannot update jwks; %s", header.KeyID, err)
 		}
 		keys = c.accessTokenJWKS.Key(header.KeyID)
 		if len(keys) == 0 {
-			// unknown key, return inactive introspection
-			debug.Logger.Printf("unknown access token key: %s", header.KeyID)
-			return introspect.InactiveIntrospectionBytes, nil
+			// unknown key, return inactive claims
+			return nil, fmt.Errorf("unknown access token key: %s", header.KeyID)
 		}
 	}
 	if len(keys) > 1 {
 		debug.Logger.Println("Received multiple keys for a single KID; using first key only")
 	}
-	introspection, err = object.Verify(keys[0])
+	claims, err = object.Verify(keys[0])
 	if err != nil {
-		debug.Logger.Printf("Cryptographic verification failed; %s", err)
-		return introspect.InactiveIntrospectionBytes, nil
+		return nil, fmt.Errorf("cryptographic verification failed; %s", err)
 	}
 
-	if !introspect.ValidNow(introspection) {
-		debug.Logger.Printf("not within the valid time period of the token")
-		return introspect.InactiveIntrospectionBytes, nil
+	if !introspect.ValidNow(claims) {
+		return nil, fmt.Errorf("not within the valid time period of the token")
 	}
-	return introspect.CreateFromJWT(introspection)
+	return claims, nil
 }
 
 // IntrospectAccessToken introspects an access token
@@ -444,7 +440,29 @@ func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType
 	}
 
 	// try local introspection
-	return c.introspectAccessTokenLocally(token)
+	// Will only work for client based (stateless) asymmetrically signed access tokens
+	introspection, err = c.verifySignedJWT(token)
+	if err != nil {
+		debug.Logger.Println(err.Error())
+		return introspect.InactiveIntrospectionBytes, nil
+	}
+	return introspect.CreateFromJWT(introspection)
+}
+
+// IDTokenInfo retrieves the validated claims from an OpenID Connect ID token.
+func (c *amConnection) IDTokenInfo(_ string, content ContentType, payload string) (info []byte, err error) {
+	var token IntrospectPayload
+	switch content {
+	case ApplicationJOSE:
+		err = jws.ExtractClaims(payload, &token)
+	case ApplicationJSON:
+		err = json.Unmarshal([]byte(payload), &token)
+	}
+	if err != nil {
+		return info, err
+	}
+
+	return c.verifySignedJWT(token)
 }
 
 // attributes makes a thing attributes request with the given session token and payload
