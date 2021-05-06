@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ForgeRock/iot-edge/v7/internal/debug"
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -39,6 +40,9 @@ const (
 	TypePasswordCallback    = "PasswordCallback"
 	TypeTextInputCallback   = "TextInputCallback"
 	TypeHiddenValueCallback = "HiddenValueCallback"
+	// Entry keys
+	keyHiddenID = "id"
+	keyValue    = "value"
 	// Thing types used with registration callback
 	TypeDevice  ThingType = "device"
 	TypeService ThingType = "service"
@@ -50,8 +54,8 @@ type ThingType string
 
 // Entry represents an Input or Output Entry in a Callback.
 type Entry struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"`
 }
 
 func (e Entry) String() string {
@@ -75,8 +79,12 @@ func (c Callback) ID() string {
 		return ""
 	}
 	for _, e := range c.Output {
-		if e.Name == "id" {
-			return e.Value
+		if e.Name == keyHiddenID {
+			id, ok := e.Value.(string)
+			if !ok {
+				debug.Logger.Printf("Expected 'string' id %v", e)
+			}
+			return id
 		}
 	}
 	return ""
@@ -167,8 +175,12 @@ func (h AuthenticateHandler) Handle(cb Callback) (bool, error) {
 	}
 	var challenge string
 	for _, e := range cb.Output {
-		if e.Name == "value" {
-			challenge = e.Value
+		if e.Name == keyValue {
+			var ok bool
+			challenge, ok = e.Value.(string)
+			if !ok {
+				return true, fmt.Errorf("expected `string` challenge %v", e.Value)
+			}
 			break
 		}
 	}
@@ -218,8 +230,12 @@ func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	}
 	var challenge string
 	for _, e := range cb.Output {
-		if e.Name == "value" {
-			challenge = e.Value
+		if e.Name == keyValue {
+			var ok bool
+			challenge, ok = e.Value.(string)
+			if !ok {
+				return true, fmt.Errorf("expected `string` challenge %v", e.Value)
+			}
 			break
 		}
 	}
