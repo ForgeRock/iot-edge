@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
@@ -152,7 +153,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 	if _, err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
-	response := cb.Input[0].Value
+	response := cb.Input[0].Value.(string)
 	claims := struct {
 		Sub string `json:"sub"`
 		Aud string `json:"aud"`
@@ -226,7 +227,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if _, err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
-	response := cb.Input[0].Value
+	response := cb.Input[0].Value.(string)
 	claims := struct {
 		Sub string `json:"sub"`
 		Aud string `json:"aud"`
@@ -276,4 +277,44 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if claims.SerialNumber != serialNumber {
 		t.Fatal("incorrect serial number")
 	}
+}
+
+func TestCallback_ID(t *testing.T) {
+	tests := []struct {
+		name     string
+		cb       Callback
+		expected string
+	}{
+		{name: "ok", cb: Callback{Type: TypeHiddenValueCallback, Output: []Entry{{Name: keyHiddenID, Value: "foo"}}}, expected: "foo"},
+		{name: "notFirst", cb: Callback{Type: TypeHiddenValueCallback, Output: []Entry{{Name: "prompt", Value: "bar"}, {Name: keyHiddenID, Value: "foo"}}}, expected: "foo"},
+		{name: "malformed", cb: Callback{Type: TypeHiddenValueCallback, Output: []Entry{{Name: keyHiddenID, Value: true}}}, expected: ""},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			id := subtest.cb.ID()
+			if id != subtest.expected {
+				t.Errorf("ID() = %v, want %v", id, subtest.expected)
+			}
+		})
+	}
+}
+
+func TestEntry_Unmarshal(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{name: "string", raw: `{"key":"value"}`},
+		{name: "bool", raw: `{"key":true}`},
+		{name: "number", raw: `{"key":2.718}`},
+	}
+	for _, subtest := range tests {
+		t.Run(subtest.name, func(t *testing.T) {
+			var e Entry
+			if err := json.Unmarshal([]byte(subtest.raw), &e); err != nil {
+				t.Errorf("unmarshal into entry failed; %v", err)
+			}
+		})
+	}
+
 }
