@@ -11,8 +11,9 @@ Additionally, install [mkcert](https://github.com/FiloSottile/mkcert) for making
 Clone this repo:
 ```
 git clone https://github.com/ForgeRock/iot-edge.git
+cd iot-edge
 git checkout release/v7.1.0
-cd iot-edge/deployments/forgeops
+cd deployments/forgeops
 ```
 
 Start the platform:
