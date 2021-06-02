@@ -1,0 +1,57 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+actor "Admin" as ad
+actor "Thing" as th
+participant "Access Management" as am
+participant "Identity Management" as idm
+participant "Certificate Authority\nhttp://testrfc7030.com" as ca
+
+== Register & Authenticate ==
+th -> am : authenticate using JWT PoP
+am -> am : identity exists=false
+am --> th : collect ID, public key, type, CSR
+th -> th : create CSR
+th -> am : send ID, public key, type, CSR, signed JWT
+am -> ca : Enrollment over Secure Transport\nSend CSR to CA
+ca --> am : return certificate
+am -> idm : create identity\nthingConfig=(cert, rotate=false)
+am -> am : verify JWT
+am --> th : return SSO token
+
+== Request Certificate ==
+th -> am : request thingConfig attribute\nusing SSO token
+am --> th : return thingConfig
+th -> th : extract certificate
+
+== Rotate Certificate ==
+ad -> idm : set rotation=true
+th -> am : authenticate using JWT PoP
+am -> am : identity exists=true, rotate=true
+am -> am : verify JWT
+am --> th : collect CSR
+th -> am : send CSR
+am -> ca : Enrollment over Secure Transport\nSend CSR to CA
+ca --> am : return certificate
+am -> idm : patch identity\nthingConfig=(cert, rotate=false)
+am --> th : return SSO token
+
+== Request Certificate ==
+th -> am : request thingConfig attribute\nusing SSO token
+am --> th : return thingConfig
+th -> th : extract certificate
+
+@enduml

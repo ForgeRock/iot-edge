@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "realm": "/",
+    "entityType": "authenticationTreesService",
+    "entityId": "default/RegisterThings",
+    "uid": "ou=RegisterThings,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID": "tree",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams": {},
+    "ou": [
+      "RegisterThings"
+    ]
+  },
+  "data": {
+    "_id": "default/RegisterThings",
+    "_type": {
+      "_id": "authenticationTreesService",
+      "name": "authenticationTreesService",
+      "collection": false
+    },
+    "entryNodeId": "769c9cde-377a-4de3-9668-9f6e512b30c4",
+    "staticNodes": {
+      "startNode": {
+        "x": 20,
+        "y": 20
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 1023,
+        "y": 47
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 1050,
+        "y": 180
+      }
+    },
+    "uiConfig": {},
+    "identityResource": "managed/thing",
+    "nodes": {
+      "769c9cde-377a-4de3-9668-9f6e512b30c4": {
+        "displayName": "Authenticate Thing",
+        "nodeType": "IotAuthenticationNode",
+        "x": 28,
+        "y": 129,
+        "connections": {
+          "success": "0109813b-7d07-4004-a62f-45517f14ea13",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register": "6371cf23-18fc-4a7d-bf16-aed974ec3288"
+        }
+      },
+      "6371cf23-18fc-4a7d-bf16-aed974ec3288": {
+        "displayName": "Collect Thing Attributes",
+        "nodeType": "AttributeCollectorNode",
+        "x": 221,
+        "y": 240,
+        "connections": {
+          "outcome": "47f4b77f-1ac1-4921-ac79-de296db1cb9e"
+        }
+      },
+      "248813f1-3954-4fd0-9fc2-2abb7b5b5274": {
+        "displayName": "Create Thing",
+        "nodeType": "CreateObjectNode",
+        "x": 748,
+        "y": 178,
+        "connections": {
+          "CREATED": "0a22f8e2-6c05-493b-b637-566e38155891",
+          "FAILURE": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "710d2ead-753b-48f0-8a92-92a994742f42": {
+        "displayName": "Rotate Certificate",
+        "nodeType": "ScriptedDecisionNode",
+        "x": 308,
+        "y": 20,
+        "connections": {
+          "False": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "True": "c61d471f-e2e0-40a3-b5ea-1589c2bd2ff2"
+        }
+      },
+      "c61d471f-e2e0-40a3-b5ea-1589c2bd2ff2": {
+        "displayName": "CSR Collector",
+        "nodeType": "AttributeCollectorNode",
+        "x": 471,
+        "y": 20,
+        "connections": {
+          "outcome": "47f4b77f-1ac1-4921-ac79-de296db1cb9e"
+        }
+      },
+      "47f4b77f-1ac1-4921-ac79-de296db1cb9e": {
+        "displayName": "Request Certificate",
+        "nodeType": "ScriptedDecisionNode",
+        "x": 444,
+        "y": 219,
+        "connections": {
+          "Success": "50278f79-49aa-4c8e-b88e-c5b66f94803f",
+          "Failure": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "3e5dce20-1a5c-45a3-b626-3155be5cd8c7": {
+        "displayName": "Patch Thing",
+        "nodeType": "PatchObjectNode",
+        "x": 743,
+        "y": 20,
+        "connections": {
+          "PATCHED": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "FAILURE": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "50278f79-49aa-4c8e-b88e-c5b66f94803f": {
+        "displayName": "Thing Exists",
+        "nodeType": "IdentifyExistingUserNode",
+        "x": 593,
+        "y": 87,
+        "connections": {
+          "true": "3e5dce20-1a5c-45a3-b626-3155be5cd8c7",
+          "false": "248813f1-3954-4fd0-9fc2-2abb7b5b5274"
+        }
+      },
+      "0a22f8e2-6c05-493b-b637-566e38155891": {
+        "displayName": "Authenticate Thing",
+        "nodeType": "IotAuthenticationNode",
+        "x": 828,
+        "y": 301,
+        "connections": {
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "0109813b-7d07-4004-a62f-45517f14ea13": {
+        "displayName": "Lookup UUID",
+        "nodeType": "IdentifyExistingUserNode",
+        "x": 165,
+        "y": 20,
+        "connections": {
+          "true": "710d2ead-753b-48f0-8a92-92a994742f42",
+          "false": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    }
+  }
+}
