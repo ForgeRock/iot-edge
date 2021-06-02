@@ -17,9 +17,9 @@
         <version>1.5.2.0</version>
     </parent>
     <artifactId>gcp-iot-core-connector</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1</version>
     <packaging>bundle</packaging>
-    <name>GCP IoT Core Connector</name>
+    <name>Google Core Platform IoT Core Connector</name>
     <description>Connector for Google Cloud Platform IoT Core</description>
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
