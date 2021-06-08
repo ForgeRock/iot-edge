@@ -7,19 +7,11 @@
             "displayName" : "systemGCPIoTCoreTHINGS_managedThing",
             "properties" : [
                 {
-                    "target" : "_id",
-                    "source" : "__UID__"
-                },
-                {
                     "target" : "uid",
                     "source" : "__UID__"
                 },
                 {
                     "target" : "cn",
-                    "source" : "__NAME__"
-                },
-                {
-                    "target" : "sn",
                     "source" : "__NAME__"
                 },
                 {
@@ -109,6 +101,10 @@
                 {
                     "target" : "thingConfig",
                     "source" : "thingConfig"
+                },
+                {
+                    "target" : "__NAME__",
+                    "source" : "cn"
                 }
             ],
             "policies" : [
@@ -161,7 +157,7 @@
                     "situation" : "FOUND"
                 },
                 {
-                    "action" : "EXCEPTION",
+                    "action" : "CREATE",
                     "situation" : "ABSENT"
                 }
             ],

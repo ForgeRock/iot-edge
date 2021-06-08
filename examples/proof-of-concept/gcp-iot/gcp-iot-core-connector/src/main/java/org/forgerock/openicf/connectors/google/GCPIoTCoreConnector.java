@@ -40,7 +40,7 @@ import java.util.Set;
  * Main implementation of the Google Cloud Platform IoT Core Connector.
  */
 @ConnectorClass(displayNameKey = "GCPIoTCore.connector.display", configurationClass = GCPIoTCoreConfiguration.class)
-public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp {
+public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp, CreateOp {
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS`Z`");
     private static final AttributeInfo THING_TYPE_ATTR_INFO = AttributeInfoBuilder.build("thingType", String.class);
     private static final AttributeInfo STATUS_ATTR_INFO = AttributeInfoBuilder.build("accountStatus", String.class);
@@ -195,7 +195,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
     private ConnectorObject buildThing(Device device) {
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(THINGS);
-        builder.setUid(device.getId());
+        builder.setUid(device.getNumId().toString());
         builder.setName(device.getId());
         builder.addAttribute(THING_TYPE_ATTR);
 
@@ -281,5 +281,43 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
             throw new ConnectorIOException("Device config update failed", e);
         }
 
+    }
+
+    @Override
+    public Uid create(ObjectClass objectClass, Set<Attribute> set, OperationOptions operationOptions) {
+        isThing(objectClass);
+        AttributesAccessor attributesAccessor = new AttributesAccessor(set);
+
+        // Assume that the device's user id has been mapped to __NAME__.
+        // As stated in the docs "There will never be a Uid passed in with the attribute set for this method"
+        Name name = attributesAccessor.getName();
+        if( name == null ) {
+            logger.error("Missing Name");
+            throw new ConnectorIOException("Missing Name");
+        }
+        String id = name.getNameValue();
+        logger.info("Creating device {0}", id);
+
+        CloudIot service = getService();
+        Device device = new Device();
+        device.setId(id);
+
+        try {
+             device = service.projects()
+                    .locations()
+                    .registries()
+                    .devices()
+                    .create(getRegistryPath(), device)
+                    .execute();
+            logger.info("Device {0} was successfully created and assigned numeric ID {1}",
+                    device.getName(),
+                    device.getNumId().toString());
+            // UID can be either the user-defined device identifier or the numeric ID assigned by IoT Core.
+            // Both can be used to construct the device path in GCP IoT Core
+            return new Uid(device.getNumId().toString());
+        } catch (IOException e) {
+            logger.error("Device config update failed", e);
+            throw new ConnectorIOException("Device config update failed", e);
+        }
     }
 }
