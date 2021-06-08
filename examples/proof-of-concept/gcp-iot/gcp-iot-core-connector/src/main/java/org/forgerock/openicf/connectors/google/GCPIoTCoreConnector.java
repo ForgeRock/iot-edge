@@ -40,7 +40,7 @@ import java.util.Set;
  * Main implementation of the Google Cloud Platform IoT Core Connector.
  */
 @ConnectorClass(displayNameKey = "GCPIoTCore.connector.display", configurationClass = GCPIoTCoreConfiguration.class)
-public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp, CreateOp {
+public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp, CreateOp, DeleteOp {
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS`Z`");
     private static final AttributeInfo THING_TYPE_ATTR_INFO = AttributeInfoBuilder.build("thingType", String.class);
     private static final AttributeInfo STATUS_ATTR_INFO = AttributeInfoBuilder.build("accountStatus", String.class);
@@ -316,8 +316,31 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
             // Both can be used to construct the device path in GCP IoT Core
             return new Uid(device.getNumId().toString());
         } catch (IOException e) {
-            logger.error("Device config update failed", e);
-            throw new ConnectorIOException("Device config update failed", e);
+            logger.error("Device create failed", e);
+            throw new ConnectorIOException("Device create failed", e);
         }
+    }
+
+    @Override
+    public void delete(ObjectClass objectClass, Uid uid, OperationOptions operationOptions) {
+        if (uid == null) {
+            throw new IllegalArgumentException("Uid cannot be null");
+        }
+        String devicePath = getDevicePath(uid.getUidValue());
+        logger.info("Deleting device {0}", devicePath);
+
+        CloudIot service = getService();
+        try {
+            service.projects()
+                    .locations()
+                    .registries()
+                    .devices()
+                    .delete(devicePath)
+                    .execute();
+        } catch (IOException e) {
+            logger.error("Device delete failed", e);
+            throw new ConnectorIOException("Device delete failed", e);
+        }
+        logger.info("Device {0} deleted", devicePath);
     }
 }

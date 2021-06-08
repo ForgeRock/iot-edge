@@ -29,43 +29,43 @@
             ],
             "policies" : [
                 {
-                    "action" : "ASYNC",
+                    "action" : "EXCEPTION",
                     "situation" : "AMBIGUOUS"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "DELETE",
                     "situation" : "SOURCE_MISSING"
                 },
                 {
-                    "action" : "CREATE",
+                    "action" : "EXCEPTION",
                     "situation" : "MISSING"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "EXCEPTION",
                     "situation" : "FOUND_ALREADY_LINKED"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "DELETE",
                     "situation" : "UNQUALIFIED"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "EXCEPTION",
                     "situation" : "UNASSIGNED"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "EXCEPTION",
                     "situation" : "LINK_ONLY"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "IGNORE",
                     "situation" : "TARGET_IGNORED"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "IGNORE",
                     "situation" : "SOURCE_IGNORED"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "IGNORE",
                     "situation" : "ALL_GONE"
                 },
                 {
@@ -73,7 +73,7 @@
                     "situation" : "CONFIRMED"
                 },
                 {
-                    "action" : "ASYNC",
+                    "action" : "UPDATE",
                     "situation" : "FOUND"
                 },
                 {
@@ -113,7 +113,7 @@
                     "situation" : "AMBIGUOUS"
                 },
                 {
-                    "action" : "EXCEPTION",
+                    "action" : "DELETE",
                     "situation" : "SOURCE_MISSING"
                 },
                 {
