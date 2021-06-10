@@ -32,7 +32,7 @@ The diagram shows an example authentication and authorization flow.
 
 ### Using the Platform directly
 
-Create a thing identity with name `thingymabot` via the platform UI as described in the forgrops [README](../../deployments/forgeops/README.md#using-the-platform-for-things).
+Create a thing identity with name `thingymabot` via the platform UI as described in the forgrops [README](../../../deployments/forgeops/README.md#using-the-platform-for-things).
 
 Authenticate `thingymabot`:
 ```
