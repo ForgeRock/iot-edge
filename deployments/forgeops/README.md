@@ -36,40 +36,20 @@ DS Password: zMO2W9IlOronDqrF2MtEha3Jiic3urZM
 =====================================================
 ```
 
-### Example
-The `things` endpoint in AM provides IoT-specific functionality. For example, a thing can request an OAuth 2.0 access token without having to know the credentials of the OAuth 2.0 client acting on its behalf.
+### Using the Platform for Things
+Once the platform is running we can register and authenticate a thing via the `authenticate` endpoint and perform actions like authorization and retrieving attributes via the `things` endpoint. This can either be done with the IoT SDK or by using the endpoints directly. The `things` endpoint in AM provides IoT-specific functionality. For example, a thing can request an OAuth 2.0 access token without having to know the credentials of the OAuth 2.0 client acting on its behalf.
 
-Before a thing can use the endpoint, it must be registered with the platform and have a valid session token. Firstly, use the `amadmin` credentials to register a thing identity in the platform. Save the `Password` returned in the connection details to a variable, for example:
-```
-export adminPassword=6KZjOxJU1xHGWHI0hrQT24Fn
-```
+Before a thing can use the `things` endpoint, it must be registered with the platform and have a valid session token. A thing identity can be registered via the platform UI:
 
-Obtain an admin SSO token:
-```
-curl --request POST 'https://iot.iam.example.com/am/json/authenticate' \
-    --header 'X-OpenAM-Username: amadmin' \
-    --header "X-OpenAM-Password: ${adminPassword}" \
-    --header 'Content-Type: application/json' \
-    --header 'Accept-API-Version: resource=2.0, protocol=1.0'
-```
-
-Save the `tokenId` received from this request to a variable:
-```
-export adminTokenId=qrTdqm....AAIwMQ..*
-```
-
-Create a thing identity called `thingymabot` in the platform:
-```
-curl --request PUT 'https://iot.iam.example.com/am/json/realms/root/users/515e16bc-8988-42a4-b24a-aea93c6f972b' \
-    --header 'Content-Type: application/json' \
-    --header 'Accept-Api-Version: resource=4.0, protocol=2.1' \
-    --header "Cookie: iPlanetDirectoryPro=${adminTokenId}" \
-    --data-raw '{
-        "username": "thingymabot",
-        "userPassword": "5tr0ngG3n3r@ted",
-        "thingType": "device"
-    }'
-```
+1. Open the [Thing List](https://iot.iam.example.com/platform/?realm=root#/managed-identities/managed/thing).
+1. Click the `New Thing` button.
+1. Enter the following values in the pop up window:
+    * ID: `thingymabot`
+    * Type: `device`
+1. Click `Save` to create the thing identity.
+1. An entry for `thingymabot` will appear in the `Thing List`, click on the entry.
+1. Click the `Reset Password` button.
+1. Enter the password `5tr0ngG3n3r@ted` in the pop up window and click the `Reset Password` button.
 
 Now that `thingymabot` exists in the platform, it can authenticate using its own credentials:
 ```
