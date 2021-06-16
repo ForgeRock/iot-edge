@@ -39,7 +39,7 @@ The diagram shows an example authentication and authorization flow.
 To run the example from the command line requires a MQTT client.
 This example uses [mosquitto_pub](https://mosquitto.org/man/mosquitto_pub-1.html) but any client can be used.
 
-Create a thing identity with name `thingymabot` and password `5tr0ngG3n3r@ted` via the platform UI as described in the forgrops
+Create a thing identity with name `thingymabot` and password `5tr0ngG3n3r@ted` via the platform UI as described in the ForgeOps IoT
 [README](../../../deployments/forgeops/README.md#using-the-platform-for-things). Then authenticate `thingymabot`:
 ```
 curl --request POST 'https://iot.iam.example.com/am/json/realms/root/authenticate?realm=/' \
