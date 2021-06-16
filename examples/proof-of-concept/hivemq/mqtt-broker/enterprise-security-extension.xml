@@ -3,6 +3,12 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="enterprise-security-extension.xsd"
         version="1">
+    <access-log>
+        <enabled>true</enabled>
+        <file-name>access</file-name>
+        <sub-folder>access</sub-folder>
+        <write-through>true</write-through>
+    </access-log>
     <realms>
         <jwt-realm>
             <name>ForgeRock</name>
@@ -18,7 +24,8 @@
                 <realm>ForgeRock</realm>
                 <jwt-validation>
                     <reserved-claims>
-                        <scope>publish</scope>
+                        <sub>${mqtt-clientid}</sub>
+                        <scope>publish subscribe</scope>
                     </reserved-claims>
                 </jwt-validation>
             </jwt-authentication-manager>
