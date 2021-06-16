@@ -1,0 +1,38 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "ScriptingService",
+    "entityId" : "default/scriptConfigurations/0d8ec7e3-70ef-492f-b1ad-0c1017eb8b05",
+    "uid" : "ou=0d8ec7e3-70ef-492f-b1ad-0c1017eb8b05,ou=scriptConfigurations,ou=default,ou=OrganizationConfig,ou=1.0,ou=ScriptingService,ou=services,ou=am-config",
+    "sunServiceID" : "scriptConfiguration",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : [
+      "0d8ec7e3-70ef-492f-b1ad-0c1017eb8b05"
+    ]
+  },
+  "data" : {
+    "_id" : "default/scriptConfigurations/0d8ec7e3-70ef-492f-b1ad-0c1017eb8b05",
+    "_type" : {
+      "_id" : "ScriptingService",
+      "name" : "ScriptingService",
+      "collection" : false
+    },
+    "createdBy" : "null",
+    "lastModifiedDate" : "0",
+    "lastModifiedBy" : "null",
+    "name" : "RemoveTokenRestriction",
+    "context" : "AUTHENTICATION_TREE_DECISION_NODE",
+    "description" : null,
+    "language" : "GROOVY",
+    "creationDate" : "0",
+    "script" : {
+      "$base64:encode" : {
+        "$inline" : "RemoveTokenRestriction.groovy"
+      }
+    }
+  }
+}

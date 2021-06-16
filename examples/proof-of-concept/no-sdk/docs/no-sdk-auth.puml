@@ -1,0 +1,33 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+participant "Manufacturer" as mn
+participant "Thing" as th
+participant "ForgeRock Platform" as fp
+
+mn -> th : retrieve public key
+th --> mn : public key
+mn -> fp : create identity with public key
+
+th -> th : activate
+th -> fp : authenticate with signed JWT\n(/authenticate endpoint)
+fp -> fp : verify JWT
+fp --> th : return SSO token
+
+th -> fp : get access token using SSO token\n(/things endpoint)
+fp --> th : access token\n(subject = thing ID)
+
+@enduml
