@@ -4,7 +4,7 @@ The ForgeRock Identity Platform can be configured to authenticate and authorize 
 This can be done via the IoT SDK or by using the `authenticate` and `things` endpoints direct. This example will show
 how to use the endpoints directly when the platform is configured for JWT Proof of Possession based authentication.
 
-<img src="docs/no-sdk.png" alt="No SDK flow" width="700"/>
+<img src="docs/no-sdk-auth.png" alt="No SDK flow" width="700"/>
 
 In this scenario a thing is manually registered. It then uses the `authenticate` endpoint to retrieve a session token.
 The session token is then used to request an access token from the `things` endpoint.
@@ -78,7 +78,7 @@ Manually register the thing identity via the platform UI:
 
 Initiate the authentication request:
 ```bash
-authCallback=$(curl --request POST 'https://iot.iam.example.com/am/json/authenticate?authIndexType=service&authIndexValue=AuthenticateThings' \
+authCallback=$(curl --silent --request POST 'https://iot.iam.example.com/am/json/authenticate?authIndexType=service&authIndexValue=AuthenticateThings' \
     --header 'Content-Type: application/json' \
     --header 'Accept-API-Version: resource=2.0, protocol=1.0')
 authId=$(jq -r '.authId' <(echo $authCallback))
@@ -93,7 +93,7 @@ signedJWT=$(./bin/auth-tool -jwt -sub $thingId -kid $keyId -challenge $challenge
 
 Complete the authentication request:
 ```bash
-authResponse=$(curl --request POST 'https://iot.iam.example.com/am/json/authenticate?authIndexType=service&authIndexValue=AuthenticateThings' \
+authResponse=$(curl --silent --request POST 'https://iot.iam.example.com/am/json/authenticate?authIndexType=service&authIndexValue=AuthenticateThings' \
 --header 'Content-Type: application/json' \
 --header 'Accept-API-Version: resource=2.0, protocol=1.0' \
 --data-raw "{
@@ -120,7 +120,7 @@ ssoToken=$(jq -r '.tokenId' <(echo $authResponse))
 
 Request the access token:
 ```bash
-tokenResponse=$(curl --request POST 'https://iot.iam.example.com/am/json/things/*?_action=get_access_token' \
+tokenResponse=$(curl --silent --request POST 'https://iot.iam.example.com/am/json/things/*?_action=get_access_token' \
     --header 'Accept-API-Version: protocol=2.0,resource=1.0' \
     --header 'Content-Type: application/json' \
     --header "Cookie: iPlanetDirectoryPro=${ssoToken}" \
@@ -144,11 +144,28 @@ The `things` endpoint will respond with a standard OAuth 2.0 Access Token Respon
 
 We can also use the `thing` endpoint to introspect the access token:
 ```bash
-curl --request POST 'https://iot.iam.example.com/am/json/things/*?_action=introspect_token' \
+curl --silent --request POST 'https://iot.iam.example.com/am/json/things/*?_action=introspect_token' \
     --header 'Accept-API-Version: protocol=2.0,resource=1.0' \
     --header 'Content-Type: application/json' \
     --header "Cookie: iPlanetDirectoryPro=${ssoToken}" \
     --data-raw "{
         \"token\":\"$accessToken\"
     }" | jq '.'
+```
+```
+{
+  "active": true,
+  "scope": "publish",
+  "realm": "/",
+  "client_id": "forgerock-iot-oauth2-client",
+  "user_id": "my-device",
+  "token_type": "Bearer",
+  "exp": 1623879239,
+  "sub": "my-device",
+  "subname": "my-device",
+  "iss": "https://iot.iam.example.com/am/oauth2",
+  "authGrantId": "nVKF7K3jdx83UqbqmwHZW8hkFz8",
+  "auditTrackingId": "797a92f7-0cb4-4e24-acec-e9229101abe8-1541",
+  "resourceType": "thing"
+}
 ```
