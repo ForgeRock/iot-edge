@@ -105,6 +105,10 @@
                 {
                     "target" : "__NAME__",
                     "source" : "cn"
+                },
+                {
+                    "target" : "publicKey",
+                    "source" : "thingKeys"
                 }
             ],
             "policies" : [
