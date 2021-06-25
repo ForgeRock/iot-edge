@@ -74,10 +74,11 @@ func main() {
 
 	connOpts := mqtt.NewClientOptions().
 		AddBroker(server).
-		SetCleanSession(true)
+		SetCleanSession(true).
+		SetClientID(*thingID)
 
 	connOpts.SetCredentialsProvider(func() (username string, password string) {
-		tokenResponse, err := dynamicThing.RequestAccessToken("publish")
+		tokenResponse, err := dynamicThing.RequestAccessToken("publish", "subscribe")
 		if err != nil {
 			log.Fatal(err)
 		}

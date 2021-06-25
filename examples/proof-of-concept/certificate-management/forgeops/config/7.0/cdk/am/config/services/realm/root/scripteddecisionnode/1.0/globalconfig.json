@@ -1,0 +1,23 @@
+{
+  "metadata" : {
+    "realm" : null,
+    "entityType" : "ScriptedDecisionNode",
+    "entityId" : "GlobalConfig",
+    "uid" : "ou=GlobalConfig,ou=1.0,ou=ScriptedDecisionNode,ou=services,ou=am-config",
+    "sunServiceID" : null,
+    "objectClass" : [
+      "top",
+      "organizationalunit"
+    ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_id" : "GlobalConfig",
+    "_type" : {
+      "_id" : "ScriptedDecisionNode",
+      "name" : "ScriptedDecisionNode",
+      "collection" : false
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "ScriptingService",
+    "entityId" : "default/scriptConfigurations/89ab41a9-2ccc-472f-b476-84c4643decd9",
+    "uid" : "ou=89ab41a9-2ccc-472f-b476-84c4643decd9,ou=scriptConfigurations,ou=default,ou=OrganizationConfig,ou=1.0,ou=ScriptingService,ou=services,ou=am-config",
+    "sunServiceID" : "scriptConfiguration",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : [
+      "89ab41a9-2ccc-472f-b476-84c4643decd9"
+    ]
+  },
+  "data" : {
+    "_id" : "default/scriptConfigurations/89ab41a9-2ccc-472f-b476-84c4643decd9",
+    "_type" : {
+      "_id" : "ScriptingService",
+      "name" : "ScriptingService",
+      "collection" : false
+    },
+    "createdBy" : "null",
+    "lastModifiedDate" : "0",
+    "lastModifiedBy" : "null",
+    "name" : "ThingCertificateRotationCheck",
+    "context" : "AUTHENTICATION_TREE_DECISION_NODE",
+    "description" : null,
+    "language" : "GROOVY",
+    "creationDate" : "0",
+    "script" : {
+      "$base64:encode" : {
+        "$inline" : "ThingCertificateRotationCheck.groovy"
+      }
+    }
+  }
+}
