@@ -48,6 +48,24 @@ cloudiot.provisioner should be sufficient
 
 On creation of a GCP IoT Core connector, IDM will request the service account credentials,
 along with the project id, region and registry id.
+
+#### Using the SDK
+
+The [things](./things) folder contains an example that uses the ForgeRock IoT Golang SDK.
+The example uses a certificate and the SDK to dynamically register a thing identity in the ForgeRock Platform and
+then publish its `state` to GCP IoT Core.
+
+To run the example:
+```
+cd things
+go run cmd/publish-state/main.go  -p projectID -l region -r registryID -n thingName
+```
+Where
+
+* `projectID` = Google Cloud Platform Project ID
+* `region` = IoT Core Region
+* `registryID` = IoT Core Registry ID
+* `thingName` = Thing ID
  
 #### References
 - [ICF Connector Developer's Guide](https://backstage.forgerock.com/docs/idm/7.1/connector-dev-guide/)

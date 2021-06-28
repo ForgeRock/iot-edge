@@ -189,7 +189,6 @@ func registerAndUpdateState() (err error) {
 }
 
 func main() {
-	fmt.Scanln()
 	// pipe debug to standard out
 	thing.DebugLogger().SetOutput(os.Stdout)
 
