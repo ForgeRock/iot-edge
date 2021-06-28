@@ -127,65 +127,69 @@ func registerAndUpdateState() (err error) {
 		AuthenticateThing(opts.Name, opts.Audience, keyID, signer, nil).
 		RegisterThing(certs, nil)
 
-	fmt.Printf("Creating Thing %s in the ForgeRock Platform... ", opts.Name)
+	fmt.Println("--> Register & Authenticate", opts.Name)
 	_, err = builder.Create()
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Done\n")
+	fmt.Println("--> Registered & Authenticated successfully")
 
-	fmt.Printf("Please enter a \"state\" for %s to publish to GCP: ", opts.Name)
-	var input string
-	fmt.Scanln(&input)
-	url := fmt.Sprintf(
-		"https://cloudiotdevice.googleapis.com/v1/projects/%s/locations/%s/registries/%s/devices/%s:setState",
-		opts.ProjectID,
-		opts.Location,
-		opts.RegistryID,
-		opts.Name)
+	for {
+		fmt.Printf("--> Please enter a \"state\" for %s to publish to GCP: ", opts.Name)
+		var input string
+		fmt.Scanln(&input)
+		url := fmt.Sprintf(
+			"https://cloudiotdevice.googleapis.com/v1/projects/%s/locations/%s/registries/%s/devices/%s:setState",
+			opts.ProjectID,
+			opts.Location,
+			opts.RegistryID,
+			opts.Name)
 
-	b := &backoff.Backoff{
-		Min:    time.Second,
-		Max:    20 * time.Second,
-		Jitter: true,
-	}
+		b := &backoff.Backoff{
+			Min:    time.Second,
+			Max:    20 * time.Second,
+			Jitter: true,
+		}
 
-	var request *http.Request
-	var response *http.Response
-	for i := 0; i < 10; i++ {
-		jwt, err := createJWT(opts.ProjectID, signer)
+		var request *http.Request
+		var response *http.Response
+		for i := 0; i < 10; i++ {
+			fmt.Print(".")
+			jwt, err := createJWT(opts.ProjectID, signer)
+			if err != nil {
+				return err
+			}
+
+			request, err = createStateRequest(url, jwt, input)
+			if err != nil {
+				return err
+			}
+			response, err = http.DefaultClient.Do(request)
+			if err == nil && response.StatusCode == http.StatusOK {
+				break
+			}
+			time.Sleep(b.Duration())
+		}
+		fmt.Println()
+
 		if err != nil {
 			return err
+		} else if response.StatusCode != http.StatusOK {
+			if opts.Debug {
+				req, _ := httputil.DumpRequest(request, true)
+				res, _ := httputil.DumpResponse(response, true)
+				fmt.Printf("%s\n\n%s\n\n", req, res)
+			}
+			return fmt.Errorf("unexpected status %v", response.StatusCode)
 		}
-
-		request, err = createStateRequest(url, jwt, input)
-		if err != nil {
-			return err
-		}
-		response, err = http.DefaultClient.Do(request)
-		if err == nil && response.StatusCode == http.StatusOK {
-			break
-		}
-		fmt.Print(".")
-		time.Sleep(b.Duration())
-	}
-	fmt.Println()
-
-	if err != nil {
-		return err
-	} else if response.StatusCode != http.StatusOK {
-		if opts.Debug {
-			req, _ := httputil.DumpRequest(request, true)
-			res, _ := httputil.DumpResponse(response, true)
-			fmt.Printf("%s\n\n%s\n\n", req, res)
-		}
-		return fmt.Errorf("unexpected status %v", response.StatusCode)
+		fmt.Println("--> State published successfully")
 	}
 
 	return nil
 }
 
 func main() {
+	fmt.Scanln()
 	// pipe debug to standard out
 	thing.DebugLogger().SetOutput(os.Stdout)
 
