@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2021 ForgeRock AS. All Rights Reserved
  *
  * Use of this code requires a commercial software license with ForgeRock AS.
  * or with one of its affiliates. All use shall be exclusively subject
@@ -26,8 +26,8 @@ public class GCPIoTCoreConfiguration extends AbstractConfiguration {
     private String registryId;
     private String credentials;
 
-    @ConfigurationProperty(order = 1, displayMessageKey = "projectId.display",
-            groupMessageKey = "basic.group", helpMessageKey = "projectId.help",
+    @ConfigurationProperty(order = 1,
+            groupMessageKey = "basic.group",
             required = true)
     public String getProjectId() {
         return projectId;
@@ -37,8 +37,8 @@ public class GCPIoTCoreConfiguration extends AbstractConfiguration {
         this.projectId = projectId;
     }
 
-    @ConfigurationProperty(order = 2, displayMessageKey = "region.display",
-            groupMessageKey = "basic.group", helpMessageKey = "region.help",
+    @ConfigurationProperty(order = 3,
+            groupMessageKey = "basic.group",
             required = true)
     public String getRegion() {
         return region;
@@ -48,8 +48,8 @@ public class GCPIoTCoreConfiguration extends AbstractConfiguration {
         this.region = region;
     }
 
-    @ConfigurationProperty(order = 3, displayMessageKey = "registryId.display",
-            groupMessageKey = "basic.group", helpMessageKey = "registryId.help",
+    @ConfigurationProperty(order = 2,
+            groupMessageKey = "basic.group",
             required = true)
     public String getRegistryId() {
         return registryId;
@@ -59,8 +59,9 @@ public class GCPIoTCoreConfiguration extends AbstractConfiguration {
         this.registryId = registryId;
     }
 
-    @ConfigurationProperty(order = 4, displayMessageKey = "credentials.display",
-            groupMessageKey = "basic.group", helpMessageKey = "credentials.help",
+    @ConfigurationProperty(order = 4,
+            groupMessageKey = "basic.group",
+            confidential = true,
             required = true)
     public String getCredentials() {
         return credentials;

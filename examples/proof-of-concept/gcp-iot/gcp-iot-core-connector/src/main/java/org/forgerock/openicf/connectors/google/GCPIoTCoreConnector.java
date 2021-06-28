@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2021 ForgeRock AS. All Rights Reserved
  *
  * Use of this code requires a commercial software license with ForgeRock AS.
  * or with one of its affiliates. All use shall be exclusively subject
@@ -8,16 +8,18 @@
 
 package org.forgerock.openicf.connectors.google;
 
+import com.google.api.services.cloudiot.v1.model.*;
+import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.json.jose.jwk.JWKSet;
+import org.forgerock.json.jose.jwk.EcJWK;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.cloudiot.v1.CloudIot;
 import com.google.api.services.cloudiot.v1.CloudIotScopes;
-import com.google.api.services.cloudiot.v1.model.Device;
-import com.google.api.services.cloudiot.v1.model.DeviceConfig;
-import com.google.api.services.cloudiot.v1.model.ModifyCloudToDeviceConfigRequest;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import org.identityconnectors.common.logging.Log;
+import org.identityconnectors.framework.api.operations.CreateApiOp;
 import org.identityconnectors.framework.common.exceptions.ConnectorIOException;
 import org.identityconnectors.framework.common.exceptions.ConnectorSecurityException;
 import org.identityconnectors.framework.common.objects.*;
@@ -30,22 +32,21 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.PublicKey;
 import java.text.SimpleDateFormat;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Main implementation of the Google Cloud Platform IoT Core Connector.
  */
 @ConnectorClass(displayNameKey = "GCPIoTCore.connector.display", configurationClass = GCPIoTCoreConfiguration.class)
-public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp {
+public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, UpdateOp, CreateOp, DeleteOp, CreateApiOp {
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS`Z`");
     private static final AttributeInfo THING_TYPE_ATTR_INFO = AttributeInfoBuilder.build("thingType", String.class);
     private static final AttributeInfo STATUS_ATTR_INFO = AttributeInfoBuilder.build("accountStatus", String.class);
     private static final AttributeInfo THING_CONFIG_ATTR_INFO = AttributeInfoBuilder.build("thingConfig", String.class);
     private static final AttributeInfo UID_ATTR_INFO = AttributeInfoBuilder.build(Uid.NAME, String.class);
+    private static final AttributeInfo KEY_ATTR_INFO = AttributeInfoBuilder.build("publicKey", String.class);
     private static final Attribute THING_TYPE_ATTR = AttributeBuilder.build("thingType", "DEVICE");
     private static final ObjectClass THINGS = new ObjectClass("THINGS");
     private static final Log logger = Log.getLog(GCPIoTCoreConnector.class);
@@ -157,6 +158,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         thingsInfoBuilder.addAttributeInfo(THING_TYPE_ATTR_INFO);
         thingsInfoBuilder.addAttributeInfo(THING_CONFIG_ATTR_INFO);
         thingsInfoBuilder.addAttributeInfo(STATUS_ATTR_INFO);
+        thingsInfoBuilder.addAttributeInfo(KEY_ATTR_INFO);
         builder.defineObjectClass(thingsInfoBuilder.build(), SearchOp.class, SyncOp.class);
         schema = builder.build();
         return schema;
@@ -195,7 +197,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
     private ConnectorObject buildThing(Device device) {
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(THINGS);
-        builder.setUid(device.getId());
+        builder.setUid(device.getNumId().toString());
         builder.setName(device.getId());
         builder.addAttribute(THING_TYPE_ATTR);
 
@@ -225,32 +227,13 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
         isThing(objectClass);
         CloudIot service = getService();
         AttributesAccessor attributesAccessor = new AttributesAccessor(set);
-        if( attributesAccessor.hasAttribute(STATUS_ATTR_INFO.getName())) {
-            updateBlocked(service, uid, attributesAccessor.findString(STATUS_ATTR_INFO.getName()));
-        }
+        // make a single patch call as the API is limited to one call per second
+        patchDevice(service, uid, attributesAccessor);
+
         if( attributesAccessor.hasAttribute(THING_CONFIG_ATTR_INFO.getName())) {
             updateConfig(service, uid, attributesAccessor.findString(THING_CONFIG_ATTR_INFO.getName()));
         }
         return uid;
-    }
-
-    private void updateBlocked(CloudIot service, Uid uid, String accountStatus) throws ConnectorIOException {
-        final String devicePath = getDevicePath(uid.getUidValue());
-        logger.info("update blocked for {0} with account status {1}", devicePath, accountStatus);
-
-        Device thing = new Device().setBlocked(accountStatus.equals("inactive"));
-        try {
-            service.projects()
-                    .locations()
-                    .registries()
-                    .devices()
-                    .patch(devicePath, thing)
-                    .setUpdateMask("blocked")
-                    .execute();
-        } catch (IOException e) {
-            logger.error("Device blocked update failed", e);
-            throw new ConnectorIOException("Device blocked update failed", e);
-        }
     }
 
     private void updateConfig(CloudIot service, Uid uid, String config) {
@@ -281,5 +264,141 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
             throw new ConnectorIOException("Device config update failed", e);
         }
 
+    }
+
+    private void patchDevice(CloudIot service, Uid uid, AttributesAccessor attributesAccessor) throws ConnectorIOException {
+        final String devicePath = getDevicePath(uid.getUidValue());
+        Device thing = new Device();
+        List<String> mask = new ArrayList<>();
+
+        if( attributesAccessor.hasAttribute(STATUS_ATTR_INFO.getName())) {
+            String accountStatus = attributesAccessor.findString(STATUS_ATTR_INFO.getName());
+            logger.info("update blocked for {0} with account status {1}", devicePath, accountStatus);
+            thing.setBlocked(accountStatus.equals("inactive"));
+            mask.add("blocked");
+        }
+        if (attributesAccessor.hasAttribute(KEY_ATTR_INFO.getName())) {
+            String pem = convertJWKToPEM(attributesAccessor.findString(KEY_ATTR_INFO.getName()));
+            if( pem != null ){
+                PublicKeyCredential publicKeyCredential = new PublicKeyCredential();
+                publicKeyCredential.setKey(pem);
+                publicKeyCredential.setFormat("ES256_PEM");
+
+                DeviceCredential devCredential = new DeviceCredential();
+                devCredential.setPublicKey(publicKeyCredential);
+
+                thing.setCredentials(Collections.singletonList(devCredential));
+                mask.add("credentials");
+            }
+        }
+        if(!mask.isEmpty()){
+            try {
+                service.projects()
+                        .locations()
+                        .registries()
+                        .devices()
+                        .patch(devicePath, thing)
+                        .setUpdateMask(String.join(",", mask))
+                        .execute();
+            } catch (IOException e) {
+                logger.error("Device patch failed", e);
+                throw new ConnectorIOException("Device patch failed", e);
+            }
+        }
+    }
+
+    private String convertJWKToPEM(String jwkString){
+        List<JWK> jwkList = JWKSet.parse(jwkString).getJWKsAsList();
+        if (jwkList.size() != 1) {
+            logger.error("{0} keys are unsupported", jwkList.size());
+            return null;
+        }
+        JWK key = jwkList.get(0);
+        if (key instanceof EcJWK) {
+                PublicKey pub = ((EcJWK) key).toPublicKey();
+                byte[] data = pub.getEncoded();
+                return "-----BEGIN PUBLIC KEY-----\n" +
+                        new String(Base64.getEncoder().encode(data)) +
+                        "\n-----END PUBLIC KEY-----";
+        } else {
+            logger.error("confirmation key is of an unsupported type: {}", key.toString());
+            return null;
+
+        }
+    }
+
+    @Override
+    public Uid create(ObjectClass objectClass, Set<Attribute> set, OperationOptions operationOptions) {
+        isThing(objectClass);
+        AttributesAccessor attributesAccessor = new AttributesAccessor(set);
+
+        // Assume that the device's user id has been mapped to __NAME__.
+        // As stated in the docs "There will never be a Uid passed in with the attribute set for this method"
+        Name name = attributesAccessor.getName();
+        if( name == null ) {
+            logger.error("Missing Name");
+            throw new ConnectorIOException("Missing Name");
+        }
+        String id = name.getNameValue();
+        logger.info("Creating device {0}", id);
+
+        CloudIot service = getService();
+        Device device = new Device();
+        device.setId(id);
+
+        if (attributesAccessor.hasAttribute(KEY_ATTR_INFO.getName())) {
+            String pem = convertJWKToPEM(attributesAccessor.findString(KEY_ATTR_INFO.getName()));
+            if (pem != null) {
+                PublicKeyCredential publicKeyCredential = new PublicKeyCredential();
+                publicKeyCredential.setKey(pem);
+                publicKeyCredential.setFormat("ES256_PEM");
+
+                DeviceCredential devCredential = new DeviceCredential();
+                devCredential.setPublicKey(publicKeyCredential);
+
+                device.setCredentials(Collections.singletonList(devCredential));
+            }
+        }
+
+        try {
+             device = service.projects()
+                    .locations()
+                    .registries()
+                    .devices()
+                    .create(getRegistryPath(), device)
+                    .execute();
+            logger.info("Device {0} was successfully created and assigned numeric ID {1}",
+                    device.getName(),
+                    device.getNumId().toString());
+            // UID can be either the user-defined device identifier or the numeric ID assigned by IoT Core.
+            // Both can be used to construct the device path in GCP IoT Core
+            return new Uid(device.getNumId().toString());
+        } catch (IOException e) {
+            logger.error("Device create failed", e);
+            throw new ConnectorIOException("Device create failed", e);
+        }
+    }
+
+    @Override
+    public void delete(ObjectClass objectClass, Uid uid, OperationOptions operationOptions) {
+        if (uid == null) {
+            throw new IllegalArgumentException("Uid cannot be null");
+        }
+        String devicePath = getDevicePath(uid.getUidValue());
+        logger.info("Deleting device {0}", devicePath);
+
+        CloudIot service = getService();
+        try {
+            service.projects()
+                    .locations()
+                    .registries()
+                    .devices()
+                    .delete(devicePath)
+                    .execute();
+        } catch (IOException e) {
+            logger.error("Device delete failed", e);
+            throw new ConnectorIOException("Device delete failed", e);
+        }
+        logger.info("Device {0} deleted", devicePath);
     }
 }

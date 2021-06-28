@@ -30,7 +30,7 @@ echo "====================================================="
 cd gcp-iot-core-connector
 mvn clean install
 rm -rf ../forgeops/docker/7.0/idm/connectors && mkdir -p ../forgeops/docker/7.0/idm/connectors
-cp target/gcp-iot-core-connector-0.1-SNAPSHOT.jar ../forgeops/docker/7.0/idm/connectors/gcp-iot-core-connector-0.1-SNAPSHOT.jar
+cp target/gcp-iot-core-connector-0.1.jar ../forgeops/docker/7.0/idm/connectors/gcp-iot-core-connector-0.1.jar
 
 echo "====================================================="
 echo "Run ForgeOps CDK"
