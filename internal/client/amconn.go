@@ -1,7 +1,7 @@
 // +build !coap,!http http
 
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -362,7 +362,8 @@ func (c *amConnection) AccessToken(tokenID string, content ContentType, payload 
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeRequest(tokenID, content, request)
+	request.Header.Set(httpContentType, string(content))
+	return c.makeRequest(tokenID, request)
 }
 
 // introspectAccessTokenLocally tries to introspect an access token locally
@@ -438,7 +439,8 @@ func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return introspection, err
 	}
-	introspection, err = c.makeRequest(tokenID, content, request)
+	request.Header.Set(httpContentType, string(content))
+	introspection, err = c.makeRequest(tokenID, request)
 	if err == nil {
 		return introspection, err
 	}
@@ -449,12 +451,15 @@ func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType
 
 // attributes makes a thing attributes request with the given session token and payload
 func (c *amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
-	request, err := http.NewRequest(http.MethodGet, c.attributesURL(names), strings.NewReader(payload))
+	request, err := http.NewRequest(http.MethodGet, c.attributesURL(names), nil)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeRequest(tokenID, content, request)
+	if content == ApplicationJOSE {
+		request.Header.Add("PoP-Token", payload)
+	}
+	return c.makeRequest(tokenID, request)
 }
 
 // UserCode makes a user code request with the given session token and payload
@@ -464,7 +469,8 @@ func (c *amConnection) UserCode(tokenID string, content ContentType, payload str
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeRequest(tokenID, content, request)
+	request.Header.Set(httpContentType, string(content))
+	return c.makeRequest(tokenID, request)
 }
 
 // UserToken makes a user token request with the given session token and payload
@@ -474,12 +480,12 @@ func (c *amConnection) UserToken(tokenID string, content ContentType, payload st
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return nil, err
 	}
-	return c.makeRequest(tokenID, content, request)
+	request.Header.Set(httpContentType, string(content))
+	return c.makeRequest(tokenID, request)
 }
 
-func (c *amConnection) makeRequest(tokenID string, content ContentType, request *http.Request) ([]byte, error) {
+func (c *amConnection) makeRequest(tokenID string, request *http.Request) ([]byte, error) {
 	request.Header.Set(acceptAPIVersion, thingsEndpointVersion)
-	request.Header.Set(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	response, err := c.Do(request)
 	if err != nil {
