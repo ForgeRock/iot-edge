@@ -21,6 +21,8 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"math/big"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
@@ -45,4 +47,13 @@ func PublicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
 		PrivateKey:  key,
 		Leaf:        &template,
 	}, nil
+}
+
+func ParsePEM(block *pem.Block) (crypto.Signer, error)  {
+	switch block.Type {
+	case "EC PRIVATE KEY":
+		return x509.ParseECPrivateKey(block.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported type '%s'", block.Type)
+	}
 }
