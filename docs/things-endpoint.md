@@ -1,3 +1,7 @@
+# Things Endpoint
+
+## Restricted Token
+
 Setup:
 ```bash
 baseURL=https://iot.iam.forgeops.com/am
@@ -134,10 +138,50 @@ userTokenResponse=$(curl \
     --data "$jwt" \
     "$baseURL/json/things/*?_action=get_user_token&realm=/")
 
+refreshToken=$(echo "$userTokenResponse" | jq -r '.refresh_token')
 echo "$userTokenResponse" | jq '.'
 ```
 
-# Unrestricted
+Get new User Token with Refresh Token
+Note: using the `get_access_token` action.
+```bash
+jwt=$(things-jwt \
+    -u "$baseURL/json/things/*?_action=get_access_token&realm=/" \
+    -k "$keyfile" \
+    --custom "{\"scope\":[\"profile\"],\"refresh_token\":\"$refreshToken\"}")
+
+userTokenResponse=$(curl \
+    --silent \
+    --header 'accept-api-version: protocol=2.0,resource=1.0' \
+    --header 'content-type: application/jose' \
+    --cookie "iPlanetDirectoryPro=${ssoToken}" \
+    --request POST \
+    --data "$jwt" \
+    "${baseURL}/json/things/*?_action=get_access_token&realm=/")
+
+userToken=$(echo "$userTokenResponse" | jq -r '.access_token')
+echo "$userTokenResponse" | jq '.'
+```
+
+Introspect User Token
+```bash
+jwt=$(things-jwt \
+    -u "$baseURL/json/things/*?_action=introspect_token&realm=/" \
+    -k "$keyfile" \
+    --custom "{\"token\":\"$userToken\"}")
+
+introspection=$(curl \
+    --silent \
+    --header 'accept-api-version: protocol=2.0,resource=1.0' \
+    --header 'content-type: application/jose' \
+    --cookie "iPlanetDirectoryPro=$ssoToken" \
+    --request POST \
+    --data "$jwt" \
+    "$baseURL/json/things/*?_action=introspect_token&realm=/")
+
+echo "$introspection" | jq '.'
+
+## Unrestricted Token
 
 Set constants
 ```bash
@@ -227,5 +271,35 @@ userTokenResponse=$(curl \
     --data "{\"device_code\":\"$deviceCode\"}" \
     "$baseURL/json/things/*?_action=get_user_token&realm=/")
 
+refreshToken=$(echo "$userTokenResponse" | jq -r '.refresh_token')
 echo "$userTokenResponse" | jq '.'
 ```
+
+Get new User Token with Refresh Token
+Note: using the `get_access_token` action.
+```bash
+userTokenResponse=$(curl \
+    --silent \
+    --header 'accept-api-version: protocol=2.0,resource=1.0' \
+    --header 'content-type: application/json' \
+    --cookie "iPlanetDirectoryPro=${ssoToken}" \
+    --request POST \
+    --data "{\"scope\":[\"profile\"],\"refresh_token\":\"$refreshToken\"}" \
+    "${baseURL}/json/things/*?_action=get_access_token&realm=/")
+
+userToken=$(echo "$userTokenResponse" | jq -r '.access_token')
+echo "$userTokenResponse" | jq '.'
+```
+
+Introspect User Token
+```bash
+introspection=$(curl \
+    --silent \
+    --header 'accept-api-version: protocol=2.0,resource=1.0' \
+    --header 'content-type: application/json' \
+    --cookie "iPlanetDirectoryPro=$ssoToken" \
+    --request POST \
+    --data "{\"token\":\"$userToken\"}" \
+    "$baseURL/json/things/*?_action=introspect_token&realm=/")
+
+echo "$introspection" | jq '.'
