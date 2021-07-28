@@ -62,6 +62,9 @@ func main() {
 				},
 			},
 		})
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = ioutil.WriteFile(opts.Out, jwks, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
