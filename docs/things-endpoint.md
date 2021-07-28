@@ -2,14 +2,14 @@
 
 ## Overview
 
-AM provides REST APIs under /json/things for the following use cases:
+AM provides REST APIs under`/json/things/*` for the following use cases:
 
 * [Get the attributes of a Thing](#Get-the-attributes-of-a-Thing)
-* [Obtain an OAuth 2.0 Access Token](#Obtain-an-OAuth-2.0-Access-Token)
-* [Introspect an OAuth 2.0 Access Token](#Introspect-an-OAuth-2.0-Access-Token)
-* [Obtain an OAuth 2.0 User Code](#Obtain-an-OAuth-2.0-User-Code)
-* [Obtain an OAuth 2.0 User Token](#Obtain-an-OAuth-2.0-User-Token)
-* [Refresh an OAuth 2.0 User Token](#Refresh-an-OAuth-2.0-User-Token)
+* [Obtain an OAuth 2.0 Access Token](#Obtain-an-OAuth-20-Access-Token)
+* [Introspect an OAuth 2.0 Access Token](#Introspect-an-OAuth-20-Access-Token)
+* [Obtain an OAuth 2.0 User Code](#Obtain-an-OAuth-20-User-Code)
+* [Obtain an OAuth 2.0 User Token](#Obtain-an-OAuth-20-User-Token)
+* [Refresh an OAuth 2.0 User Token](#Refresh-an-OAuth-20-User-Token)
 
 To use the endpoint, a Thing must be in prosession of a valid session token (SSO Token). How a request to AM is constructed is dependant on the type of SSO token it has received from AM:
 
