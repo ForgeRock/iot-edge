@@ -6,7 +6,7 @@ AM provides REST APIs under`/json/things/*` for the following use cases:
 
 * [Get the attributes of a Thing](#Get-the-attributes-of-a-Thing)
 * [Obtain an OAuth 2.0 Access Token](#Obtain-an-OAuth-20-Access-Token)
-* [Introspect an OAuth 2.0 Access Token](#Introspect-an-OAuth-20-Access-Token)
+* [Token Introspection](#Token-Introspection)
 * [Obtain an OAuth 2.0 User Code](#Obtain-an-OAuth-20-User-Code)
 * [Obtain an OAuth 2.0 User Token](#Obtain-an-OAuth-20-User-Token)
 * [Refresh an OAuth 2.0 User Token](#Refresh-an-OAuth-20-User-Token)
@@ -30,7 +30,7 @@ The JWT Claims Set will vary depending on the Things Endpoint action but will ma
 
 ## Get the attributes of a Thing
 
-To obtain the readable attributes of a Thing, perform an HTTP GET to the `/json/things/*` endpoint, without an action. Use the optional `_fields` parameter to filter the readable attributes. Which attributes that are classed as readable are specified in the [IoT Service](https://backstage.forgerock.com/docs/am/7.1/reference/global-services-configuration.html#global-iot).
+To obtain the readable attributes of a Thing, perform an HTTP GET to the `/json/things/*` endpoint, without an action. Use the optional `_fields` parameter to filter the readable attributes. The [IoT Service](https://backstage.forgerock.com/docs/am/7.1/reference/global-services-configuration.html#global-iot) specifies which attributes are readable.
 
 ### Request Headers
 
@@ -63,7 +63,7 @@ To obtain an OAuth 2.0 Access Token for a Thing, perform an HTTP POST to the `/j
 
 ### JSON payload
 
-Optional array of scopes requested by the Thing. If no scopes are specified then the default scopes of the associated OAuth 2.0 client are returned. If the Thing has no associated OAuth 2.0 client, then the default OAuth 2.0 client as defined in the [IoT Service OAuth 2.0 Client Name](https://ea.forgerock.com/docs/am/reference/global-services-configuration.html#global-iot).
+* scope - Optional. Array of scopes requested by the Thing. If no scopes are specified then the default scopes of the associated OAuth 2.0 client are returned. If the Thing has no associated OAuth 2.0 client, then the default OAuth 2.0 client as defined in the [IoT Service OAuth 2.0 Client Name](https://ea.forgerock.com/docs/am/reference/global-services-configuration.html#global-iot) is used.
 
 ```
 {
@@ -77,9 +77,9 @@ Optional array of scopes requested by the Thing. If no scopes are specified then
 * [Get Access Token with Unrestricted SSO Token](#Get-Access-Token-with-Unrestricted-SSO-Token)
 
 
-## Introspect an OAuth 2.0 Access Token
+## Token Introspection
 
-To introspect an OAuth 2.0 Access Token for a Thing, perform an HTTP POST to the `/json/things/*` endpoint, using the `introspect_token` action.
+To [introspect](https://datatracker.ietf.org/doc/html/rfc7662) an OAuth 2.0 Access or Refresh Token, perform an HTTP POST to the `/json/things/*` endpoint, using the `introspect_token` action.
 
 ### Request Headers
 
@@ -90,6 +90,8 @@ To introspect an OAuth 2.0 Access Token for a Thing, perform an HTTP POST to the
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
 ### JSON payload
+
+* token - Required. Token value of the access or refresh token.
 
 ```
 {
@@ -104,7 +106,7 @@ To introspect an OAuth 2.0 Access Token for a Thing, perform an HTTP POST to the
 
 ## Obtain an OAuth 2.0 User Code
 
-To obtain an User Code for the OAuth 2.0 Device Authorization Grant, perform an HTTP POST to the `/json/things/*` endpoint, using the `get_user_code` action.
+To obtain an User Code as part of the the OAuth 2.0 [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628), perform an HTTP POST to the `/json/things/*` endpoint, using the `get_user_code` action.
 
 ### Request Headers
 
@@ -116,7 +118,7 @@ To obtain an User Code for the OAuth 2.0 Device Authorization Grant, perform an 
 
 ### JSON payload
 
-Optional array of scopes requested by the Thing. If no scopes are specified then the default scopes of the associated OAuth 2.0 client are returned. If the Thing has no associated OAuth 2.0 client, then the default OAuth 2.0 client as defined in the [IoT Service OAuth 2.0 Client Name](https://ea.forgerock.com/docs/am/reference/global-services-configuration.html#global-iot).
+* scope - Optional. Array of scopes requested by the Thing. If no scopes are specified then the default scopes of the associated OAuth 2.0 client are returned. If the Thing has no associated OAuth 2.0 client, then the default OAuth 2.0 client as defined in the [IoT Service OAuth 2.0 Client Name](https://ea.forgerock.com/docs/am/reference/global-services-configuration.html#global-iot) is used.
 
 ```
 {
@@ -131,7 +133,7 @@ Optional array of scopes requested by the Thing. If no scopes are specified then
 
 ## Obtain an OAuth 2.0 User Token
 
-To obtain an User Token as part of the the OAuth 2.0 Device Authorization Grant, perform an HTTP POST to the `/json/things/*` endpoint, using the `get_user_token` action.
+To obtain an User Token as part of the the OAuth 2.0 [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628), perform an HTTP POST to the `/json/things/*` endpoint, using the `get_user_token` action.
 
 ### Request Headers
 
@@ -142,6 +144,8 @@ To obtain an User Token as part of the the OAuth 2.0 Device Authorization Grant,
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
 ### JSON payload
+
+* device_code - Required. Device Code returned in a OAuth 2.0 device code response.
 
 ```
 {
@@ -168,9 +172,8 @@ To obtain an new User Token by exchanging a Refresh Token, perform an HTTP POST 
 
 ### JSON payload
 
-Required refresh token.
-
-Optional array of scopes requested by the Thing.
+* refresh_token - Required. String value of refresh token.
+* scope - Optional. Array of scopes requested by the Thing.
 
 ```
 {
@@ -181,18 +184,40 @@ Optional array of scopes requested by the Thing.
 
 ### Examples
 
-* [Get new User Token with Refresh Token with Restricted SSO Token](#Get-new-User-Token-with-Refresh-Token-with-Restricted-SSO-Token)
-* [Get new User Token with Refresh Token with Unrestricted SSO Token](#Get-new-User-Token-with-Refresh-Token-with-Unrestricted-SSO-Token)
+* [Get new User Token with Refresh Token and Restricted SSO Token](#Get-new-User-Token-with-Refresh-Token-and-Restricted-SSO-Token)
+* [Get new User Token with Refresh Token and Unrestricted SSO Token](#Get-new-User-Token-with-Refresh-Token-and-Unrestricted-SSO-Token)
 
 ## Example cURL requests with a Restricted SSO Token
 
-### Setup
-```bash
-baseURL=https://iot.iam.forgeops.com/am
-thingId=bot
-tree=RegisterThings
-keyfile=./ec_private.pem
-```
+### Prerequisites
+
+1. Install the following command-line tools:
+    * curl
+    * [jq](https://stedolan.github.io/jq/)
+    * [go](https://golang.org/)
+    * [git](https://git-scm.com/)
+1. Build and install the jwt utilities in [iot-edge](https://github.com/ForgeRock/iot-edge):
+
+    ```bash
+    git clone https://github.com/ForgeRock/iot-edge.git
+    cd iot-edge
+    git checkout release/v7.1.0
+    go install ./cmd/auth-jwt ./cmd/things-jwt
+    ```
+
+1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
+1. Create a Thing identity as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/register-identities.html).
+1. Create a human user with a password.
+1. Set `amURL` to the base URL of your AM instance and `thingId` to the name of your Thing. Set `tree` to the authentication tree containing an `Authenticate Thing node` and `keyfile` to the example private key in `iot-edge/examples/resources/eckey1.key.pem`. For example:
+    ```bash
+    amURL=http://am.localtest.me:8080/openam
+    thingId=thingymabot
+    tree=auth-tree
+    keyfile=path/to/iot-edge/examples/resources/eckey1.key.pem
+
+    ```
+
+### Authenticate the Thing
 
 ```bash
 # Initiate the authentication request:
@@ -201,7 +226,7 @@ authCallback=$(curl \
     --header 'Accept-API-Version: resource=2.0, protocol=1.0' \
     --header 'Content-Type: application/json' \
     --request POST \
-    "$baseURL/json/authenticate?authIndexType=service&authIndexValue=$tree")
+    "$amURL/json/authenticate?authIndexType=service&authIndexValue=$tree")
 
 # Extract challenge:
 challenge=$(echo "$authCallback" | \
@@ -209,7 +234,7 @@ challenge=$(echo "$authCallback" | \
 
 
 # Create the signed authentication JWT:
-signedJWT=$(auth-jwt -a "/" -s "$thingId" -kid test -c "$challenge" --key "$keyfile")
+signedJWT=$(auth-jwt -a "/" -s "$thingId" -c "$challenge" --key "$keyfile")
 
 # Modify callback:
 authCallback=$(echo "$authCallback" | \
@@ -222,7 +247,7 @@ authResponse=$(curl \
     --header 'Content-Type: application/json' \
     --request POST \
     --data "$authCallback" \
-    "$baseURL/json/authenticate?authIndexType=service&authIndexValue=$tree")
+    "$amURL/json/authenticate?authIndexType=service&authIndexValue=$tree")
 
 ssoToken=$(jq -r '.tokenId' <(echo $authResponse))
 echo "${ssoToken}"
@@ -232,7 +257,7 @@ echo "${ssoToken}"
 
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?realm=/&_fields=thingConfig" \
+    -u "$amURL/json/things/*?realm=/&_fields=thingConfig" \
     -k "$keyfile" )
 
 attributes=$(curl \
@@ -242,7 +267,7 @@ attributes=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request GET \
     --data "$jwt" \
-    "$baseURL/json/things/*?realm=/&_fields=thingConfig")
+    "$amURL/json/things/*?realm=/&_fields=thingConfig")
 
 echo "$attributes" | jq '.'
 ```
@@ -251,9 +276,9 @@ echo "$attributes" | jq '.'
 
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?_action=get_access_token&realm=/" \
+    -u "$amURL/json/things/*?_action=get_access_token&realm=/" \
     -k "$keyfile" \
-    --custom '{"scope":["profile"]}')
+    --custom '{"scope":["publish"]}')
 
 accessTokenResponse=$(curl \
     --silent \
@@ -262,7 +287,7 @@ accessTokenResponse=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "$jwt" \
-    "$baseURL/json/things/*?_action=get_access_token&realm=/")
+    "$amURL/json/things/*?_action=get_access_token&realm=/")
 
 accessToken=$(echo "$accessTokenResponse" | jq -r '.access_token')
 echo "$accessTokenResponse" | jq '.'
@@ -272,7 +297,7 @@ echo "$accessTokenResponse" | jq '.'
 
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?_action=introspect_token&realm=/" \
+    -u "$amURL/json/things/*?_action=introspect_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"token\":\"$accessToken\"}")
 
@@ -283,7 +308,7 @@ introspection=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "$jwt" \
-    "$baseURL/json/things/*?_action=introspect_token&realm=/")
+    "$amURL/json/things/*?_action=introspect_token&realm=/")
 
 echo "$introspection" | jq '.'
 ```
@@ -292,9 +317,9 @@ echo "$introspection" | jq '.'
 
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?_action=get_user_code&realm=/" \
+    -u "$amURL/json/things/*?_action=get_user_code&realm=/" \
     -k "$keyfile" \
-    --custom '{"scope":["profile"]}')
+    --custom '{"scope":["publish"]}')
 
 userCodeResponse=$(curl \
     --silent \
@@ -303,17 +328,18 @@ userCodeResponse=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "$jwt" \
-    "$baseURL/json/things/*?_action=get_user_code&realm=/")
+    "$amURL/json/things/*?_action=get_user_code&realm=/")
 
 deviceCode=$(echo "$userCodeResponse" | jq -r '.device_code')
-echo "$userCodeResponse" | jq -r '.verification_uri_complete'
+verifyURI=$(echo "${userCodeResponse}" | jq -r '.verification_uri_complete')
+echo "Visit $verifyURI and authenticate and authorise as the human user"
 ```
 
 ### Get User Token with Restricted SSO Token
 
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?_action=get_user_token&realm=/" \
+    -u "$amURL/json/things/*?_action=get_user_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"device_code\":\"$deviceCode\"}")
 
@@ -325,20 +351,20 @@ userTokenResponse=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "$jwt" \
-    "$baseURL/json/things/*?_action=get_user_token&realm=/")
+    "$amURL/json/things/*?_action=get_user_token&realm=/")
 
 refreshToken=$(echo "$userTokenResponse" | jq -r '.refresh_token')
 echo "$userTokenResponse" | jq '.'
 ```
 
-### Get new User Token with Refresh Token with Restricted SSO Token
+### Get new User Token with Refresh Token and Restricted SSO Token
 
 Note: using the `get_access_token` action.
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?_action=get_access_token&realm=/" \
+    -u "$amURL/json/things/*?_action=get_access_token&realm=/" \
     -k "$keyfile" \
-    --custom "{\"scope\":[\"profile\"],\"refresh_token\":\"$refreshToken\"}")
+    --custom "{\"scope\":[\"publish\"],\"refresh_token\":\"$refreshToken\"}")
 
 userTokenResponse=$(curl \
     --silent \
@@ -347,17 +373,17 @@ userTokenResponse=$(curl \
     --cookie "iPlanetDirectoryPro=${ssoToken}" \
     --request POST \
     --data "$jwt" \
-    "${baseURL}/json/things/*?_action=get_access_token&realm=/")
+    "${amURL}/json/things/*?_action=get_access_token&realm=/")
 
 userToken=$(echo "$userTokenResponse" | jq -r '.access_token')
 echo "$userTokenResponse" | jq '.'
 ```
 
-### Introspect a User Token with Refresh Token with Restricted SSO Token
+### Introspect a User Token with Restricted SSO Token
 
 ```bash
 jwt=$(things-jwt \
-    -u "$baseURL/json/things/*?_action=introspect_token&realm=/" \
+    -u "$amURL/json/things/*?_action=introspect_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"token\":\"$userToken\"}")
 
@@ -368,21 +394,28 @@ introspection=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "$jwt" \
-    "$baseURL/json/things/*?_action=introspect_token&realm=/")
+    "$amURL/json/things/*?_action=introspect_token&realm=/")
 
 echo "$introspection" | jq '.'
 ```
 ## Example cURL requests with a Unrestricted SSO Token
 
-### Setup
+### Prerequisites
 
-```bash
-baseURL=https://iot.iam.forgeops.com/am
-thingId=bot
-thingPassword=Password1
-```
+1. Install the following command-line tools:
+    * curl
+    * [jq](https://stedolan.github.io/jq/)
+1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
+1. Create a Thing identity as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/register-identities.html).
+1. Create a human user with a password.
+1. Set `amURL` to the base URL of your AM instance and `thingId` and `thingPassword` to the name and password for your Thing respectively. For example:
+    ```bash
+    amURL=http://am.localtest.me:8080/openam
+    thingId=thingymabot
+    thingPassword=5tr0ngG3n3r@ted
+    ```
 
-Authenticate
+### Authenticate the Thing
 
 ```bash
 authResponse=$(curl \
@@ -404,7 +437,7 @@ attributes=$(curl \
     --header 'accept-api-version: protocol=2.0,resource=1.0' \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request GET \
-    "$baseURL/json/things/*?realm=/&_fields=thingConfig")
+    "$amURL/json/things/*?realm=/&_fields=thingConfig")
 
 echo "$attributes" | jq '.'
 ```
@@ -418,8 +451,8 @@ accessTokenResponse=$(curl \
     --header 'content-type: application/json' \
     --cookie "iPlanetDirectoryPro=${ssoToken}" \
     --request POST \
-    --data '{"scope":["profile"]}' \
-    "${baseURL}/json/things/*?_action=get_access_token&realm=/")
+    --data '{"scope":["publish"]}' \
+    "${amURL}/json/things/*?_action=get_access_token&realm=/")
 
 accessToken=$(echo "$accessTokenResponse" | jq -r '.access_token')
 echo "$accessTokenResponse" | jq '.'
@@ -435,7 +468,7 @@ introspection=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "{\"token\":\"$accessToken\"}" \
-    "$baseURL/json/things/*?_action=introspect_token&realm=/")
+    "$amURL/json/things/*?_action=introspect_token&realm=/")
 
 echo "$introspection" | jq '.'
 ```
@@ -449,11 +482,12 @@ userCodeResponse=$(curl \
     --header 'content-type: application/json' \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
-    --data '{"scope":["profile"]}' \
-    "$baseURL/json/things/*?_action=get_user_code&realm=/")
+    --data '{"scope":["publish"]}' \
+    "$amURL/json/things/*?_action=get_user_code&realm=/")
 
 deviceCode=$(echo "$userCodeResponse" | jq -r '.device_code')
-echo "${userCodeResponse}" | jq -r '.verification_uri_complete'
+verifyURI=$(echo "${userCodeResponse}" | jq -r '.verification_uri_complete')
+echo "Visit $verifyURI and authenticate and authorise as the human user"
 ```
 
 ### Get User Token with Unrestricted SSO Token
@@ -466,13 +500,13 @@ userTokenResponse=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "{\"device_code\":\"$deviceCode\"}" \
-    "$baseURL/json/things/*?_action=get_user_token&realm=/")
+    "$amURL/json/things/*?_action=get_user_token&realm=/")
 
 refreshToken=$(echo "$userTokenResponse" | jq -r '.refresh_token')
 echo "$userTokenResponse" | jq '.'
 ```
 
-### Get new User Token with Refresh Token with Unrestricted SSO Token
+### Get new User Token with Refresh Token and Unrestricted SSO Token
 
 Note: using the `get_access_token` action.
 
@@ -483,14 +517,14 @@ userTokenResponse=$(curl \
     --header 'content-type: application/json' \
     --cookie "iPlanetDirectoryPro=${ssoToken}" \
     --request POST \
-    --data "{\"scope\":[\"profile\"],\"refresh_token\":\"$refreshToken\"}" \
-    "${baseURL}/json/things/*?_action=get_access_token&realm=/")
+    --data "{\"scope\":[\"publish\"],\"refresh_token\":\"$refreshToken\"}" \
+    "${amURL}/json/things/*?_action=get_access_token&realm=/")
 
 userToken=$(echo "$userTokenResponse" | jq -r '.access_token')
 echo "$userTokenResponse" | jq '.'
 ```
 
-### Introspect a User Token with Refresh Token with Unrestricted SSO Token
+### Introspect a User Token with Unrestricted SSO Token
 
 ```bash
 introspection=$(curl \
@@ -500,6 +534,6 @@ introspection=$(curl \
     --cookie "iPlanetDirectoryPro=$ssoToken" \
     --request POST \
     --data "{\"token\":\"$userToken\"}" \
-    "$baseURL/json/things/*?_action=introspect_token&realm=/")
+    "$amURL/json/things/*?_action=introspect_token&realm=/")
 
 echo "$introspection" | jq '.'

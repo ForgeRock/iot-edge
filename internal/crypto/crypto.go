@@ -51,6 +51,12 @@ func PublicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
 
 func ParsePEM(block *pem.Block) (crypto.Signer, error)  {
 	switch block.Type {
+	case "PRIVATE KEY":
+		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		return privateKey.(crypto.Signer), nil
 	case "EC PRIVATE KEY":
 		return x509.ParseECPrivateKey(block.Bytes)
 	default:

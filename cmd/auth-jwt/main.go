@@ -76,6 +76,7 @@ type commandlineOpts struct {
 	Audience  string `short:"a" long:"audience" required:"true" description:"Audience, usually the realm"`
 	Challenge string `short:"c" long:"challenge" required:"true" description:"Challenge"`
 	Keyfile   string `short:"k" long:"key" required:"true" description:"Private Key PEM"`
+	KID       string `long:"kid" default:"pop.cnf" description:"Key ID"`
 }
 
 func main() {
@@ -100,7 +101,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	signedJWT, err := authJWT(signer, opts.Subject, opts.Audience, "test", opts.Challenge)
+	signedJWT, err := authJWT(signer, opts.Subject, opts.Audience, opts.KID, opts.Challenge)
 	if err != nil {
 		log.Fatal(err)
 	}
