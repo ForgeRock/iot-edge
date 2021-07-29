@@ -36,7 +36,7 @@ To obtain the readable attributes of a Thing, perform an HTTP GET to the `/json/
 
 | Header | Value |
 | --- | ----------- |
-| `Accept-API-Version` | `resource=2.0, protocol=1.0` |
+| `Accept-API-Version` | `resource=1.0, protocol=2.0` |
 | `Content-Type` | `application/json` or `application/jose` |
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
@@ -57,7 +57,7 @@ To obtain an OAuth 2.0 Access Token for a Thing, perform an HTTP POST to the `/j
 
 | Header | Value |
 | --- | ----------- |
-| `Accept-API-Version` | `resource=2.0, protocol=1.0` |
+| `Accept-API-Version` | `resource=1.0, protocol=2.0` |
 | `Content-Type` | `application/json` or `application/jose` |
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
@@ -85,7 +85,7 @@ To [introspect](https://datatracker.ietf.org/doc/html/rfc7662) an OAuth 2.0 Acce
 
 | Header | Value |
 | --- | ----------- |
-| `Accept-API-Version` | `resource=2.0, protocol=1.0` |
+| `Accept-API-Version` | `resource=1.0, protocol=2.0` |
 | `Content-Type` | `application/json` or `application/jose` |
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
@@ -112,7 +112,7 @@ To obtain an User Code as part of the the OAuth 2.0 [Device Authorization Grant]
 
 | Header | Value |
 | --- | ----------- |
-| `Accept-API-Version` | `resource=2.0, protocol=1.0` |
+| `Accept-API-Version` | `resource=1.0, protocol=2.0` |
 | `Content-Type` | `application/json` or `application/jose` |
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
@@ -133,19 +133,19 @@ To obtain an User Code as part of the the OAuth 2.0 [Device Authorization Grant]
 
 ## Obtain an OAuth 2.0 User Token
 
-To obtain an User Token as part of the the OAuth 2.0 [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628), perform an HTTP POST to the `/json/things/*` endpoint, using the `get_user_token` action.
+To obtain a User Token as part of the the OAuth 2.0 [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628), perform an HTTP POST to the `/json/things/*` endpoint, using the `get_user_token` action.
 
 ### Request Headers
 
 | Header | Value |
 | --- | ----------- |
-| `Accept-API-Version` | `resource=2.0, protocol=1.0` |
+| `Accept-API-Version` | `resource=1.0, protocol=2.0` |
 | `Content-Type` | `application/json` or `application/jose` |
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
 ### JSON payload
 
-* device_code - Required. Device Code returned in a OAuth 2.0 device code response.
+* device_code - Required. Device Code returned in an OAuth 2.0 device code response.
 
 ```
 {
@@ -166,7 +166,7 @@ To obtain an new User Token by exchanging a Refresh Token, perform an HTTP POST 
 
 | Header | Value |
 | --- | ----------- |
-| `Accept-API-Version` | `resource=2.0, protocol=1.0` |
+| `Accept-API-Version` | `resource=1.0, protocol=2.0` |
 | `Content-Type` | `application/json` or `application/jose` |
 | `cookie` | _sessionCookieName_=_ssoToken_ |
 
@@ -420,6 +420,7 @@ echo "$introspection" | jq '.'
 ```bash
 authResponse=$(curl \
     --silent \
+    --header 'Accept-API-Version: resource=2.0, protocol=1.0' \
     --header "X-OpenAM-Username: $thingId" \
     --header "X-OpenAM-Password: $thingPassword" \
     --request POST \
