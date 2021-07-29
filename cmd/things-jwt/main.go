@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
@@ -64,7 +63,7 @@ func main() {
 	var opts commandlineOpts
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	var custom map[string]interface{}
@@ -80,7 +79,7 @@ func main() {
 
 	block, _ := pem.Decode(b)
 	if block == nil {
-		log.Fatal("failed to decode PEM block containing public key")
+		log.Fatal("failed to decode PEM block containing private key")
 	}
 
 	signer, err := frcrypto.ParsePEM(block)

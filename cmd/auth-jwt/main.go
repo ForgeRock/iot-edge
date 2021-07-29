@@ -22,14 +22,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/cryptosigner"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
@@ -42,14 +40,13 @@ type customClaims struct {
 	CNF   confirmation `json:"cnf,omitempty"`
 }
 
-func authJWT(signer crypto.Signer, subject, audience, kid, challenge string) (string, error) {
+func authJWT(key crypto.Signer, subject, audience, kid, challenge string) (string, error) {
 	opts := &jose.SignerOptions{}
-	opts.WithHeader("typ", "JWT")
-	alg, err := jws.JWAFromKey(signer)
+	alg, err := jws.JWAFromKey(key)
 	if err != nil {
 		return "", err
 	}
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: cryptosigner.Opaque(signer)}, opts)
+	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: key}, opts)
 	if err != nil {
 		return "", err
 	}
@@ -64,11 +61,7 @@ func authJWT(signer crypto.Signer, subject, audience, kid, challenge string) (st
 			Nonce: challenge,
 			CNF:   confirmation{KID: kid},
 		})
-	response, err := builder.CompactSerialize()
-	if err != nil {
-		return "", err
-	}
-	return response, nil
+	return builder.CompactSerialize()
 }
 
 type commandlineOpts struct {
@@ -83,7 +76,7 @@ func main() {
 	var opts commandlineOpts
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	b, err := ioutil.ReadFile(opts.Keyfile)
@@ -93,7 +86,7 @@ func main() {
 
 	block, _ := pem.Decode(b)
 	if block == nil {
-		log.Fatal("failed to decode PEM block containing public key")
+		log.Fatal("failed to decode PEM block containing private key")
 	}
 
 	signer, err := frcrypto.ParsePEM(block)

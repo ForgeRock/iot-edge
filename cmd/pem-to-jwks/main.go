@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,15 +30,16 @@ import (
 )
 
 type commandlineOpts struct {
-	In  string `long:"in" required:"true" description:"Things Endpoint Version"`
-	Out string `long:"pubout" required:"true" description:"Things URL"`
+	In  string `long:"in" required:"true" description:"Input PEM filename"`
+	Out string `long:"out" description:"Output filename"`
+	KID string `long:"kid" default:"pop.cnf" description:"Key ID"`
 }
 
 func main() {
 	var opts commandlineOpts
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	b, err := ioutil.ReadFile(opts.In)
@@ -46,7 +48,7 @@ func main() {
 	}
 	block, _ := pem.Decode(b)
 	if block == nil {
-		log.Fatal("failed to decode PEM block containing public key")
+		log.Fatal("failed to decode PEM block")
 	}
 	signer, err := frcrypto.ParsePEM(block)
 	if err != nil {
@@ -57,7 +59,7 @@ func main() {
 			Keys: []jose.JSONWebKey{
 				{
 					Key:   signer.Public(),
-					KeyID: "test",
+					KeyID: opts.KID,
 					Use:   "sig",
 				},
 			},
@@ -65,8 +67,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ioutil.WriteFile(opts.Out, jwks, os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
+	if opts.Out == "" {
+		fmt.Println(string(jwks))
+	} else {
+		err = ioutil.WriteFile(opts.Out, jwks, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
