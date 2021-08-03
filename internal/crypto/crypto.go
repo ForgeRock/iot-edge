@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2021 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"math/big"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
@@ -45,4 +47,27 @@ func PublicKeyCertificate(key crypto.Signer) (cert tls.Certificate, err error) {
 		PrivateKey:  key,
 		Leaf:        &template,
 	}, nil
+}
+
+// ParsePEM parse a PEM block into a crypto signer
+// EC and RSA private keys encoded in unencrypted PKCS1 or PKCS8 format are supported.
+func ParsePEM(block *pem.Block) (crypto.Signer, error) {
+	switch block.Type {
+	case "PRIVATE KEY":
+		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		s, ok := privateKey.(crypto.Signer)
+		if !ok {
+			return nil, fmt.Errorf("unable to cast to a signer")
+		}
+		return s, nil
+	case "EC PRIVATE KEY":
+		return x509.ParseECPrivateKey(block.Bytes)
+	case "RSA PRIVATE KEY":
+		return x509.ParsePKCS1PrivateKey(block.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported type '%s'", block.Type)
+	}
 }
