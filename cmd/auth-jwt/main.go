@@ -18,10 +18,12 @@ package main
 
 import (
 	"crypto"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
@@ -32,15 +34,17 @@ import (
 )
 
 type confirmation struct {
-	KID string `json:"kid,omitempty"`
+	KID string           `json:"kid,omitempty"`
+	JWK *jose.JSONWebKey `json:"jwk,omitempty"`
 }
 
 type customClaims struct {
-	Nonce string       `json:"nonce"`
-	CNF   confirmation `json:"cnf,omitempty"`
+	Nonce     string       `json:"nonce"`
+	CNF       confirmation `json:"cnf,omitempty"`
+	ThingType string       `json:"thingType,omitempty"`
 }
 
-func authJWT(key crypto.Signer, subject, audience, kid, challenge string) (string, error) {
+func authJWT(key crypto.Signer, subject, audience string, claims customClaims) (string, error) {
 	opts := &jose.SignerOptions{}
 	alg, err := jws.JWAFromKey(key)
 	if err != nil {
@@ -57,26 +61,25 @@ func authJWT(key crypto.Signer, subject, audience, kid, challenge string) (strin
 			IssuedAt: jwt.NewNumericDate(time.Now()),
 			Expiry:   jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
 		}).
-		Claims(customClaims{
-			Nonce: challenge,
-			CNF:   confirmation{KID: kid},
-		})
+		Claims(claims)
 	return builder.CompactSerialize()
 }
 
 type commandlineOpts struct {
-	Subject   string `short:"s" long:"subject" required:"true" description:"Subject, usually the Thing ID"`
-	Audience  string `short:"a" long:"audience" required:"true" description:"Audience, usually the realm"`
-	Challenge string `short:"c" long:"challenge" required:"true" description:"Challenge"`
-	Keyfile   string `short:"k" long:"key" required:"true" description:"Private Key PEM"`
-	KID       string `long:"kid" default:"pop.cnf" description:"Key ID"`
+	Subject     string `short:"s" long:"subject" required:"true" description:"Subject, usually the Thing ID"`
+	Audience    string `short:"a" long:"audience" required:"true" description:"Audience, usually the realm"`
+	Challenge   string `short:"c" long:"challenge" required:"true" description:"Challenge"`
+	Keyfile     string `short:"k" long:"key" required:"true" description:"Private Key PEM"`
+	KID         string `long:"kid" default:"pop.cnf" description:"Key ID"`
+	Certificate string `long:"certificate" description:"Thing Certificate"`
+	ThingType   string `long:"type" default:"device" choice:"device" choice:"service" choice:"gateway" description:"Thing Type"`
 }
 
 func main() {
 	var opts commandlineOpts
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	b, err := ioutil.ReadFile(opts.Keyfile)
@@ -94,7 +97,32 @@ func main() {
 		log.Fatal(err)
 	}
 
-	signedJWT, err := authJWT(signer, opts.Subject, opts.Audience, opts.KID, opts.Challenge)
+	claims := customClaims{Nonce: opts.Challenge}
+	if opts.Certificate != "" {
+		b, err := ioutil.ReadFile(opts.Certificate)
+		if err != nil {
+			log.Fatal(err)
+		}
+		block, _ := pem.Decode(b)
+		if block == nil {
+			log.Fatal("unable to decode certificate")
+		}
+		certs, err := x509.ParseCertificates(block.Bytes)
+		if err != nil {
+			log.Fatal(err)
+		}
+		claims.CNF.JWK = &jose.JSONWebKey{
+			Key:          signer.Public(),
+			Certificates: certs,
+			KeyID:        opts.KID,
+			Use:          "sig",
+		}
+		claims.ThingType = opts.ThingType
+	} else {
+		claims.CNF.KID = opts.KID
+	}
+
+	signedJWT, err := authJWT(signer, opts.Subject, opts.Audience, claims)
 	if err != nil {
 		log.Fatal(err)
 	}

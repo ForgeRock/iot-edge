@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
@@ -63,7 +64,7 @@ func main() {
 	var opts commandlineOpts
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	var custom map[string]interface{}

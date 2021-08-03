@@ -39,7 +39,7 @@ func main() {
 	var opts commandlineOpts
 	_, err := flags.Parse(&opts)
 	if err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	b, err := ioutil.ReadFile(opts.In)
