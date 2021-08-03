@@ -56,7 +56,7 @@ For example:
 }
 ```
 
-The Thing must create a signed JWT place it in the `IDToken1` object in the `input` array.
+The Thing must create a signed JWT and place it in the `IDToken1` object in the `input` array.
 
 ### Creating a signed JWT for the IoT Authentication Node
 
@@ -94,7 +94,7 @@ registers a Thing using JWT proof-of-possession.
 
 To use this node, a Thing must:
 
-* Have a unsymmetric key pair.
+* Have an unsymmetric key pair.
 * Have a certificate that has been signed by a Certificate Authority known to AM.
 
 ### IoT Register Node Callback
@@ -133,7 +133,7 @@ The node will send a callback to the Thing of type `HiddenValueCallback`. The ca
 }
 ```
 
-The Thing must create a signed JWT place it in the `IDToken1` object in the `input` array.
+The Thing must create a signed JWT and place it in the `IDToken1` object in the `input` array.
 
 ### Creating a signed JWT for the IoT Registration Node
 
@@ -224,7 +224,6 @@ signedJWT=$(auth-jwt -a "/" -s "$thingId" -c "$challenge" --key "$keyfile")
 # Modify callback:
 authCallback=$(echo "$authCallback" | \
     jq ".callbacks[0].input[0].value = \"$signedJWT\"")
-
 
 # Complete the authentication request:
 authResponse=$(curl \
