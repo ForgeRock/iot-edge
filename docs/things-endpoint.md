@@ -16,6 +16,8 @@ To use the endpoint, a Thing must be in prosession of a valid session token (SSO
 * If the Thing has authenticated with a journey that contains the FR IoT Authenticate and/or Register nodes, then its SSO Token is restricted and the request payload to the Things endpoint must be a signed JWT. The JWT must be signed with the same key that was used during the authenication. See [Creating a signed JWT for the Things Endpoint](#creating-a-signed-jwt-for-the-things-endpoint).
 * Otherwise, the SSO Token is unrestricted and the request payload to the Things endpoint must be a JSON payload.
 
+Example cURL requests are given in this README. Alternatively, a postman collection for unrestricted requests can be found [here](./things.postman_collection.json).
+
 ## Creating a signed JWT for the Things Endpoint
 
 All calls to the Things Endpoint with a restricted SSO Token must include a signed JWT with the following headers:
@@ -206,6 +208,9 @@ To obtain an new User Token by exchanging a Refresh Token, perform an HTTP POST 
     ```
 
 1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
+1. Modify the IoT OAuth 2.0 Client `forgerock-iot-oauth2-client`:
+    * Add `publish` scope to `Scope(s)`.
+    * Add the `Refresh Token` grant to `Grant Types`.
 1. Create a Thing identity as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/register-identities.html).
 1. Create a human user with a password.
 1. Set `amURL` to the base URL of your AM instance and `thingId` to the name of your Thing. Set `tree` to the authentication tree containing an `Authenticate Thing node` and `keyfile` to the example private key in `iot-edge/examples/resources/eckey1.key.pem`. For example:
@@ -406,6 +411,9 @@ echo "$introspection" | jq '.'
     * curl
     * [jq](https://stedolan.github.io/jq/)
 1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
+1. Modify the IoT OAuth 2.0 Client `forgerock-iot-oauth2-client`:
+    * Add `publish` scope to `Scope(s)`.
+    * Add the `Refresh Token` grant to `Grant Types`.
 1. Create a Thing identity as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/register-identities.html).
 1. Create a human user with a password.
 1. Set `amURL` to the base URL of your AM instance and `thingId` and `thingPassword` to the name and password for your Thing respectively. For example:
