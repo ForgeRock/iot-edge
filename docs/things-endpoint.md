@@ -16,6 +16,8 @@ To use the endpoint, a Thing must be in prosession of a valid session token (SSO
 * If the Thing has authenticated with a journey that contains the FR IoT Authenticate and/or Register nodes, then its SSO Token is restricted and the request payload to the Things endpoint must be a signed JWT. The JWT must be signed with the same key that was used during the authenication. See [Creating a signed JWT for the Things Endpoint](#creating-a-signed-jwt-for-the-things-endpoint).
 * Otherwise, the SSO Token is unrestricted and the request payload to the Things endpoint must be a JSON payload.
 
+Example cURL requests are given in this README. Alternatively, a postman collection for unrestricted requests can be found [here](./things.postman_collection.json).
+
 ## Creating a signed JWT for the Things Endpoint
 
 All calls to the Things Endpoint with a restricted SSO Token must include a signed JWT with the following headers:
