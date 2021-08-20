@@ -208,9 +208,6 @@ To obtain an new User Token by exchanging a Refresh Token, perform an HTTP POST 
     ```
 
 1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
-1. Modify the IoT OAuth 2.0 Client `forgerock-iot-oauth2-client`:
-    * Add `publish` scope to `Scope(s)`.
-    * Add the `Refresh Token` grant to `Grant Types`.
 1. Create a Thing identity as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/register-identities.html).
 1. Create a human user with a password.
 1. Set `amURL` to the base URL of your AM instance and `thingId` to the name of your Thing. Set `tree` to the authentication tree containing an `Authenticate Thing node` and `keyfile` to the example private key in `iot-edge/examples/resources/eckey1.key.pem`. For example:
@@ -411,9 +408,6 @@ echo "$introspection" | jq '.'
     * curl
     * [jq](https://stedolan.github.io/jq/)
 1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
-1. Modify the IoT OAuth 2.0 Client `forgerock-iot-oauth2-client`:
-    * Add `publish` scope to `Scope(s)`.
-    * Add the `Refresh Token` grant to `Grant Types`.
 1. Create a Thing identity as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/register-identities.html).
 1. Create a human user with a password.
 1. Set `amURL` to the base URL of your AM instance and `thingId` and `thingPassword` to the name and password for your Thing respectively. For example:
