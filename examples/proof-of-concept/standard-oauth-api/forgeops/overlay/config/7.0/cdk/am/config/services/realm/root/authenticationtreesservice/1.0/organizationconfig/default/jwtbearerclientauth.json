@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "realm": "/",
+    "entityType": "authenticationTreesService",
+    "entityId": "default/JWTBearerClientAuth",
+    "uid": "ou=JWTBearerClientAuth,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID": "tree",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams": {},
+    "ou": null
+  },
+  "data": {
+    "_id": "default/JWTBearerClientAuth",
+    "_type": {
+      "_id": "authenticationTreesService",
+      "name": "authenticationTreesService",
+      "collection": false
+    },
+    "entryNodeId": "710d2ead-753b-48f0-8a92-92a994742f42",
+    "staticNodes": {
+      "startNode": {
+        "x": 70,
+        "y": 155
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 440,
+        "y": 80
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 440,
+        "y": 230
+      }
+    },
+    "identityResource": "managed/thing",
+    "uiConfig": {},
+    "nodes": {
+      "710d2ead-753b-48f0-8a92-92a994742f42": {
+        "x": 210,
+        "y": 137.5,
+        "connections": {
+          "Success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Failure": "e301438c-0bd0-429c-ab0c-66126501069a"
+        },
+        "nodeType": "ScriptedDecisionNode",
+        "displayName": "Verify Client Assertion"
+      }
+    }
+  }
+}

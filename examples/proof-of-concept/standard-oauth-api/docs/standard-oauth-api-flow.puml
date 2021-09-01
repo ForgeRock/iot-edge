@@ -1,0 +1,39 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+actor "Manufacturer" as man
+actor "Thing" as thing
+participant "API Gateway" as ag
+participant "Access Management" as am
+participant "Identity Management" as idm
+
+man -> idm : create thing identity\nwith public key
+
+thing -> ag : /access_token,\ngrant_type=client_credentials,\nclient_assertion_type=jwt-bearer,\nclient_assertion=JWT(sub=thing ID)
+ag -> am: /authenticate,\ncallback=client_assertion
+am -> am : validate assertion in\ncustom or scripted node
+am --> ag : sso token
+ag -> am : /things/*?_action=get_access_token
+am -> am : issue token based on\nclient=forgerock-iot-oauth2-client,\nissuer=forgerock-iot-jwt-issuer
+am --> ag : access token
+ag --> thing : access token
+
+thing -> ag : /thing,\nauth=access_token
+ag -> idm : /thing,\nauth=access_token
+idm --> ag : attributes
+ag --> thing : attributes
+
+@enduml

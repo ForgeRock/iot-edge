@@ -1,0 +1,38 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "ScriptingService",
+    "entityId" : "default/scriptConfigurations/f681d60e-743f-4b4e-be9e-7cbf7b9cae31",
+    "uid" : "ou=f681d60e-743f-4b4e-be9e-7cbf7b9cae31,ou=scriptConfigurations,ou=default,ou=OrganizationConfig,ou=1.0,ou=ScriptingService,ou=services,ou=am-config",
+    "sunServiceID" : "scriptConfiguration",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : [
+      "f681d60e-743f-4b4e-be9e-7cbf7b9cae31"
+    ]
+  },
+  "data" : {
+    "_id" : "default/scriptConfigurations/f681d60e-743f-4b4e-be9e-7cbf7b9cae31",
+    "_type" : {
+      "_id" : "ScriptingService",
+      "name" : "ScriptingService",
+      "collection" : false
+    },
+    "createdBy" : "null",
+    "lastModifiedDate" : "0",
+    "lastModifiedBy" : "null",
+    "name" : "Verify Client Assertion",
+    "context" : "AUTHENTICATION_TREE_DECISION_NODE",
+    "description" : null,
+    "language" : "GROOVY",
+    "creationDate" : "0",
+    "script" : {
+      "$base64:encode" : {
+        "$inline" : "VerifyClientAssertion.groovy"
+      }
+    }
+  }
+}
