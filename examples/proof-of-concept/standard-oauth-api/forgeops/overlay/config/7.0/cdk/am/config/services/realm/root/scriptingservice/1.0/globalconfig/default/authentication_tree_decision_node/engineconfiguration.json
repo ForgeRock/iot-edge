@@ -113,7 +113,9 @@
       "org.forgerock.json.jose.jwk.JWKSet",
       "org.forgerock.json.jose.jwk.EcJWK",
       "org.forgerock.json.jose.jws.SigningManager",
-      "org.forgerock.json.jose.jws.handlers.ECDSASigningHandler"
+      "org.forgerock.json.jose.jws.handlers.ECDSASigningHandler",
+      "org.forgerock.json.jose.jws.SignedJwt",
+      "org.forgerock.json.jose.jws.JwsHeader"
     ],
     "queueSize" : -1,
     "serverTimeout" : 0,

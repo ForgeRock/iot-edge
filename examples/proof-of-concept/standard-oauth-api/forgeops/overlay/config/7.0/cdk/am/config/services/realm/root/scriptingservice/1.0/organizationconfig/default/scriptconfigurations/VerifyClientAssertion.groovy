@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-import com.sun.identity.authentication.callbacks.HiddenValueCallback
 import com.sun.identity.idm.AMIdentity
 import com.sun.identity.idm.IdUtils
 import org.forgerock.json.jose.jwk.JWK
 import org.forgerock.json.jose.jwk.JWKSet
 import org.forgerock.json.jose.jws.SigningManager
 import org.forgerock.oauth2.core.OAuth2Jwt
-import javax.security.auth.callback.Callback
 
 if (callbacks.isEmpty()) {
     logger.message("No client assertion provided")
@@ -46,7 +44,13 @@ if (keysEntry.isEmpty()) {
 
 String thingKeys = keysEntry.first()
 JWKSet jwkSet = JWKSet.parse(thingKeys)
-JWK verificationKey = jwkSet.getJWKsAsList().first()
+String kid = jwt.signedJwt.header.keyId
+if (kid == null) {
+    logger.message("No key ID defined in client assertion")
+    outcome = "Failure"
+    return
+}
+JWK verificationKey = jwkSet.findJwk(kid)
 if (verificationKey == null) {
     logger.message("No key found in key set")
     outcome = "Failure"

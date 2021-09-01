@@ -18,7 +18,6 @@ package main
 
 import (
 	"crypto"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -35,30 +34,21 @@ import (
 var amURL *url.URL
 var thingID = "4Y1SL65848Z411439"
 var alg = jose.ES256
-var algString = string(alg)
 
 func jwtBearerToken(key crypto.Signer, subject, audience, kid string) (string, error) {
 	opts := &jose.SignerOptions{}
+	opts.WithHeader("kid", kid)
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: key}, opts)
 	if err != nil {
 		return "", err
 	}
-	jwtBuilder := jwt.Signed(sig).
+	return jwt.Signed(sig).
 		Claims(jwt.Claims{
 			Issuer:   subject,
 			Subject:  subject,
 			Audience: []string{audience},
-			Expiry:   jwt.NewNumericDate(time.Now().Add(600 * time.Minute)),
-		})
-	token, err := jwtBuilder.Token()
-	if err != nil {
-		return "", err
-	}
-	token.Headers = []jose.Header{{
-		KeyID:        kid,
-		Algorithm:    algString,
-	}}
-	return jwtBuilder.CompactSerialize()
+			Expiry:   jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+		}).CompactSerialize()
 }
 
 func registerDevice() (signer crypto.Signer, keyID string) {
@@ -94,15 +84,6 @@ func main() {
 	amURL, _ = url.Parse(amURLString)
 
 	signer, kid := registerDevice()
-	var keySet jose.JSONWebKeySet
-	keySet.Keys = append(keySet.Keys,
-		jose.JSONWebKey{KeyID: kid, Key: signer.Public(), Algorithm: algString, Use: "sig"})
-	b, err := json.MarshalIndent(keySet, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Verification key set:")
-	log.Println(string(b))
 
 	signedJWT, err := jwtBearerToken(signer, thingID, amURLString+"/oauth2/access_token", kid)
 	if err != nil {
