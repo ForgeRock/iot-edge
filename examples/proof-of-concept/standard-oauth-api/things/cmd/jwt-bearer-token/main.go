@@ -18,6 +18,7 @@ package main
 
 import (
 	"crypto"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -71,6 +72,17 @@ func registerDevice() (signer crypto.Signer, keyID string) {
 	return signer, keyID
 }
 
+func verificationKeySet(signer crypto.Signer, kid string) string {
+	var keySet jose.JSONWebKeySet
+	keySet.Keys = append(keySet.Keys,
+		jose.JSONWebKey{KeyID: kid, Key: signer.Public(), Algorithm: string(alg), Use: "sig"})
+	b, err := json.MarshalIndent(keySet, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(b)
+}
+
 func main() {
 	var (
 		fqdn = flag.String("fqdn", "", "The FQDN of the ForgeOps deployment")
@@ -80,10 +92,12 @@ func main() {
 	if *fqdn == "" {
 		log.Fatal("FQDN must be provided")
 	}
-	amURLString := "https://"+*fqdn+"/am"
+	amURLString := "https://" + *fqdn + "/am"
 	amURL, _ = url.Parse(amURLString)
 
 	signer, kid := registerDevice()
+	log.Println("Verification key set:")
+	log.Println(verificationKeySet(signer, kid))
 
 	signedJWT, err := jwtBearerToken(signer, thingID, amURLString+"/oauth2/access_token", kid)
 	if err != nil {

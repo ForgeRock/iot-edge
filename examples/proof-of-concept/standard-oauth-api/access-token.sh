@@ -29,10 +29,18 @@ client_assertion=$(go run ./cmd/jwt-bearer-token --fqdn $FQDN)
 echo $client_assertion
 cd - &>/dev/null
 
-# Standard OAuth 2.0 access token request
+# Standard OAuth 2.0 access token request with Client Credential grant
 #curl \
 #--request POST "https://$FQDN/am/oauth2/realms/root/access_token" \
 #--data "grant_type=client_credentials" \
+#--data "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer" \
+#--data "client_assertion=$client_assertion"
+
+# Standard OAuth 2.0 access token request with JWT Bearer grant
+#curl \
+#--request POST "https://$FQDN/am/oauth2/realms/root/access_token" \
+#--data "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer" \
+#--data "assertion=$client_assertion" \
 #--data "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer" \
 #--data "client_assertion=$client_assertion"
 
