@@ -17,6 +17,53 @@ set -e
 # limitations under the License.
 #
 
+function standardEndpoint() {
+  # Standard OAuth 2.0 access token request
+  echo $(curl --silent \
+  --request POST "https://$FQDN/am/oauth2/realms/root/access_token" \
+  --data "grant_type=client_credentials" \
+  --data "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer" \
+  --data "client_assertion=$1" \
+  --data "scope=publish fr:idm:*" )
+}
+
+function thingsEndpoint() {
+  # Request to authenticate the client by verifying the bearer JWT
+  authResponse=$(curl --silent \
+  --request POST "https://$FQDN/am/json/authenticate?authIndexType=service&authIndexValue=JWTBearerClientAuth" \
+  --header "Content-Type: application/json" \
+  --header "Accept-API-Version: resource=2.0, protocol=1.0" \
+  --data-raw "{
+       \"callbacks\": [
+           {
+               \"type\": \"HiddenValueCallback\",
+               \"output\": [
+                   {
+                       \"name\": \"id\",
+                       \"value\": \"client_assertion\"
+                   }
+               ],
+               \"input\": [
+                   {
+                       \"name\": \"IDToken1\",
+                       \"value\": \"$1\"
+                   }
+               ]
+           }
+       ]}")
+  ssoToken=$(jq -r '.tokenId' <(echo $authResponse))
+
+  # Request the access token via the things endpoint
+  echo $(curl --silent \
+  --request POST "https://$FQDN/am/json/things/*?_action=get_access_token" \
+  --header "Accept-API-Version: protocol=2.0,resource=1.0" \
+  --header "Content-Type: application/json" \
+  --header "Cookie: iPlanetDirectoryPro=${ssoToken}" \
+  --data-raw '{
+      "scope":["publish", "subscribe", "fr:idm:*"]
+  }')
+}
+
 FQDN=
 if [ -n "$1" ]; then
   FQDN=$1
@@ -29,62 +76,19 @@ client_assertion=$(go run ./cmd/jwt-bearer-token --fqdn $FQDN)
 echo $client_assertion
 cd - &>/dev/null
 
-# Standard OAuth 2.0 access token request with Client Credential grant
-#curl \
-#--request POST "https://$FQDN/am/oauth2/realms/root/access_token" \
-#--data "grant_type=client_credentials" \
-#--data "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer" \
-#--data "client_assertion=$client_assertion"
+#accessToken=$(jq -r '.access_token' <(echo $(standardEndpoint $client_assertion)))
+accessToken=$(jq -r '.access_token' <(echo $(thingsEndpoint $client_assertion)))
+echo "access token $accessToken"
 
-# Standard OAuth 2.0 access token request with JWT Bearer grant
-#curl \
-#--request POST "https://$FQDN/am/oauth2/realms/root/access_token" \
-#--data "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer" \
-#--data "assertion=$client_assertion" \
-#--data "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer" \
-#--data "client_assertion=$client_assertion"
+# NOTE: the following will only work if the things endpoint has been used
+# get information about the current session
+loginInfo=$(curl --silent --request GET "https://$FQDN/openidm/info/login" \
+--header "authorization: Bearer $accessToken")
 
-# Request to authenticate the client by verifying the bearer JWT
-authResponse=$(curl --silent \
---request POST "https://$FQDN/am/json/authenticate?authIndexType=service&authIndexValue=JWTBearerClientAuth" \
---header "Content-Type: application/json" \
---header "Accept-API-Version: resource=2.0, protocol=1.0" \
---data-raw "{
-     \"callbacks\": [
-         {
-             \"type\": \"HiddenValueCallback\",
-             \"output\": [
-                 {
-                     \"name\": \"id\",
-                     \"value\": \"client_assertion\"
-                 }
-             ],
-             \"input\": [
-                 {
-                     \"name\": \"IDToken1\",
-                     \"value\": \"${client_assertion}\"
-                 }
-             ]
-         }
-     ]}")
-ssoToken=$(jq -r '.tokenId' <(echo $authResponse))
+frId=$(echo ${loginInfo}| jq -r '.authenticationId')
+echo "FR Id = $frId"
 
-# Request the access token via the things endpoint
-tokenResponse=$(curl --silent \
---request POST "https://$FQDN/am/json/things/*?_action=get_access_token" \
---header "Accept-API-Version: protocol=2.0,resource=1.0" \
---header "Content-Type: application/json" \
---header "Cookie: iPlanetDirectoryPro=${ssoToken}" \
---data-raw '{
-    "scope":["publish"]
-}')
-accessToken=$(jq -r '.access_token' <(echo $tokenResponse))
 
-# Request access token introspection via the things endpoint
-curl --silent --request POST "https://$FQDN/am/json/things/*?_action=introspect_token" \
---header "Accept-API-Version: protocol=2.0,resource=1.0" \
---header "Content-Type: application/json" \
---header "Cookie: iPlanetDirectoryPro=${ssoToken}" \
---data-raw "{
-    \"token\":\"$accessToken\"
-}" | jq '.'
+attributesResponse=$(curl --silent --request GET "https://$FQDN/openidm/managed/thing/$frId?_fields=thingProperties" \
+--header "authorization: Bearer $accessToken")
+echo "${attributesResponse}"

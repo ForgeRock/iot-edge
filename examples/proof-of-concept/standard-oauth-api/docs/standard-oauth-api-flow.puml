@@ -32,7 +32,9 @@ am --> ag : access token
 ag --> thing : access token
 
 thing -> ag : /thing,\nauth=access_token
-ag -> idm : /thing,\nauth=access_token
+ag -> idm: /info/login,\nauth=access_token
+idm -> ag: FR id of Thing
+ag -> idm : /managed/thing///id//,\nauth=access_token
 idm --> ag : attributes
 ag --> thing : attributes
 

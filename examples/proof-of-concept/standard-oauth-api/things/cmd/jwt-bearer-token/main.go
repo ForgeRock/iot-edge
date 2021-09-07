@@ -53,7 +53,7 @@ func jwtBearerToken(key crypto.Signer, subject, audience, kid string) (string, e
 }
 
 func registerDevice() (signer crypto.Signer, keyID string) {
-	store := secrets.Store{}
+	store := secrets.Store{Path: "things.secrets"}
 	signer, _ = store.Signer(thingID)
 	certificate, _ := store.Certificates(thingID)
 	keyID, _ = thing.JWKThumbprint(signer)
@@ -63,7 +63,11 @@ func registerDevice() (signer crypto.Signer, keyID string) {
 		InRealm("/").
 		WithTree("RegisterThings").
 		AuthenticateThing(thingID, "/", keyID, signer, nil).
-		RegisterThing(certificate, nil).
+		RegisterThing(certificate, func() interface{} {
+			return struct {
+				ThingProperties string `json:"thingProperties"`
+			}{"ABCDE12345"}
+		}).
 		Create()
 	if err != nil {
 		log.Fatal(thingID, " registration failed...", "\nReason: ", err)
