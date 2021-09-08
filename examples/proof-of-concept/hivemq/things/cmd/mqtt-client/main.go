@@ -38,8 +38,13 @@ func main() {
 	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
 
 	// ForgeRock connection information
-	thingID := flag.String("name", "47cf707c-80c1-4816-b067-99db2a443113", "Thing name")
+	thingID := flag.String("name", "thingymabot", "Thing name")
+	fqdn := flag.String("fqdn", "", "The FQDN of the ForgeOps deployment")
 	flag.Parse()
+
+	if *fqdn == "" {
+		log.Fatal("FQDN must be provided")
+	}
 
 	store := secrets.Store{}
 	signer, err := store.Signer(*thingID)
@@ -51,11 +56,14 @@ func main() {
 		log.Fatal(err)
 	}
 	keyID, _ := thing.JWKThumbprint(signer)
-	amURL, _ := url.Parse(os.Getenv("AM_URL"))
+	amURL, err := url.Parse("https://" + *fqdn + "/am")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// MQTT connection information
 	// Can be retrieved from configuration
-	server := os.Getenv("MQTT_SERVER_URL")
+	server := "localhost:1883"
 	qos := byte(2)
 	topic := "test"
 

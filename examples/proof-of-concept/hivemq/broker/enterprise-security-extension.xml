@@ -14,7 +14,7 @@
             <name>ForgeRock</name>
             <enabled>true</enabled>
             <configuration>
-                <jwks-endpoint>https://iot.iam.example.com/am/oauth2/connect/jwk_uri</jwks-endpoint>
+                <jwks-endpoint>https://&{FQDN}/am/oauth2/connect/jwk_uri</jwks-endpoint>
             </configuration>
         </jwt-realm>
     </realms>
@@ -24,9 +24,14 @@
                 <realm>ForgeRock</realm>
                 <jwt-validation>
                     <reserved-claims>
-                        <sub>${mqtt-clientid}</sub>
                         <scope>publish subscribe</scope>
                     </reserved-claims>
+                    <custom-claims>
+                        <claim>
+                            <name>externalId</name>
+                            <value>${mqtt-clientid}</value>
+                        </claim>
+                    </custom-claims>
                 </jwt-validation>
             </jwt-authentication-manager>
             <allow-all-authorization-manager/>
