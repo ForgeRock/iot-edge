@@ -22,13 +22,3 @@ RUN rm /opt/hivemq/extensions/hivemq-enterprise-security-extension/DISABLED
 
 # Send all debug info to the console
 COPY logback.xml /opt/hivemq/conf
-
-# Install the platform certificate
-ADD tmp/_wildcard.iam.example.com.pem _wildcard.iam.example.com.crt
-RUN keytool -importcert \
-        -trustcacerts \
-        -cacerts \
-        -noprompt \
-        -alias iot.iam.example.com \
-        -file _wildcard.iam.example.com.crt \
-        -storepass changeit
