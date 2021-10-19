@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "realm": "/",
+    "entityType": "authenticationTreesService",
+    "entityId": "default/AuthenticateThings",
+    "uid": "ou=AuthenticateThings,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID": "tree",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams": {},
+    "ou": [
+      "AuthenticateThings"
+    ]
+  },
+  "data": {
+    "_id": "AuthenticateThings",
+    "entryNodeId": "3474b8dd-8a1f-4905-af1d-8d9eb4cbe724",
+    "staticNodes": {
+      "startNode": {
+        "x": 70,
+        "y": 155
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 953,
+        "y": 80
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 953,
+        "y": 230
+      }
+    },
+    "uiConfig": {},
+    "nodes": {
+      "3474b8dd-8a1f-4905-af1d-8d9eb4cbe724": {
+        "x": 440,
+        "y": 125,
+        "connections": {
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "success": "f681d60e-743f-4b4e-be9e-7cbf7b9cae31",
+          "register": "e301438c-0bd0-429c-ab0c-66126501069a"
+        },
+        "nodeType": "IotAuthenticationNode",
+        "displayName": "Authenticate Thing"
+      },
+      "f681d60e-743f-4b4e-be9e-7cbf7b9cae31": {
+        "x": 673,
+        "y": 137.5,
+        "connections": {
+          "Success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Failure": "e301438c-0bd0-429c-ab0c-66126501069a"
+        },
+        "nodeType": "ScriptedDecisionNode",
+        "displayName": "Remove Token Restriction"
+      }
+    }
+  }
+}

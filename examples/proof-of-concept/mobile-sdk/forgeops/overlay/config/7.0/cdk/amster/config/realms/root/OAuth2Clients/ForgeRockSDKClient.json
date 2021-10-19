@@ -1,0 +1,116 @@
+{
+  "data": {
+    "_id": "ForgeRockSDKClient",
+    "_type": {
+      "_id": "OAuth2Client",
+      "collection": true,
+      "name": "OAuth2 Clients"
+    },
+    "advancedOAuth2ClientConfig": {
+      "clientUri": [],
+      "contacts": [],
+      "customProperties": [],
+      "descriptions": [],
+      "grantTypes": [
+        "authorization_code",
+        "refresh_token"
+      ],
+      "isConsentImplied": true,
+      "javascriptOrigins": [],
+      "logoUri": [],
+      "mixUpMitigation": false,
+      "name": [],
+      "policyUri": [],
+      "requestUris": [],
+      "responseTypes": [
+        "code",
+        "token",
+        "id_token",
+        "code token",
+        "token id_token",
+        "code id_token",
+        "code token id_token",
+        "device_code",
+        "device_code id_token"
+      ],
+      "sectorIdentifierUri": null,
+      "softwareIdentity": null,
+      "softwareVersion": null,
+      "subjectType": "public",
+      "tokenEndpointAuthMethod": "none",
+      "tokenExchangeAuthLevel": 0,
+      "tosURI": [],
+      "updateAccessToken": null
+    },
+    "coreOAuth2ClientConfig": {
+      "accessTokenLifetime": 0,
+      "agentgroup": null,
+      "authorizationCodeLifetime": 0,
+      "clientName": [],
+      "clientType": "Public",
+      "defaultScopes": [],
+      "loopbackInterfaceRedirection": false,
+      "redirectionUris": [
+        "https://sdkapp.example.com:8443/callback"
+      ],
+      "refreshTokenLifetime": 0,
+      "scopes": [
+        "openid",
+        "profile",
+        "email",
+        "address",
+        "phone"
+      ],
+      "status": "Active"
+    },
+    "coreOpenIDClientConfig": {
+      "backchannel_logout_session_required": false,
+      "backchannel_logout_uri": null,
+      "claims": [],
+      "clientSessionUri": null,
+      "defaultAcrValues": [],
+      "defaultMaxAge": 600,
+      "defaultMaxAgeEnabled": false,
+      "jwtTokenLifetime": 0,
+      "postLogoutRedirectUri": []
+    },
+    "coreUmaClientConfig": {
+      "claimsRedirectionUris": []
+    },
+    "signEncOAuth2ClientConfig": {
+      "clientJwtPublicKey": null,
+      "idTokenEncryptionAlgorithm": "RSA-OAEP-256",
+      "idTokenEncryptionEnabled": false,
+      "idTokenEncryptionMethod": "A128CBC-HS256",
+      "idTokenPublicEncryptionKey": null,
+      "idTokenSignedResponseAlg": "RS256",
+      "jwkSet": null,
+      "jwkStoreCacheMissCacheTime": 60000,
+      "jwksCacheTimeout": 3600000,
+      "jwksUri": null,
+      "mTLSCertificateBoundAccessTokens": false,
+      "mTLSSubjectDN": null,
+      "mTLSTrustedCert": null,
+      "publicKeyLocation": "jwks_uri",
+      "requestParameterEncryptedAlg": null,
+      "requestParameterEncryptedEncryptionAlgorithm": "A128CBC-HS256",
+      "requestParameterSignedAlg": null,
+      "tokenEndpointAuthSigningAlgorithm": "RS256",
+      "tokenIntrospectionEncryptedResponseAlg": "RSA-OAEP-256",
+      "tokenIntrospectionEncryptedResponseEncryptionAlgorithm": "A128CBC-HS256",
+      "tokenIntrospectionResponseFormat": "JSON",
+      "tokenIntrospectionSignedResponseAlg": "RS256",
+      "userinfoEncryptedResponseAlg": null,
+      "userinfoEncryptedResponseEncryptionAlgorithm": "A128CBC-HS256",
+      "userinfoResponseFormat": "JSON",
+      "userinfoSignedResponseAlg": null
+    }
+  },
+  "metadata": {
+    "amsterVersion": "&{version}",
+    "entityId": "ForgeRockSDKClient",
+    "entityType": "OAuth2Clients",
+    "pathParams": {},
+    "realm": "/"
+  }
+}
