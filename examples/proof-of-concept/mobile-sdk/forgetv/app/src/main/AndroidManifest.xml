@@ -20,7 +20,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FrTutorial">
         <activity
+            android:name="com.example.forgetv.InfoActivity"
+            android:exported="true" />
+        <activity
             android:name="com.example.forgetv.AccessTokenActivity"
+            android:exported="true" />
+        <activity
+            android:name="com.example.forgetv.AuthenticateActivity"
             android:exported="true" />
         <activity
             android:name="com.example.forgetv.MainActivity"

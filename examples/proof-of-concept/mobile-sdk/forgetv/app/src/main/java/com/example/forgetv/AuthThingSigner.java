@@ -6,23 +6,27 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.Curve;
 
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class AuthThingSigner {
-    String privateJWK;
     String thingID;
     String audience;
     String kid;
-    ECDSASigner signer;
-    ECKey key;
 
-    public AuthThingSigner(String privateJWK, String thingID, String audience) {
-        this.privateJWK = privateJWK;
+    public AuthThingSigner(String kid, String thingID, String audience) {
+        this.kid = kid;
         this.thingID = thingID;
 
         if(audience.equals("root")) {
@@ -31,24 +35,26 @@ public class AuthThingSigner {
         this.audience = audience;
     }
 
-    public String sign(String nonce) throws ParseException, JOSEException {
-        if (this.key == null) {
-            this.key = ECKey.parse(privateJWK);
-            this.signer = new ECDSASigner(key);
-            this.kid = key.getKeyID();
-        }
-        // Create an HMAC-protected JWS object with some payload
+    public String sign(String nonce) throws ParseException, JOSEException, KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
+        // load private key from keystore
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        PrivateKey key = (PrivateKey) keyStore.getKey("forgerock", null);
+        ECDSASigner signer = new ECDSASigner(key, Curve.P_256);
+
+        // write claims
         long unixTime = System.currentTimeMillis() / 1000;
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", thingID);
         claims.put("iat", unixTime);
-        claims.put("exp", unixTime + 300);
+        claims.put("exp", unixTime + 86400);
         claims.put("aud", audience);
         claims.put("nonce", nonce);
         Map<String, String> cnf = new HashMap<>();
         cnf.put("kid", kid);
         claims.put("cnf", cnf);
 
+        // create JWT
         JWSObject jwsObject = new JWSObject(
                 new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(kid).build(),
                 new Payload(claims));
