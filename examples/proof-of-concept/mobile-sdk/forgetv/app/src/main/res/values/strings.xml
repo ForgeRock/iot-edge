@@ -18,7 +18,7 @@
     <string name="forgerock_account_name" translatable="false">Demo User</string>
 
     <!-- AM Tree Details -->
-    <string name="forgerock_auth_service" translatable="false">AuthenticateThings</string>
+    <string name="forgerock_auth_service" translatable="false">RegisterThings</string>
 
     <string name="thing_id" translatable="false">ForgeTV</string>
     <string name="jwt_kid" translatable="false">pop.cnf</string>
@@ -26,6 +26,7 @@
     <string name="return_button">Return</string>
     <string name="access_token_button">Get Access Token</string>
     <string name="info_button">TV Information</string>
+    <string name="csr_button">Create Certificate</string>
     <string name="info_table_id">ID</string>
     <string name="info_table_public_key">Public Key</string>
 </resources>

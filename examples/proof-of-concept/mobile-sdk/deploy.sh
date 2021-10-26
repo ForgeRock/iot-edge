@@ -19,9 +19,6 @@ set -e
 
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
-HIVEMQ_DIR=$(PWD)/tmp/hivemq
-HIVEMQ_CONFIG=$(PWD)/broker
-HIVEMQ_TAG=fr-hivemq
 BASE_OVERLAY_DIR=$IOT_EDGE_DIR/deployments/forgeops/overlay
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
 PLATFORM_PASSWORD=

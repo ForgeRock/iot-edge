@@ -23,6 +23,15 @@
             android:text="@string/info_button" />
 
         <Button
+            android:id="@+id/getCSR"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:clickable="true"
+            android:onClick="getCSR"
+            android:text="@string/csr_button" />
+
+        <Button
             android:id="@+id/accessToken"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

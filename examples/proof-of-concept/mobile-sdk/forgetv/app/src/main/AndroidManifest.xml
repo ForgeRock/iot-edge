@@ -18,9 +18,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.FrTutorial">
         <activity
             android:name="com.example.forgetv.InfoActivity"
+            android:exported="true" />
+        <activity
+            android:name="com.example.forgetv.CertificateSigningRequestActivity"
             android:exported="true" />
         <activity
             android:name="com.example.forgetv.AccessTokenActivity"

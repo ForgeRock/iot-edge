@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 ForgeRock AS
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.forgetv;
 
 import android.content.Intent;
@@ -11,6 +27,7 @@ import org.forgerock.android.auth.FRUser;
 import org.forgerock.android.auth.Node;
 import org.forgerock.android.auth.NodeListener;
 import org.forgerock.android.auth.callback.HiddenValueCallback;
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.security.KeyStoreException;
@@ -32,6 +49,12 @@ public class AuthenticateActivity extends AppCompatActivity {
                              getResources().getString(R.string.jwt_kid),
                              getResources().getString(R.string.thing_id),
                              getResources().getString(R.string.forgerock_realm));
+        final RegThingSigner regSigner =
+                new RegThingSigner(
+                        getResources().getString(R.string.jwt_kid),
+                        getResources().getString(R.string.thing_id),
+                        getResources().getString(R.string.forgerock_realm));
+
         NodeListener<FRUser> nodeListenerFuture =
                 new NodeListener<FRUser>() {
                     @Override
@@ -51,11 +74,22 @@ public class AuthenticateActivity extends AppCompatActivity {
                         if (cb != null) {
                             String nonce = cb.getValue();
                             try {
-                                String jws = authSigner.sign(nonce);
-                                cb.setValue(jws);
+                                String response;
+                                switch (cb.getId()) {
+                                    case "jwt-pop-authentication":
+                                        response = authSigner.sign(nonce);
+                                        break;
+                                    case "jwt-pop-registration":
+                                        response = regSigner.sign(nonce);
+                                        break;
+                                    default:
+                                        return;
+                                }
+
+                                cb.setValue(response);
                                 // call next to move on and send response to AM
                                 node.next(AuthenticateActivity.this, this);
-                            } catch (ParseException | IOException | JOSEException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException e) {
+                            } catch (IOException | JOSEException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | ParseException | JSONException e) {
                                 e.printStackTrace();
                             }
                         }
