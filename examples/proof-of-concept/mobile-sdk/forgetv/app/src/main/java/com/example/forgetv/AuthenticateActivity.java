@@ -118,8 +118,9 @@ public class AuthenticateActivity extends AppCompatActivity {
                                 cb.setValue(response);
                                 // call next to move on and send response to AM
                                 node.next(AuthenticateActivity.this, this);
-                            } catch (IOException | JOSEException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | ParseException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
+                                onException(e);
                             }
                         }
                     }

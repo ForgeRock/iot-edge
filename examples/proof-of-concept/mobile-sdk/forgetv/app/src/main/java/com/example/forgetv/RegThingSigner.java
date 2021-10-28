@@ -44,7 +44,7 @@ public class RegThingSigner extends AbstractJWTSigner {
     }
 
     @Override
-    Map<String, Object> extraClaims() {
+    Map<String, Object> extraClaims() throws Exception {
         Map<String, Object> claims = new HashMap<>();
 
         // add the thing type
@@ -52,32 +52,31 @@ public class RegThingSigner extends AbstractJWTSigner {
 
         // add the certificate in the cnf
         Map<String, Object> cnf = new HashMap<>();
-        try {
-            KeyStore keyStore = KeyStore.getInstance(PROVIDER);
-            keyStore.load(null);
-            Certificate certificate = keyStore.getCertificate(CERT_ALIAS);
-            PublicKey publicKey = certificate.getPublicKey();
-            ECKey esKey = new ECKey.Builder(Curve.P_256, (ECPublicKey) publicKey)
-                    .keyID(kid)
-                    .keyUse(KeyUse.SIGNATURE)
-                    .build();
-
-            // get public key as JWK
-            // convert from JSONObject since this breaks in JWSObject
-            JSONObject jwk = new JSONObject(esKey.toJSONObject());
-            Iterator<String> keys = jwk.keys();
-            Map<String, Object> jwkMap = new HashMap<>();
-            while(keys.hasNext()) {
-                String key = keys.next();
-                jwkMap.put(key, jwk.get(key));
-            }
-
-            // add the certificate to the JWK
-            jwkMap.put("x5c", new String[]{Base64.encodeToString(certificate.getEncoded(), Base64.NO_WRAP)});
-            cnf.put("jwk", jwkMap);
-        } catch (CertificateException | NoSuchAlgorithmException | IOException | KeyStoreException | JSONException e) {
-            e.printStackTrace();
+        KeyStore keyStore = KeyStore.getInstance(PROVIDER);
+        keyStore.load(null);
+        Certificate certificate = keyStore.getCertificate(CERT_ALIAS);
+        if (certificate==null) {
+            throw new Exception("Missing certificate, please create one");
         }
+        PublicKey publicKey = certificate.getPublicKey();
+        ECKey esKey = new ECKey.Builder(Curve.P_256, (ECPublicKey) publicKey)
+                .keyID(kid)
+                .keyUse(KeyUse.SIGNATURE)
+                .build();
+
+        // get public key as JWK
+        // convert from JSONObject since this breaks in JWSObject
+        JSONObject jwk = new JSONObject(esKey.toJSONObject());
+        Iterator<String> keys = jwk.keys();
+        Map<String, Object> jwkMap = new HashMap<>();
+        while(keys.hasNext()) {
+            String key = keys.next();
+            jwkMap.put(key, jwk.get(key));
+        }
+
+        // add the certificate to the JWK
+        jwkMap.put("x5c", new String[]{Base64.encodeToString(certificate.getEncoded(), Base64.NO_WRAP)});
+        cnf.put("jwk", jwkMap);
         claims.put("cnf", cnf);
 
         return claims;

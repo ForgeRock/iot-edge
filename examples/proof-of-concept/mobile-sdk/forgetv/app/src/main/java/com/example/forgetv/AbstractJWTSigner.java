@@ -60,7 +60,7 @@ abstract class AbstractJWTSigner {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public String sign(String nonce) throws ParseException, JOSEException, KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException, UnrecoverableKeyException {
+    public String sign(String nonce) throws Exception {
         // load private key from keystore
         KeyStore keyStore = KeyStore.getInstance(PROVIDER);
         keyStore.load(null);
@@ -85,14 +85,9 @@ abstract class AbstractJWTSigner {
                 new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(kid).build(),
                 new Payload(claims));
 
-        try {
-            jwsObject.sign(signer);
-            return jwsObject.serialize();
-        } catch (JOSEException joseException) {
-            joseException.printStackTrace();
-        }
-        return "";
+        jwsObject.sign(signer);
+        return jwsObject.serialize();
     }
 
-    abstract Map<String, Object> extraClaims();
+    abstract Map<String, Object> extraClaims() throws Exception;
 }
