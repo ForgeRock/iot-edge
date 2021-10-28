@@ -20,10 +20,14 @@
     <!-- AM Tree Details -->
     <string name="forgerock_auth_service" translatable="false">RegisterThings</string>
 
+    <!-- Dummy CA Details -->
+    <string name="dunny_ca_url" translatable="false">http://10.0.2.2:8088/sign</string>
+
     <string name="thing_id" translatable="false">ForgeTV</string>
     <string name="jwt_kid" translatable="false">pop.cnf</string>
 
     <string name="return_button">Return</string>
+    <string name="restart_button">Restart</string>
     <string name="access_token_button">Get Access Token</string>
     <string name="info_button">TV Information</string>
     <string name="csr_button">Create Certificate</string>

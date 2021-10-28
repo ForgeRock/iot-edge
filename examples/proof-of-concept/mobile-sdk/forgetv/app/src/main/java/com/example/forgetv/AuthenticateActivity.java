@@ -16,8 +16,15 @@
 
 package com.example.forgetv;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -54,6 +61,23 @@ public class AuthenticateActivity extends AppCompatActivity {
                         getResources().getString(R.string.thing_id),
                         getResources().getString(R.string.forgerock_realm));
 
+        Context context = this;
+        Handler handler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                Bundle bb = msg.getData();
+                String str = bb.getString("err");
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setNeutralButton(R.string.return_button, (dialog, which) -> {
+                    Intent intent = new Intent(context, MainActivity.class);
+                    startActivity(intent);
+                }
+
+                ).setMessage(str).setTitle("Error");
+                builder.create().show();
+            }
+        };
+
         NodeListener<FRUser> nodeListenerFuture =
                 new NodeListener<FRUser>() {
                     @Override
@@ -64,6 +88,12 @@ public class AuthenticateActivity extends AppCompatActivity {
                     @Override
                     public void onException(Exception e) {
                         e.printStackTrace();
+                        Message m = Message.obtain();
+                        Bundle b = new Bundle();
+                        b.putString("err", e.getMessage());
+                        m.setData(b);
+                        handler.sendMessage(m);
+
                     }
 
                     @Override

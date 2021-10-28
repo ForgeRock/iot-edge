@@ -45,6 +45,7 @@ public class InfoActivity extends AppCompatActivity {
         setContentView(R.layout.activity_info);
         TextView idTxt = findViewById(R.id.textViewInfo);
         idTxt.setText(getResources().getString(R.string.thing_id));
+        TextView jwkTxt = findViewById(R.id.textJWK);
         try {
             // read public key from keystore
             KeyStore keyStore = KeyStore.getInstance(AbstractJWTSigner.PROVIDER);
@@ -57,11 +58,11 @@ public class InfoActivity extends AppCompatActivity {
 
             // write key in a JWK Set
             String jwkSet = String.format("{\"keys\":[%s]}", new JSONObject(esKey.toJSONObject()));
-            TextView jwkTxt = findViewById(R.id.textJWK);
             jwkTxt.setText(jwkSet);
 
         } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
             e.printStackTrace();
+            jwkTxt.setText(e.getMessage());
         }
 
     }
