@@ -27,7 +27,6 @@ import org.forgerock.android.auth.FRUser;
 import org.forgerock.android.auth.Node;
 import org.forgerock.android.auth.NodeListener;
 import org.forgerock.android.auth.callback.HiddenValueCallback;
-import org.json.JSONException;
 
 import java.io.IOException;
 import java.security.KeyStoreException;
@@ -89,7 +88,7 @@ public class AuthenticateActivity extends AppCompatActivity {
                                 cb.setValue(response);
                                 // call next to move on and send response to AM
                                 node.next(AuthenticateActivity.this, this);
-                            } catch (IOException | JOSEException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | ParseException | JSONException e) {
+                            } catch (IOException | JOSEException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | ParseException e) {
                                 e.printStackTrace();
                             }
                         }

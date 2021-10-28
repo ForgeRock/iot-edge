@@ -67,10 +67,10 @@ public class CertificateSigningRequestActivity extends AppCompatActivity {
         TextView certView = findViewById(R.id.cert);
         try {
             // read public key from keystore
-            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            KeyStore keyStore = KeyStore.getInstance(AbstractJWTSigner.PROVIDER);
             keyStore.load(null);
 
-            PublicKey publicKey = keyStore.getCertificate("forgerock").getPublicKey();
+            PublicKey publicKey = keyStore.getCertificate(AbstractJWTSigner.KEY_ALIAS).getPublicKey();
             //Generate CSR in PKCS#10 format encoded in DER
             String principal = String.format("CN=%s", getResources().getString(R.string.thing_id));
 
@@ -116,7 +116,7 @@ public class CertificateSigningRequestActivity extends AppCompatActivity {
                         ByteArrayInputStream inputStream  =  new ByteArrayInputStream(response.body().bytes());
                         CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
                         X509Certificate cert = (X509Certificate)certFactory.generateCertificate(inputStream);
-                        keyStore.setCertificateEntry("forgerockCert", cert);
+                        keyStore.setCertificateEntry(AbstractJWTSigner.CERT_ALIAS, cert);
                         handler.post(new Runnable() {
                             @Override
                             public void run() {

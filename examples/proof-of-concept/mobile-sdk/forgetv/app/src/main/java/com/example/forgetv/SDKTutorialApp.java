@@ -44,13 +44,13 @@ public class SDKTutorialApp extends Application {
         FRAuth.start(this);
 
         try {
-            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            KeyStore keyStore = KeyStore.getInstance(AbstractJWTSigner.PROVIDER);
             keyStore.load(null);
-            if(!keyStore.containsAlias("forgerock")){
+            if(!keyStore.containsAlias(AbstractJWTSigner.KEY_ALIAS)){
                 KeyPairGenerator kpg = KeyPairGenerator.getInstance(
-                        KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
+                        KeyProperties.KEY_ALGORITHM_EC, AbstractJWTSigner.PROVIDER);
                 kpg.initialize(new KeyGenParameterSpec.Builder(
-                        "forgerock",
+                        AbstractJWTSigner.KEY_ALIAS,
                         KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
                         .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
                         .build());

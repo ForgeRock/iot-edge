@@ -47,9 +47,9 @@ public class InfoActivity extends AppCompatActivity {
         idTxt.setText(getResources().getString(R.string.thing_id));
         try {
             // read public key from keystore
-            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            KeyStore keyStore = KeyStore.getInstance(AbstractJWTSigner.PROVIDER);
             keyStore.load(null);
-            PublicKey publicKey = keyStore.getCertificate("forgerock").getPublicKey();
+            PublicKey publicKey = keyStore.getCertificate(AbstractJWTSigner.KEY_ALIAS).getPublicKey();
             ECKey esKey = new ECKey.Builder(Curve.P_256, (ECPublicKey) publicKey)
                     .keyID(getResources().getString(R.string.jwt_kid))
                     .keyUse(KeyUse.SIGNATURE)
