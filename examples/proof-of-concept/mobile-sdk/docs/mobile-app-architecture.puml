@@ -1,0 +1,32 @@
+@startuml
+
+skinparam component {
+  FontColor #062b8c
+  BackgroundColor #fc6700
+  BorderColor #062b8c
+  ArrowColor #062b8c
+  ArrowFontColor #062b8c
+}
+skinparam node {
+  BorderColor #062b8c
+  FontColor #062b8c
+}
+skinparam frame {
+  BorderColor Grey
+  FontColor Grey
+}
+
+[Main Activity] as main
+[Info Activity] as info
+[CSR Activity] as csr
+[Authenticate Activity] as auth
+[Access Token Activity] as token
+
+main -down-> info
+info -> main
+main -down-> csr
+csr -> main
+main -down-> auth
+auth -down-> token
+token -up-> main
+@enduml

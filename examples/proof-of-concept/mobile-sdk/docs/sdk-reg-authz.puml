@@ -1,0 +1,46 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+participant "Certificate Authority" as ca
+actor "TV (Android SDK)" as thing
+participant "Access Management" as am
+participant "Directory Services" as ds
+
+== Initialise ==
+thing -> thing : create and store key
+thing -> ca: certificate signing request
+ca -> thing: return certificate
+thing -> thing : store certificate
+
+== Authenticate & Register ==
+thing -> am : /authenticate
+am --> thing : return nonce
+
+thing -> am : /auhtenticate\n(signed JWT, certificate, nonce)
+am -> am : verify certificate and JWT
+am -> ds : create identity\nwith public key
+am --> thing : return sso token
+
+== Request OAuth 2.0 Access Token ==
+thing -> thing : create code challenge\nand code verifier
+thing -> am : /oauth2/authorize\n(sso token, code challenge)
+am --> thing : return authorization code
+
+thing -> am : /oauth2/access_token\n(authorization code, code verifier)
+am -> am : authorize based on\nauthorization code\nwith public client
+am --> thing : return access token
+
+@enduml
