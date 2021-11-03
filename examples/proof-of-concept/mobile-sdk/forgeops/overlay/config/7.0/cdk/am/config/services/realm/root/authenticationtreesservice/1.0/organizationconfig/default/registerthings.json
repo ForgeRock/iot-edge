@@ -1,0 +1,75 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "authenticationTreesService",
+    "entityId" : "default/RegisterThings",
+    "uid" : "ou=RegisterThings,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID" : "tree",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : [
+      "RegisterThings"
+    ]
+  },
+  "data" : {
+    "_id" : "default/RegisterThings",
+    "_type" : {
+      "_id" : "authenticationTreesService",
+      "name" : "authenticationTreesService",
+      "collection" : false
+    },
+    "entryNodeId" : "769c9cde-377a-4de3-9668-9f6e512b30c4",
+    "staticNodes" : {
+      "startNode" : {
+        "x" : 50,
+        "y" : 58.5
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0" : {
+        "x" : 739.671875,
+        "y" : 92
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a" : {
+        "x" : 741,
+        "y" : 201
+      }
+    },
+    "uiConfig" : { },
+    "identityResource" : "managed/thing",
+    "nodes" : {
+      "769c9cde-377a-4de3-9668-9f6e512b30c4" : {
+        "displayName" : "Authenticate Thing",
+        "nodeType" : "IotAuthenticationNode",
+        "x" : 152.078125,
+        "y" : 27.5,
+        "connections" : {
+          "success" : "f681d60e-743f-4b4e-be9e-7cbf7b9cae31",
+          "failure" : "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register" : "4492621e-df92-4f53-a972-040ecdfbfdba"
+        }
+      },
+      "4492621e-df92-4f53-a972-040ecdfbfdba" : {
+        "displayName" : "Register Thing",
+        "nodeType" : "IotRegistrationNode",
+        "x" : 329,
+        "y" : 232,
+        "connections" : {
+          "success" : "f681d60e-743f-4b4e-be9e-7cbf7b9cae31",
+          "failure" : "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "f681d60e-743f-4b4e-be9e-7cbf7b9cae31": {
+        "displayName" : "Remove Token Restriction",
+        "nodeType" : "ScriptedDecisionNode",
+        "x" : 504.046875,
+        "y" : 36,
+        "connections" : {
+          "Success" : "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Failure" : "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    }
+  }
+}
