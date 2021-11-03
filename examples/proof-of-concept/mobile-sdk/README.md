@@ -58,7 +58,7 @@ The diagram shows the manual registration flow.
 ![InfoActivity](docs/info_activity.png)
  - The adminstrator creates a Thing identity in AM, using the name and public key provided by the App.
  ![ForgeTVEntry](docs/forgetv_platform_entry.png)
- - Returning to the landing page and selecting `GET ACCESS TOKEN` will authenticate, authorise and request an OAuth 2.0. This is all handled by the ForgeRock Android SDK and custom callback handlers.
+ - Returning to the landing page and selecting `GET ACCESS TOKEN` will authenticate, authorise and request an OAuth 2.0 access token. This is all handled by the ForgeRock Android SDK and custom callback handlers.
  ![ForgeTVEntry](docs/access_token_activity.png)
 
 
@@ -73,7 +73,7 @@ The diagram shows the dynamic registration flow.
 ![CSRActivity](docs/csr_activity.png)
  The CA logs shows this interaction from the dummy CA server side.
 ![CALogs](docs/ca_logs.png)
- - Returning to the landing page and selecting `GET ACCESS TOKEN` will authenticate, authorise and request an OAuth 2.0. This is all handled by the ForgeRock Android SDK and custom callback handlers.
+ - Returning to the landing page and selecting `GET ACCESS TOKEN` will authenticate, authorise and request an OAuth 2.0 access token. This is all handled by the ForgeRock Android SDK and custom callback handlers.
  ![ForgeTVEntry](docs/access_token_activity.png)
  - If the TV is unknown to AM, the Register Thing node will request a certificate from the App when the App authenticates with AM for the first time. If the certificate is valid and signed by a key known by AM, the Register Thing node will register the device in AM.
  ![ForgeTVEntry](docs/forgetv_platform_entry.png)
