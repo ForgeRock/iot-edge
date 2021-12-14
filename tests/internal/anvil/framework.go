@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -472,85 +472,83 @@ type ThingData struct {
 }
 
 // TestState contains client and realm data required to run a test
-type TestState interface {
-	// RealmForConfiguration returns the realm that can be used for test setup, validation and clean up
-	RealmForConfiguration() string
-	// TestRealm returns the test realm that should be passed to the IoT SDK
-	TestRealm() string
-	// Audience returns the JWT audience for the current test realm
-	Audience() string
-	// ClientType returns 'am' or 'gateway' depending on the type of client
-	ClientType() string
-	// URL of the current test server (AM or Gateway)
-	URL() *url.URL
-	// SetGatewayTree sets the auth tree used by the test IoT Gateway
-	SetGatewayTree(tree string)
+type TestState struct {
+	clientType    string
+	gateway       *gateway.Gateway
+	realm         string
+	realmPath     string
+	amURL         *url.URL
+	dnsConfigured bool
 }
 
-// AMTestState contains data and methods for testing the AM client
-type AMTestState struct {
-	Realm         string
-	TestAudience  string
-	TestURL       *url.URL
-	DNSConfigured bool
+// NewTestState will create a new TestState instance with the given properties
+func NewTestState(gateway *gateway.Gateway, amURL *url.URL, realm, realmPath string, dns bool) TestState {
+	clientType := AMClientType
+	if gateway != nil {
+		clientType = GatewayClientType
+	}
+	return TestState{
+		clientType:    clientType,
+		gateway:       gateway,
+		realm:         realm,
+		realmPath:     realmPath,
+		amURL:         amURL,
+		dnsConfigured: dns,
+	}
 }
 
-func (a *AMTestState) SetGatewayTree(tree string) {
+// SetGatewayTree sets the auth tree used by the test IoT Gateway
+func (t *TestState) SetGatewayTree(tree string) {
+	if t.clientType == GatewayClientType {
+		gateway.SetAuthenticationTree(t.gateway, tree)
+	}
 }
 
-func (a *AMTestState) URL() *url.URL {
-	return a.TestURL
+// ConnectionURL of the current test server (AM or Gateway)
+func (t *TestState) ConnectionURL() *url.URL {
+	if t.clientType == GatewayClientType {
+		u, _ := url.Parse("coap://" + t.gateway.Address())
+		return u
+	}
+	return t.amURL
 }
 
-func (a *AMTestState) ClientType() string {
-	return AMClientType
+// ClientType returns 'am' or 'gateway' depending on the type of client
+func (t *TestState) ClientType() string {
+	return t.clientType
 }
 
-func (a *AMTestState) RealmForConfiguration() string {
-	return a.Realm
+// RealmForConfiguration returns the realm that can be used for test setup, validation and clean up
+func (t *TestState) RealmForConfiguration() string {
+	return t.realm
 }
 
-func (a *AMTestState) TestRealm() string {
-	if a.DNSConfigured {
+// Realm returns the test realm that should be passed to the IoT SDK
+func (t *TestState) Realm() string {
+	if t.clientType == GatewayClientType || t.dnsConfigured {
 		return ""
 	}
-	return a.Realm
+	return t.realm
 }
 
-func (a *AMTestState) Audience() string {
-	return a.TestAudience
+// RealmPath returns the path of the current test realm
+func (t *TestState) RealmPath() string {
+	return t.realmPath
 }
 
-// GatewayTestState contains data and methods for testing the IoT Gateway client
-type GatewayTestState struct {
-	Gateway      *gateway.Gateway
-	Realm        string
-	TestAudience string
+// DNSConfigured will be true if DNS configuration is used instead of a realm path
+func (t *TestState) DNSConfigured() bool {
+	return t.dnsConfigured
 }
 
-func (i *GatewayTestState) SetGatewayTree(tree string) {
-	gateway.SetAuthenticationTree(i.Gateway, tree)
+// AMURL returns the URL of the AM server as a string
+func (t *TestState) AMURL() string {
+	return t.amURL.String()
 }
 
-func (i *GatewayTestState) URL() *url.URL {
-	u, _ := url.Parse("coap://" + i.Gateway.Address())
-	return u
-}
-
-func (i *GatewayTestState) ClientType() string {
-	return GatewayClientType
-}
-
-func (i *GatewayTestState) RealmForConfiguration() string {
-	return i.Realm
-}
-
-func (i *GatewayTestState) TestRealm() string {
-	return ""
-}
-
-func (i *GatewayTestState) Audience() string {
-	return i.TestAudience
+func (t *TestState) String() string {
+	return fmt.Sprintf("\nConfig Realm: %s\nRealm: %s\nRealm Path: %s\nClient Type: %s\nURL: %s\n",
+		t.RealmForConfiguration(), t.Realm(), t.RealmPath(), t.ClientType(), t.ConnectionURL().String())
 }
 
 // SDKTest defines the interface required by a SDK API test
@@ -642,7 +640,7 @@ func RunTest(state TestState, t SDKTest) (pass bool) {
 	if data, pass = t.Setup(state); !pass {
 		return false
 	}
-	DebugLogger.Printf("*** STARTING TEST RUN in realm %s\n", state.RealmForConfiguration())
+	DebugLogger.Printf("*** STARTING TEST RUN: %v", state)
 	pass = t.Run(state, data)
 	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
 	if err := t.Cleanup(state, data); err != nil {

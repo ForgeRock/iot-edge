@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -290,8 +290,8 @@ func (a AccessTokenWithExactScopesNonRestricted) Setup(state anvil.TestState) (d
 func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -322,8 +322,8 @@ func (a AccessTokenWithNoScopesNonRestricted) Setup(state anvil.TestState) (data
 func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -355,8 +355,8 @@ func (t *AccessTokenExpiredSession) Setup(state anvil.TestState) (data anvil.Thi
 func (t *AccessTokenExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -519,10 +519,10 @@ func (t *AccessTokenAfterDynamicRegistration) Setup(state anvil.TestState) (data
 func (t *AccessTokenAfterDynamicRegistration) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
 	thingBuilder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	device, err := thingBuilder.Create()
 	if err != nil {

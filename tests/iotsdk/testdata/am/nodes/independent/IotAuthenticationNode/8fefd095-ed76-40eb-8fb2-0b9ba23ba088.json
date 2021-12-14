@@ -1,0 +1,6 @@
+{
+  "_id": "8fefd095-ed76-40eb-8fb2-0b9ba23ba088",
+  "jwtAuthenticationMethod" : "CLIENT_ASSERTION",
+  "issueRestrictedToken" : false,
+  "additionalAudienceValues" : [ "custom-client-assertion-audience" ]
+}

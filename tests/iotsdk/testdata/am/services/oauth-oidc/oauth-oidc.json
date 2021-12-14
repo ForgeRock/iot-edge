@@ -7,7 +7,6 @@
     "statelessTokensEnabled": true,
     "usePolicyEngineForScope": false,
     "issueRefreshTokenOnRefreshedToken": true,
-    "accessTokenModificationScript": "d22f9a0c-426a-4466-b95e-d0f125b0d5fa",
     "issueRefreshToken": true
   },
   "coreOIDCConfig": {
@@ -46,11 +45,12 @@
       "PS256",
       "PS512",
       "RS512"
-    ],
-    "oidcClaimsScript": "36863ffb-40ec-48b9-94b1-9a99f71cc3b5"
+    ]
   },
   "advancedOAuth2Config": {
     "supportedScopes": ["publish", "subscribe"],
+    "allowedAudienceValues": [],
+    "tlsCertificateRevocationCheckingEnabled": false,
     "codeVerifierEnforced": "false",
     "tokenSigningAlgorithm": "ES256",
     "authenticationAttributes": [
@@ -59,7 +59,6 @@
     "passwordGrantAuthService": "[Empty]",
     "defaultScopes": [],
     "tlsClientCertificateHeaderFormat": "URLENCODED_PEM",
-    "scopeImplementationClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
     "responseTypeClasses": [
       "code|org.forgerock.oauth2.core.AuthorizationCodeResponseTypeHandler",
       "device_code|org.forgerock.oauth2.core.TokenResponseTypeHandler",
@@ -218,7 +217,8 @@
       "dir",
       "A192KW"
     ],
-    "loaMapping": {}
+    "loaMapping": {},
+    "useForceAuthnForPromptLogin": false
   },
   "cibaConfig": {
     "supportedCibaSigningAlgorithms": [
@@ -309,5 +309,20 @@
     "_id": "oauth-oidc",
     "name": "OAuth2 Provider",
     "collection": false
+  },
+  "pluginsConfig": {
+    "oidcClaimsScript": "36863ffb-40ec-48b9-94b1-9a99f71cc3b5",
+    "accessTokenModificationScript": "d22f9a0c-426a-4466-b95e-d0f125b0d5fa",
+    "oidcClaimsClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
+    "accessTokenModifierClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
+    "evaluateScopeClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
+    "validateScopeClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
+    "authorizeEndpointDataProviderClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
+    "accessTokenEnricherClass": "org.forgerock.openam.oauth2.OpenAMScopeValidator",
+    "accessTokenModificationPluginType": "SCRIPTED",
+    "oidcClaimsPluginType": "SCRIPTED",
+    "evaluateScopePluginType": "JAVA",
+    "validateScopePluginType": "JAVA",
+    "authorizeEndpointDataProviderPluginType": "JAVA"
   }
 }

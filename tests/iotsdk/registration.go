@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,10 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
-// RegisterDeviceCert tests the dynamic registration of a device with a valid x509 certificate
-type RegisterDeviceCert struct {
-	alg jose.SignatureAlgorithm
-	anvil.NopSetupCleanup
-}
-
-func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+func populateThingDataForRegistration(alg jose.SignatureAlgorithm) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(t.alg)
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(alg)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
@@ -54,13 +48,23 @@ func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData,
 	return data, true
 }
 
+// RegisterDeviceCert tests the dynamic registration of a device with a valid x509 certificate
+type RegisterDeviceCert struct {
+	alg jose.SignatureAlgorithm
+	anvil.NopSetupCleanup
+}
+
+func (t *RegisterDeviceCert) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	return populateThingDataForRegistration(t.alg)
+}
+
 func (t *RegisterDeviceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	return err == nil
@@ -89,10 +93,10 @@ func (t *RegisterDeviceWithoutCert) Setup(state anvil.TestState) (data anvil.Thi
 func (t *RegisterDeviceWithoutCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(nil, nil)
 
 	_, err := builder.Create()
@@ -109,24 +113,7 @@ type RegisterDeviceWithAttributes struct {
 }
 
 func (t *RegisterDeviceWithAttributes) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
-	if err != nil {
-		return data, false
-	}
-	data.Certificates = []*x509.Certificate{certificate}
-	return data, true
+	return populateThingDataForRegistration(jose.ES256)
 }
 
 func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.ThingData) bool {
@@ -148,10 +135,10 @@ func (t *RegisterDeviceWithAttributes) Run(state anvil.TestState, data anvil.Thi
 	}
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, func() interface{} {
 			return sdkAttribute
 		})
@@ -189,33 +176,16 @@ type RegisterServiceCert struct {
 }
 
 func (t *RegisterServiceCert) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
-	if err != nil {
-		return data, false
-	}
-	data.Certificates = []*x509.Certificate{certificate}
-	return data, true
+	return populateThingDataForRegistration(jose.ES256)
 }
 
 func (t *RegisterServiceCert) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil).
 		AsService()
 
@@ -245,33 +215,16 @@ type RegisterDeviceNoKeyID struct {
 }
 
 func (t *RegisterDeviceNoKeyID) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
-	if err != nil {
-		return data, false
-	}
-	data.Certificates = []*x509.Certificate{certificate}
-	return data, true
+	return populateThingDataForRegistration(jose.ES256)
 }
 
 func (t *RegisterDeviceNoKeyID) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), "", data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), "", data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	return err != nil
@@ -290,11 +243,33 @@ func (t *RegisterDeviceNoKey) Setup(state anvil.TestState) (data anvil.ThingData
 func (t *RegisterDeviceNoKey) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopRegCertTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopRegCertTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), "", nil, nil).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), "", nil, nil).
 		RegisterThing(data.Certificates, nil)
 	_, err := builder.Create()
 	return err != nil
+}
+
+// RegisterDeviceCertJWTBearer tests the dynamic registration of a device with a valid x509 certificate that uses a
+// bearer JWT for authentication and a custom audience value
+type RegisterDeviceCertJWTBearer struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *RegisterDeviceCertJWTBearer) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	return populateThingDataForRegistration(jose.ES256)
+}
+
+func (t *RegisterDeviceCertJWTBearer) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertJWTBearerAuthTree)
+	_, err := builder.Thing().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtPopRegCertJWTBearerAuthTree).
+		AuthenticateThing(data.Id.Name, "custom-client-assertion-audience", data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, nil).
+		Create()
+	return err == nil
 }
