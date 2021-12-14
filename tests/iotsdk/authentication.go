@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
@@ -26,12 +28,16 @@ import (
 )
 
 func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
+	return thingJWTAuthWithAudience(state, data, state.RealmPath())
+}
+
+func thingJWTAuthWithAudience(state anvil.TestState, data anvil.ThingData, audience string) thing.Builder {
 	state.SetGatewayTree(jwtPopAuthTree)
 	return builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopAuthTree).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil)
+		AuthenticateThing(data.Id.Name, audience, data.Signer.KID, data.Signer.Signer, nil)
 }
 
 // AuthenticateThingJWT tests the authentication of a pre-registered device
@@ -51,8 +57,20 @@ func (t *AuthenticateThingJWT) Setup(state anvil.TestState) (data anvil.ThingDat
 }
 
 func (t *AuthenticateThingJWT) Run(state anvil.TestState, data anvil.ThingData) bool {
-	_, err := thingJWTAuth(state, data).Create()
-	return err == nil
+	success := true
+	_, err := thingJWTAuthWithAudience(state, data, state.RealmPath()).Create()
+	if err != nil {
+		anvil.DebugLogger.Printf("failed to authenticate thing using PoP JWT with aud: %s; Error: %s\n",
+			state.RealmPath(), err.Error())
+		success = false
+	}
+	_, err = thingJWTAuthWithAudience(state, data, "custom-pop-audience").Create()
+	if err != nil {
+		anvil.DebugLogger.Printf("failed to authenticate thing using PoP JWT with aud: custom-pop-audience; Error: %s\n",
+			err.Error())
+		success = false
+	}
+	return success
 }
 
 // AuthenticateThingJWTNonDefaultKID tests the authentication of a pre-registered device with a non-default key id
@@ -127,10 +145,10 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopAuthTreeCustomClaims).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, func() interface{} {
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
 			}{"42"}
@@ -160,10 +178,10 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(jwtPopAuthTreeCustomClaims).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, func() interface{} {
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
 			}{"0"}
@@ -189,8 +207,8 @@ func (a AuthenticateWithUserPwd) Setup(state anvil.TestState) (data anvil.ThingD
 func (a AuthenticateWithUserPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -213,8 +231,8 @@ func (a AuthenticateWithIncorrectPwd) Setup(state anvil.TestState) (data anvil.T
 func (a AuthenticateWithIncorrectPwd) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -246,8 +264,133 @@ func (t *AuthenticateThingThroughGateway) Setup(state anvil.TestState) (data anv
 func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtPopAuthTree)
 	_, err := builder.Thing().
-		ConnectTo(state.URL()).
-		AuthenticateThing(data.Id.Name, state.Audience(), data.Signer.KID, data.Signer.Signer, nil).
+		ConnectTo(state.ConnectionURL()).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
+		Create()
+	switch state.ClientType() {
+	case anvil.GatewayClientType:
+		if err != nil {
+			return false
+		}
+	default:
+		if err == nil {
+			return false
+		}
+	}
+	return true
+}
+
+func oauthBaseURL(state anvil.TestState) string {
+	var urlRealmPath string
+	if state.RealmPath() != "/" && !state.DNSConfigured() {
+		urlRealmPath = "/realms/root"
+		realms := strings.Split(state.RealmPath(), "/")
+		for _, realmName := range realms {
+			if len(realmName) > 0 {
+				urlRealmPath += "/realms/" + realmName
+			}
+		}
+	}
+	return state.AMURL() + "/oauth2" + urlRealmPath
+}
+
+func oauthAudienceValues(state anvil.TestState) []string {
+	url := oauthBaseURL(state)
+	return []string{url, url + "/access_token", "custom-client-assertion-audience"}
+}
+
+func thingJWTBearerAuth(state anvil.TestState, data anvil.ThingData, audience string) thing.Builder {
+	state.SetGatewayTree(jwtBearerAuthTree)
+	return builder.Thing().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtBearerAuthTree).
+		AuthenticateThing(data.Id.Name, audience, data.Signer.KID, data.Signer.Signer, nil)
+}
+
+// AuthenticateThingJWTBearer tests the authentication of a pre-registered device using a bearer JWT.
+// The test will authenticate the thing once for each audience value.
+type AuthenticateThingJWTBearer struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateThingJWTBearer) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err.Error())
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *AuthenticateThingJWTBearer) Run(state anvil.TestState, data anvil.ThingData) bool {
+	success := true
+	for _, audience := range oauthAudienceValues(state) {
+		_, err := thingJWTBearerAuth(state, data, audience).Create()
+		if err != nil {
+			anvil.DebugLogger.Printf("failed to authenticate thing using bearer JWT with aud: %s", audience, err.Error())
+			success = false
+		}
+	}
+	return success
+}
+
+// AuthenticateWithCustomClaimsJWTBearer tests the authentication of a pre-registered device with a custom claim that
+// is checked by a scripted decision node
+type AuthenticateWithCustomClaimsJWTBearer struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateWithCustomClaimsJWTBearer) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *AuthenticateWithCustomClaimsJWTBearer) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtBearerAuthTreeCustomClaims)
+	thingBuilder := builder.Thing().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtBearerAuthTreeCustomClaims).
+		AuthenticateThing(data.Id.Name, oauthBaseURL(state), data.Signer.KID, data.Signer.Signer, func() interface{} {
+			return struct {
+				LifeUniverseEverything string `json:"life_universe_everything"`
+			}{"42"}
+		})
+
+	_, err := thingBuilder.Create()
+	return err == nil
+}
+
+// AuthenticateThingThroughGatewayWithJWTBearer tests authentication with the minimum setup required by the gateway
+type AuthenticateThingThroughGatewayWithJWTBearer struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *AuthenticateThingThroughGatewayWithJWTBearer) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *AuthenticateThingThroughGatewayWithJWTBearer) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtBearerAuthTree)
+	_, err := builder.Thing().
+		ConnectTo(state.ConnectionURL()).
+		AuthenticateThing(data.Id.Name, oauthBaseURL(state), data.Signer.KID, data.Signer.Signer, nil).
 		Create()
 	switch state.ClientType() {
 	case anvil.GatewayClientType:

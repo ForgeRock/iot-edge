@@ -2,15 +2,15 @@
   "metadata" : {
     "realm" : "/",
     "entityType" : "authenticationTreesService",
-    "entityId" : "default/AnvilJWTAuth",
-    "uid" : "ou=AnvilJWTAuth,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "entityId" : "default/AnvilJWTPoPAuthUnrestrictedToken",
+    "uid" : "ou=AnvilJWTPoPAuthUnrestrictedToken,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
     "sunServiceID" : "tree",
     "objectClass" : [ "top", "sunServiceComponent" ],
     "pathParams" : { },
-    "ou" : [ "AnvilJWTAuth" ]
+    "ou" : [ "AnvilJWTPoPAuthUnrestrictedToken" ]
   },
   "data" : {
-    "_id" : "default/AnvilJWTAuth",
+    "_id" : "default/AnvilJWTPoPAuthUnrestrictedToken",
     "_type" : {
       "_id" : "authenticationTreesService",
       "name" : "authenticationTreesService",
@@ -31,9 +31,9 @@
         "y": 90
       }
     },
-    "entryNodeId": "158825d9-05cb-48df-9fd8-b08762f21840",
+    "entryNodeId": "b115c800-71f1-4e8a-b4ac-ac889c8c6688",
     "nodes": {
-      "158825d9-05cb-48df-9fd8-b08762f21840": {
+      "b115c800-71f1-4e8a-b4ac-ac889c8c6688": {
         "displayName": "Authenticate Thing",
         "nodeType": "IotAuthenticationNode",
         "x": 152,

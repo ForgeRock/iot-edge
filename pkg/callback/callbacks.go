@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,11 +141,12 @@ type AuthenticateHandler struct {
 
 type jwtVerifyClaims struct {
 	Sub       string    `json:"sub"`
+	Iss       string    `json:"iss,omitempty"`
 	Aud       string    `json:"aud"`
-	ThingType ThingType `json:"thingType"`
+	ThingType ThingType `json:"thingType,omitempty"`
 	Iat       int64     `json:"iat"`
 	Exp       int64     `json:"exp"`
-	Nonce     string    `json:"nonce"`
+	Nonce     string    `json:"nonce,omitempty"`
 	CNF       struct {
 		KID string           `json:"kid,omitempty"`
 		JWK *jose.JSONWebKey `json:"jwk,omitempty"`
@@ -156,47 +157,54 @@ func (c jwtVerifyClaims) String() string {
 	return fmt.Sprintf("{sub:%s, aud:%s, ThingType:%s}", c.Sub, c.Aud, c.ThingType)
 }
 
-func baseJWTClaims(thingID, audience, challenge string) jwtVerifyClaims {
+func baseJWTClaims(thingID, audience string) jwtVerifyClaims {
 	return jwtVerifyClaims{
-		Sub:   thingID,
-		Aud:   audience,
-		Iat:   time.Now().Unix(),
-		Exp:   time.Now().Add(5 * time.Minute).Unix(),
-		Nonce: challenge,
+		Sub: thingID,
+		Aud: audience,
+		Iat: time.Now().Unix(),
+		Exp: time.Now().Add(5 * time.Minute).Unix(),
 	}
 }
 
 func (h AuthenticateHandler) Handle(cb Callback) (bool, error) {
-	if cb.ID() != "jwt-pop-authentication" {
+	jwtPoPAuth := cb.ID() == "jwt-pop-authentication"
+	clientAssertion := cb.ID() == "client_assertion"
+	if !jwtPoPAuth && !clientAssertion {
 		return false, nil
 	}
 	if len(cb.Input) == 0 {
 		return true, errNoInput
 	}
-	var challenge string
-	for _, e := range cb.Output {
-		if e.Name == keyValue {
-			var ok bool
-			challenge, ok = e.Value.(string)
-			if !ok {
-				return true, fmt.Errorf("expected `string` challenge %v", e.Value)
-			}
-			break
-		}
-	}
-	if challenge == "" {
-		return true, errNoOutput
-	}
 
 	opts := &jose.SignerOptions{}
-	opts.WithHeader("typ", "JWT")
+	opts.WithHeader(jose.HeaderType, "JWT")
+	claims := baseJWTClaims(h.ThingID, h.Audience)
+	if jwtPoPAuth {
+		var challenge string
+		for _, e := range cb.Output {
+			if e.Name == keyValue {
+				var ok bool
+				challenge, ok = e.Value.(string)
+				if !ok {
+					return true, fmt.Errorf("expected `string` challenge %v", e.Value)
+				}
+				break
+			}
+		}
+		if challenge == "" {
+			return true, errNoOutput
+		}
+		claims.Nonce = challenge
+		claims.CNF.KID = h.KeyID
+	} else {
+		opts.WithHeader("kid", h.KeyID)
+		claims.Iss = h.ThingID
+	}
 
 	sig, err := jws.NewSigner(h.Key, opts)
 	if err != nil {
 		return true, err
 	}
-	claims := baseJWTClaims(h.ThingID, h.Audience, challenge)
-	claims.CNF.KID = h.KeyID
 	builder := jwt.Signed(sig).Claims(claims)
 	if h.Claims != nil {
 		builder = builder.Claims(h.Claims())
@@ -250,7 +258,8 @@ func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	claims := baseJWTClaims(h.ThingID, h.Audience, challenge)
+	claims := baseJWTClaims(h.ThingID, h.Audience)
+	claims.Nonce = challenge
 	claims.ThingType = h.ThingType
 	claims.CNF.JWK = &jose.JSONWebKey{
 		Key:          h.Key.Public(),

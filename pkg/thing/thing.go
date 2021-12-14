@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,8 +110,8 @@ type Builder interface {
 	// AsService registers the thing as a service. By default, a thing is registered as a device.
 	AsService() Builder
 
-	// AuthenticateThing with the ForgeRock Authenticate Thing tree node. This node uses JWT PoP and requires a JWT
-	// signed with the key that was registered for the thing. The JWT must contain the key ID provided for the
+	// AuthenticateThing with the ForgeRock Authenticate Thing tree node. This node uses JWT authentication and requires
+	// a JWT signed with the key that was registered for the thing. The JWT must contain the key ID provided for the
 	// registered key. In addition, the JWT may include custom claims about the thing. The claims will be available for
 	// processing by the proceeding nodes in the tree.
 	AuthenticateThing(thingID string, audience string, keyID string, key crypto.Signer, claims func() interface{}) Builder

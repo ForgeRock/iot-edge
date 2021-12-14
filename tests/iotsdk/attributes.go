@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,8 +127,8 @@ func (t *AttributesWithNonRestrictedToken) Setup(state anvil.TestState) (data an
 func (t *AttributesWithNonRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -175,8 +175,8 @@ func (t *AttributesExpiredSession) Setup(state anvil.TestState) (data anvil.Thin
 func (t *AttributesExpiredSession) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Thing().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		HandleCallbacksWith(
 			callback.NameHandler{Name: data.Id.Name},

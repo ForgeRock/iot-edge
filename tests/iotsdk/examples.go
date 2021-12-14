@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,9 +120,9 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
-		"-url", state.URL().String(),
-		"-realm", state.TestRealm(),
-		"-audience", state.Audience(),
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", state.RealmPath(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
@@ -188,9 +188,9 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 
 	cmd := exec.CommandContext(ctx, "go", "run", "-tags", tags,
 		"github.com/ForgeRock/iot-edge/examples/thing/simple",
-		"-url", state.URL().String(),
-		"-realm", state.TestRealm(),
-		"-audience", state.Audience(),
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", state.RealmPath(),
 		"-tree", jwtPopAuthTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
@@ -265,9 +265,9 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
-		"-url", state.URL().String(),
-		"-realm", state.TestRealm(),
-		"-audience", state.Audience(),
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", state.RealmPath(),
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
@@ -340,9 +340,9 @@ func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bo
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/user-token",
-		"-url", state.URL().String(),
-		"-realm", state.TestRealm(),
-		"-audience", state.Audience(),
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", state.RealmPath(),
 		"-tree", jwtPopRegCertTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
@@ -431,9 +431,9 @@ func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/cmd/gateway",
 		"-d",
 		"--timeout", "4s",
-		"--url", state.URL().String(),
-		"--realm", state.TestRealm(),
-		"--audience", state.Audience(),
+		"--url", state.ConnectionURL().String(),
+		"--realm", state.Realm(),
+		"--audience", state.RealmPath(),
 		"--tree", jwtPopAuthTree,
 		"--name", data.Id.Name,
 		"--address", nextAvailablePort,
@@ -508,9 +508,9 @@ func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.Thin
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/cmd/gateway",
 		"--debug",
-		"--url", state.URL().String(),
-		"--realm", state.TestRealm(),
-		"--audience", state.Audience(),
+		"--url", state.ConnectionURL().String(),
+		"--realm", state.Realm(),
+		"--audience", state.RealmPath(),
 		"--tree", jwtPopAuthTree,
 		"--name", data.Id.Name,
 		"--address", nextAvailablePort,
@@ -608,9 +608,9 @@ func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
 
 	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/v7/cmd/gateway",
 		"--debug",
-		"--url", state.URL().String(),
-		"--realm", state.TestRealm(),
-		"--audience", state.Audience(),
+		"--url", state.ConnectionURL().String(),
+		"--realm", state.Realm(),
+		"--audience", state.RealmPath(),
 		"--tree", jwtPopRegCertTree,
 		"--name", data.Id.Name,
 		"--address", nextAvailablePort,

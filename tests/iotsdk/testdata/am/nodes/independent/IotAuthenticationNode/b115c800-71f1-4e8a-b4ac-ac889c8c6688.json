@@ -1,6 +1,6 @@
 {
-  "_id": "03490e69-af68-4515-94c6-17756e6bdd21",
+  "_id": "b115c800-71f1-4e8a-b4ac-ac889c8c6688",
   "jwtAuthenticationMethod" : "PROOF_OF_POSSESSION",
-  "issueRestrictedToken" : true,
+  "issueRestrictedToken" : false,
   "additionalAudienceValues" : [ ]
 }

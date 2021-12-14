@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,21 +44,29 @@ const (
 	gatewayDir  = execDir + "/../../cmd/gateway"
 
 	// Auth trees
-	jwtPopAuthTree             = "AnvilJWTAuth"
-	jwtPopAuthTreeCustomClaims = "AnvilJWTAuthCustomClaims"
-	jwtPopRegCertTree          = "AnvilJWTRegCert"
-	userPwdAuthTree            = "AnvilUserPwd"
+	jwtPopAuthTree                     = "AnvilJWTAuth"
+	jwtPopAuthUnrestrictedTokenTree    = "AnvilJWTPoPAuthUnrestrictedToken"
+	jwtBearerAuthTree                  = "AnvilJWTBearerAuth"
+	jwtPopAuthTreeCustomClaims         = "AnvilJWTAuthCustomClaims"
+	jwtBearerAuthTreeCustomClaims      = "AnvilJWTBearerAuthCustomClaims"
+	jwtPopRegCertTree                  = "AnvilJWTRegCert"
+	jwtPopRegCertUnrestrictedTokenTree = "AnvilJWTRegCertUnrestrictedToken"
+	jwtPopRegCertJWTBearerAuthTree     = "AnvilJWTRegCertJWTBearerAuth"
+	userPwdAuthTree                    = "AnvilUserPwd"
 )
 
 // define the full test set
 var tests = []anvil.SDKTest{
 	&AuthenticateThingJWT{},
+	&AuthenticateThingJWTBearer{},
 	&AuthenticateThingJWTNonDefaultKID{},
 	&AuthenticateWithoutConfirmationKey{},
 	&AuthenticateWithCustomClaims{},
+	&AuthenticateWithCustomClaimsJWTBearer{},
 	&AuthenticateWithIncorrectCustomClaim{},
 	&AuthenticateWithUserPwd{},
 	&AuthenticateThingThroughGateway{},
+	&AuthenticateThingThroughGatewayWithJWTBearer{},
 	&AuthenticateWithIncorrectPwd{},
 	&RegisterDeviceCert{alg: jose.ES256},
 	&RegisterDeviceCert{alg: jose.ES384},
@@ -67,6 +75,7 @@ var tests = []anvil.SDKTest{
 	&RegisterDeviceCert{alg: jose.PS256},
 	&RegisterDeviceCert{alg: jose.PS384},
 	&RegisterDeviceCert{alg: jose.PS512},
+	&RegisterDeviceCertJWTBearer{},
 	&RegisterDeviceWithAttributes{},
 	&RegisterDeviceWithoutCert{},
 	&RegisterServiceCert{},
@@ -111,6 +120,8 @@ var tests = []anvil.SDKTest{
 	&SessionValid{},
 	&SessionInvalid{},
 	&SessionLogout{},
+	&UnrestrictedSessionTokenAfterAuthentication{},
+	&UnrestrictedSessionTokenAfterRegistration{},
 	&UserTokenAllow{},
 	&UserTokenDeny{},
 	&UserTokenWithUnsupportedScopes{},
@@ -191,7 +202,7 @@ func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 type realmInfo struct {
 	description   string
 	name          string
-	audience      string
+	path          string
 	u             *url.URL
 	dnsConfigured bool
 }
@@ -211,17 +222,13 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 	fmt.Printf("\n\n-- Running Tests in %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Connection Tests --\n\n")
-	result = runAllTestsForContext(&anvil.AMTestState{
-		TestAudience:  realm.audience,
-		TestURL:       realm.u,
-		Realm:         realm.name,
-		DNSConfigured: realm.dnsConfigured,
-	})
+
+	result = runAllTestsForContext(anvil.NewTestState(nil, realm.u, realm.name, realm.path, realm.dnsConfigured))
 
 	fmt.Printf("\n-- Running IoT Gateway COAP Connection Tests --\n\n")
 
 	// run the IoT Gateway
-	gateway, err := anvil.TestGateway(realm.u, realm.name, realm.audience, jwtPopAuthTree, realm.dnsConfigured)
+	gateway, err := anvil.TestGateway(realm.u, realm.name, realm.path, jwtPopAuthTree, realm.dnsConfigured)
 	if err != nil {
 		return false, err
 	}
@@ -236,13 +243,7 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 	}
 	defer gateway.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(
-		&anvil.GatewayTestState{
-			Gateway:      gateway,
-			Realm:        realm.name,
-			TestAudience: realm.audience,
-		}) && result
-
+	result = runAllTestsForContext(anvil.NewTestState(gateway, realm.u, realm.name, realm.path, realm.dnsConfigured)) && result
 	return result, nil
 }
 
@@ -295,11 +296,11 @@ func runAMTests() (err error) {
 	}()
 
 	realms := []realmInfo{
-		{description: "root", name: anvil.RootRealm, audience: anvil.RootRealm, u: anvil.BaseURL()},
-		{description: "sub-realm", name: subRealm, audience: subRealm, u: anvil.BaseURL()},
-		{description: "sub-sub-realm", name: subSubRealm, audience: subSubRealm, u: anvil.BaseURL()},
-		{description: "realm with alias", name: alias, audience: anvil.RootRealm + aliasRealm, u: anvil.BaseURL()},
-		{description: "realm with DNS alias", name: dnsRealm, audience: anvil.RootRealm + dnsRealm, u: dnsURL, dnsConfigured: true},
+		{description: "root", name: anvil.RootRealm, path: anvil.RootRealm, u: anvil.BaseURL()},
+		{description: "sub-realm", name: subRealm, path: subRealm, u: anvil.BaseURL()},
+		{description: "sub-sub-realm", name: subSubRealm, path: subSubRealm, u: anvil.BaseURL()},
+		{description: "realm with alias", name: alias, path: anvil.RootRealm + aliasRealm, u: anvil.BaseURL()},
+		{description: "realm with DNS alias", name: dnsRealm, path: anvil.RootRealm + dnsRealm, u: dnsURL, dnsConfigured: true},
 	}
 
 	// Configure the test realms in a single batch.
@@ -345,9 +346,9 @@ func runPlatformTests() (err error) {
 	am.AdminPassword = *amPassword
 	pass, err := runAllTestsForRealm(realmInfo{
 		description: "root",
-		name: anvil.RootRealm,
-		audience: anvil.RootRealm,
-		u: u,
+		name:        anvil.RootRealm,
+		path:        anvil.RootRealm,
+		u:           u,
 	})
 	if err != nil {
 		return err

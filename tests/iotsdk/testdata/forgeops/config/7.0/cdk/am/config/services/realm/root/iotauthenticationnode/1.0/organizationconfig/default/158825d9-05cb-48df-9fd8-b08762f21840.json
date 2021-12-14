@@ -11,6 +11,9 @@
   },
   "data" : {
     "_id" : "default/158825d9-05cb-48df-9fd8-b08762f21840",
+    "jwtAuthenticationMethod" : "PROOF_OF_POSSESSION",
+    "issueRestrictedToken" : true,
+    "additionalAudienceValues" : [ "custom-pop-audience" ],
     "_type" : {
       "_id" : "IotAuthenticationNode",
       "name" : "IotAuthenticationNode",

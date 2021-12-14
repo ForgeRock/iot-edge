@@ -1,4 +1,6 @@
-FROM gcr.io/forgerock-io/am-base:7.1.0
+# Platform integration tested AM docker image:
+FROM gcr.io/forgerock-io/am-base/pit1:latest
+
 USER root
 
 ENV DEBIAN_FRONTEND=noninteractive

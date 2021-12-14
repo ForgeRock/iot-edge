@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
+	"gopkg.in/square/go-jose.v2"
 )
 
 // SessionValid checks that the Session method returns true for a valid session
@@ -36,8 +37,8 @@ func (t *SessionValid) Setup(state anvil.TestState) (data anvil.ThingData, ok bo
 func (t *SessionValid) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Session().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -74,8 +75,8 @@ func (t *SessionInvalid) Setup(state anvil.TestState) (data anvil.ThingData, ok 
 func (t *SessionInvalid) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Session().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -119,8 +120,8 @@ func (t *SessionLogout) Setup(state anvil.TestState) (data anvil.ThingData, ok b
 func (t *SessionLogout) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(userPwdAuthTree)
 	builder := builder.Session().
-		ConnectTo(state.URL()).
-		InRealm(state.TestRealm()).
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
 		WithTree(userPwdAuthTree).
 		AuthenticateWith(
 			callback.NameHandler{Name: data.Id.Name},
@@ -148,5 +149,73 @@ func (t *SessionLogout) Run(state anvil.TestState, data anvil.ThingData) bool {
 		return false
 	}
 
+	return true
+}
+
+// UnrestrictedSessionTokenAfterAuthentication tests if an unrestricted token obtained with JWT PoP authentication
+// can be used to make a request to the things endpoint
+type UnrestrictedSessionTokenAfterAuthentication struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *UnrestrictedSessionTokenAfterAuthentication) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	data.Id.ThingType = callback.TypeDevice
+	return anvil.CreateIdentity(state.RealmForConfiguration(), data)
+}
+
+func (t *UnrestrictedSessionTokenAfterAuthentication) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopAuthUnrestrictedTokenTree)
+	device, err := builder.Thing().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtPopAuthUnrestrictedTokenTree).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
+		Create()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to authenticate thing", err)
+		return false
+	}
+	_, err = device.RequestAttributes()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to retrieve thing attributes", err)
+		return false
+	}
+	return true
+}
+
+// UnrestrictedSessionTokenAfterRegistration tests if an unrestricted token obtained with JWT PoP registration can be
+// used to make a request to the things endpoint
+type UnrestrictedSessionTokenAfterRegistration struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *UnrestrictedSessionTokenAfterRegistration) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	return populateThingDataForRegistration(jose.ES256)
+}
+
+func (t *UnrestrictedSessionTokenAfterRegistration) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtPopRegCertUnrestrictedTokenTree)
+	thingBuilder := builder.Thing().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtPopRegCertUnrestrictedTokenTree).
+		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
+		RegisterThing(data.Certificates, nil)
+	device, err := thingBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to register thing", err)
+		return false
+	}
+	_, err = device.RequestAttributes()
+	if err != nil {
+		anvil.DebugLogger.Println("failed to retrieve thing attributes", err)
+		return false
+	}
 	return true
 }
