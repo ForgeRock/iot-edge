@@ -30,13 +30,13 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
-func authenticateDevice() error {
+func registerDevice() (err error) {
 	var (
 		urlString   = flag.String("url", "https://am.localtest.me:8080/am", "URL of AM or Gateway")
 		realm       = flag.String("realm", "/", "AM Realm")
 		authTree    = flag.String("tree", "iot-journey", "Authentication journey")
-		thingName   = flag.String("name", "manual-smart-device", "Thing name")
-		secretStore = flag.String("secrets", "./example.secrets", "Path to pre-created JWK set file")
+		thingName   = flag.String("name", "dynamic-smart-device", "Thing name")
+		secretStore = flag.String("secrets", "./example.secrets", "Path to pre-created secret store")
 	)
 	flag.Parse()
 
@@ -50,6 +50,11 @@ func authenticateDevice() error {
 	if err != nil {
 		return err
 	}
+	certs, err := store.Certificates(*thingName)
+	if err != nil {
+		return err
+	}
+
 	keyID, err := thing.JWKThumbprint(signer)
 	if err != nil {
 		return err
@@ -60,12 +65,21 @@ func authenticateDevice() error {
 		InRealm(*realm).
 		WithTree(*authTree).
 		AuthenticateWith(callback.AuthenticateHandler{
-		Audience: *realm,
-		ThingID:  *thingName,
-		KeyID:    keyID,
-		Key:      signer,
-		Claims:   nil,
-	})
+			Audience: *realm,
+			ThingID:  *thingName,
+			KeyID:    keyID,
+			Key:      signer,
+			Claims:   nil,
+		},
+		callback.RegisterHandler{
+			Audience:     *realm,
+			ThingID:      *thingName,
+			ThingType:    callback.TypeDevice,
+			KeyID:        keyID,
+			Key:          signer,
+			Certificates: certs,
+			Claims:       nil,
+		})
 
 	session, err := b.Create()
 	if err != nil {
@@ -80,7 +94,7 @@ func main() {
 	// pipe debug to standard out
 	thing.DebugLogger().SetOutput(os.Stdout)
 
-	if err := authenticateDevice(); err != nil {
+	if err := registerDevice(); err != nil {
 		log.Fatal(err)
 	}
 }

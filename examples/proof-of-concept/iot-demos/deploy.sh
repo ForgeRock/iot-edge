@@ -21,26 +21,44 @@ FORGEOPS_DIR=$(PWD)/tmp/forgeops
 IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
 #BASE_OVERLAY_DIR=$IOT_EDGE_DIR/deployments/forgeops/overlay
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
-PLATFORM_PASSWORD=
 SECRETS_DIR=$(PWD)/forgeops/secrets
 CONFIG_PROFILE=cdk
-NAMESPACE=
-FQDN=
-CLUSTER=eng-shared-1
-ZONE=us-east1
-PROJECT=engineering-devops
 
-if [ -n "$1" ]; then
-  NAMESPACE=$1
-  echo "Setting namespace: $NAMESPACE"
+if [ -z "$NAMESPACE" ]; then
+  echo "NAMESPACE variable must be set"
+  exit 1
 fi
-if [ -n "$2" ]; then
-  FQDN=$2
-  echo "Setting FQDN: $FQDN"
+
+if [ -z "$FQDN" ]; then
+  echo "FQDN variable must be set"
+  exit 1
 fi
-if [ -n "$3" ]; then
-  PLATFORM_PASSWORD=$3
-  echo "Overriding platform password: $PLATFORM_PASSWORD"
+
+if [ -z "$CLUSTER" ]; then
+  echo "CLUSTER variable must be set"
+  exit 1
+fi
+
+if [ -z "$ZONE" ]; then
+  echo "ZONE variable must be set"
+  exit 1
+fi
+
+if [ -z "$PROJECT" ]; then
+  echo "PROJECT variable must be set"
+  exit 1
+fi
+
+echo "====================================================="
+echo "Environment variables"
+echo "====================================================="
+echo "NAMESPACE=$NAMESPACE"
+echo "FQDN=$FQDN"
+echo "CLUSTER=$CLUSTER"
+echo "ZONE=$ZONE"
+echo "PROJECT=$PROJECT"
+if [ -n "$PLATFORM_PASSWORD" ]; then
+  echo "PLATFORM_PASSWORD=$PLATFORM_PASSWORD"
 fi
 
 echo "====================================================="
@@ -103,8 +121,5 @@ skaffold run
 
 echo "====================================================="
 echo "~~~ Platform login details ~~~"
-echo "URL: https://$FQDN/platform"
-echo "Username: amadmin"
-echo "Password: $($FORGEOPS_DIR/bin/print-secrets amadmin)"
-echo "DS Password: $($FORGEOPS_DIR/bin/print-secrets dsadmin)"
+$FORGEOPS_DIR/bin/print-secrets
 echo "====================================================="
