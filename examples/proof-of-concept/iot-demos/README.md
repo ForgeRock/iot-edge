@@ -65,6 +65,20 @@ Run the `dynamic-registration` example to dynamically register the device:
 go run ./cmd/dynamic-registration -url $AM_URL
 ```
 
+## Use case 2
+
+Managing device identities in a central location along with user and service identities.
+
+### Manage identities
+
+Create user, device and service identities as required.
+
+Identities can be modified and deleted through the Identities UI.
+
+Relationships can be created between users and things. These relationships can then be queried and used, for example,
+to manage access to user data or restrict user access to devices or services. Relationships can be created manually
+through the UI or dynamically via custom endpoints.
+
 ## Deploy
 
 Set environment variables:
@@ -80,4 +94,10 @@ export PROJECT=fr-iot-demos
 Deploy the ForgeOps IoT platform:
 ```
 ./deploy.sh
+```
+
+Use the `(uid=admin user)` password provided at the end of the deployment script and populate the demo identities,
+for example:
+```
+./add-identities.sh zIg1LChqItAh7imtQSopLxn5uGlnMycc
 ```
