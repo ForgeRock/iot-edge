@@ -26,7 +26,7 @@ fi
 DS_PASSWORD=$1
 
 echo "====================================================="
-echo "Adding identities to the platform"
+echo "Adding identities and groups to the platform"
 echo "====================================================="
 kubectl cp "./$LDIF_FILE" ds-idrepo-0:/opt/opendj/ldif/
 kubectl exec ds-idrepo-0 -- ./bin/ldapmodify --no-prompt -w "$DS_PASSWORD"  "./ldif/$LDIF_FILE"

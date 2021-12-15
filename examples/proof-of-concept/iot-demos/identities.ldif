@@ -113,3 +113,13 @@ inetUserStatus: active
 mail: kiyoshi.murakami@example.com
 uid: kiyoshi
 
+dn: cn=Technicians,ou=groups,ou=identities
+objectclass: groupofuniquenames
+objectclass: top
+cn: Technicians
+
+dn: cn=Healthcare Professionals,ou=groups,ou=identities
+objectclass: groupofuniquenames
+objectclass: top
+cn: Healthcare Professionals
+
