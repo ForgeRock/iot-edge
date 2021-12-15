@@ -1,0 +1,28 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "&{version}",
+    "entityType" : "Policies",
+    "entityId" : "scopesForMaintainers",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "scopesForMaintainers",
+    "name" : "scopesForMaintainers",
+    "active" : true,
+    "description" : "",
+    "resources" : [ "maintain" ],
+    "applicationName" : "oauth2Scopes",
+    "actionValues" : {
+      "GRANT" : false
+    },
+    "subject" : {
+      "type" : "NOT",
+      "subject" : {
+        "type" : "Identity",
+        "subjectValues" : [ "id=Technicians,ou=group,ou=am-config" ]
+      }
+    },
+    "resourceTypeUuid" : "d60b7a71-1dc6-44a5-8e48-e4b9d92dee8b"
+  }
+}

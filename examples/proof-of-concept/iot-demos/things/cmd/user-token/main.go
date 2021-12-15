@@ -102,7 +102,7 @@ func userTokenThing() (err error) {
 	}
 	//fmt.Println("Done")
 
-	fmt.Printf("\nRequesting user code... ")
+	//fmt.Printf("\nRequesting user code... ")
 	userCode, err := device.RequestUserCode("view", "maintain")
 	if err != nil {
 		return err

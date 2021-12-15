@@ -1,0 +1,28 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "&{version}",
+    "entityType" : "Policies",
+    "entityId" : "scopesForHCProfessionals",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "scopesForHCProfessionals",
+    "name" : "scopesForHCProfessionals",
+    "active" : true,
+    "description" : "",
+    "resources" : [ "view" ],
+    "applicationName" : "oauth2Scopes",
+    "actionValues" : {
+      "GRANT" : false
+    },
+    "subject" : {
+      "type" : "NOT",
+      "subject" : {
+        "type" : "Identity",
+        "subjectValues" : [ "id=Healthcare Professionals,ou=group,ou=am-config" ]
+      }
+    },
+    "resourceTypeUuid" : "d60b7a71-1dc6-44a5-8e48-e4b9d92dee8b"
+  }
+}

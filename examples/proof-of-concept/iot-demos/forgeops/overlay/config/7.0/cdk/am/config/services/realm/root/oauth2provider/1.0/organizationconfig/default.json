@@ -20,7 +20,7 @@
     "coreOAuth2Config" : {
       "refreshTokenLifetime" : 604800,
       "accessTokenLifetime" : 3600,
-      "usePolicyEngineForScope" : false,
+      "usePolicyEngineForScope" : true,
       "codeLifetime" : 120,
       "issueRefreshTokenOnRefreshedToken" : true,
       "issueRefreshToken" : true,

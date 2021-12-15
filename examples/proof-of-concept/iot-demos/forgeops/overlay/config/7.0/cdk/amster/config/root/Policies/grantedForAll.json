@@ -1,0 +1,24 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "&{version}",
+    "entityType" : "Policies",
+    "entityId" : "grantedForAll",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "grantedForAll",
+    "name" : "grantedForAll",
+    "active" : true,
+    "description" : "",
+    "resources" : [ "openid", "fr:idm:*"],
+    "applicationName" : "oauth2Scopes",
+    "actionValues" : {
+      "GRANT" : true
+    },
+    "subject" : {
+      "type" : "AuthenticatedUsers"
+    },
+    "resourceTypeUuid" : "d60b7a71-1dc6-44a5-8e48-e4b9d92dee8b"
+  }
+}
