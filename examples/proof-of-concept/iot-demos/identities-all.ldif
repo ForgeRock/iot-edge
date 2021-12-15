@@ -1,5 +1,50 @@
 version: 1
 
+dn: fr-idm-uuid=4959f523-a34b-489e-81b0-1e404e5be6e5,ou=people,ou=identities
+objectClass: fr-idm-managed-user-explicit
+objectClass: fr-iot
+objectClass: inetOrgPerson
+objectClass: inetuser
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: PressureSensor-5623hg
+sn: PressureSensor-5623hg
+fr-idm-uuid:: NDk1OWY1MjMtYTM0Yi00ODllLTgxYjAtMWU0MDRlNWJlNmU1
+inetUserStatus: active
+thingType: device
+uid: PressureSensor-5623hg
+
+dn: fr-idm-uuid=6d97a7fc-fc44-4ba2-a583-ad92852255af,ou=people,ou=identities
+objectClass: fr-idm-managed-user-explicit
+objectClass: fr-iot
+objectClass: inetOrgPerson
+objectClass: inetuser
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: SmartLock-651112
+sn: SmartLock-651112
+fr-idm-uuid:: NmQ5N2E3ZmMtZmM0NC00YmEyLWE1ODMtYWQ5Mjg1MjI1NWFm
+inetUserStatus: active
+thingType: device
+uid: SmartLock-651112
+
+dn: fr-idm-uuid=15319fec-8862-4574-9559-027a1e030772,ou=people,ou=identities
+objectClass: fr-idm-managed-user-explicit
+objectClass: fr-iot
+objectClass: inetOrgPerson
+objectClass: inetuser
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: DeviceUpdateService
+sn: DeviceUpdateService
+fr-idm-uuid:: MTUzMTlmZWMtODg2Mi00NTc0LTk1NTktMDI3YTFlMDMwNzcy
+inetUserStatus: active
+thingType: service
+uid: DeviceUpdateService
+
 dn: fr-idm-uuid=ed83b950-e78d-4473-ade1-0bb030406961,ou=people,ou=identities
 objectClass: devicePrintProfilesContainer
 objectClass: forgerock-am-dashboard-service
@@ -67,3 +112,14 @@ givenName: Kiyoshi
 inetUserStatus: active
 mail: kiyoshi.murakami@example.com
 uid: kiyoshi
+
+dn: cn=Technicians,ou=groups,ou=identities
+objectclass: groupofuniquenames
+objectclass: top
+cn: Technicians
+
+dn: cn=Healthcare Professionals,ou=groups,ou=identities
+objectclass: groupofuniquenames
+objectclass: top
+cn: Healthcare Professionals
+

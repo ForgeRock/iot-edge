@@ -47,7 +47,7 @@ docker run -it -e AM_URL="$AM_URL" -v "$PWD"/things:/usr/src/things -w /usr/src/
 
 Run the `manual-registration` example to authenticate the device:
 ```
-go run ./cmd/manual-registration -url $AM_URL
+go run ./cmd/manual-registration -url "$AM_URL"
 ```
 
 ### Dynamic Registration
@@ -62,7 +62,7 @@ Configure the platform:
 
 Run the `dynamic-registration` example to dynamically register the device:
 ```
-go run ./cmd/dynamic-registration -url $AM_URL
+go run ./cmd/dynamic-registration -url "$AM_URL"
 ```
 
 ## Use case 2
@@ -78,6 +78,40 @@ Identities can be modified and deleted through the Identities UI.
 Relationships can be created between users and things. These relationships can then be queried and used, for example,
 to manage access to user data or restrict user access to devices or services. Relationships can be created manually
 through the UI or dynamically via custom endpoints.
+
+## Use case 3
+
+Manage user access to a particular device.
+
+### Group based access
+
+This use case will use a feature called [Dynamic OAuth 2.0 Authorization](https://backstage.forgerock.com/docs/am/7.1/authorization-guide/oauth2-authorization.html)
+to assign OAuth 2.0 scopes to users based on what group they belong to. This allows devices to restrict access to users
+if they are not in a particular group.
+
+The device will obtain an access token for the user via the OAuth 2.0 Device Authorization Grant (Device Flow). This
+means that the user does not have to share their credentials with the device and the device does not need an interactive
+user interface.
+
+Configure the platform:
+- Modify the IoT Service to add OAuth 2.0 client
+  - Add `view` and `maintain` scopes to the client
+- Create groups for `Healthcare Professionals` and `Technicians`
+- Add users to each group
+
+Policies for making the decision about which scopes to add to the user's access token has already been added to the
+configuration.
+
+Run the `device-access` example to authenticate the user and gain access to the device:
+```
+go run ./cmd/device-access -url "$AM_URL"
+```
+
+Navigate to the URL provided and authenticate the user that requires access to the device.
+
+The device will receive an access token for the user and inspect the scopes to decide what type of access the user is allowed.
+
+
 
 ## Deploy
 
