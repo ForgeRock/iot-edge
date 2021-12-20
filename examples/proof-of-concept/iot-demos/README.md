@@ -112,6 +112,34 @@ Navigate to the URL provided and authenticate the user that requires access to t
 The device will receive an access token for the user and inspect the scopes to decide what type of access the user is allowed.
 
 
+## Use case 4
+
+Integrate with GCP IoT Core and manage devices in either ForgeRock or GCP.
+
+### Synchronise devices with ForgeRock Identity Management
+
+Deploy the ForgeRock Platform from in the
+[Google Cloud Platform IoT Core Integration](https://github.com/ForgeRock/iot-edge/tree/main/examples/proof-of-concept/gcp-iot).
+
+Create GCP registry and populate with devices.
+
+Configure the platform:
+- Add the GCP IoT Connector in IDM
+
+View the newly synchronised devices in the ForgeRock Platform.
+
+### Publish device telemetry
+
+Devices can be dynamically registered in the ForgeRock Platform and synchronised to the GCP Registry.
+
+![Publish](docs/device-publish.png)
+
+Run the `gcp-iot` example to register a device and publish device telemetry to GCP:
+```
+go run cmd/publish-state/main.go --url "$AM_URL" -p iec-engineering -l us-central1 -r things -n dynamic-gcp-device
+```
+
+View the device's state in GCP IoT Core.
 
 ## Deploy
 

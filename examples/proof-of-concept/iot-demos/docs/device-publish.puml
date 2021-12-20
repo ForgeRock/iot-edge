@@ -1,0 +1,35 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+'actor "Admin" as ad
+participant Device as dv
+participant "FR Platform" as fr
+participant "GCP IoT Core" as gcp
+
+'ad -> gcp : Manually create device
+'fr -> gcp : Synchronize devices
+'gcp --> fr
+'ad -> fr : Manage device\nconfiguration and\nrelationships
+
+dv -> fr : Dynamically register device
+fr -> gcp : Synchronize devices
+gcp --> fr
+
+
+dv -> dv : Create and sign\nauthentication JWT
+dv -> gcp : Post device state\nusing JWT bearer\nauthentication
+
+@enduml
