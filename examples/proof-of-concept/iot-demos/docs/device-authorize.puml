@@ -1,0 +1,33 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+actor "Admin" as ad
+participant Device as dv
+participant "FR Platform" as fr
+participant "GCP IoT Core" as gcp
+
+ad -> gcp : Create device
+fr -> gcp : Synchronize devices
+gcp --> fr
+
+dv -> fr : Authenticate\nusing signed JWT
+fr --> dv : Session token response
+
+dv -> fr : Request OAuth 2.0 access token
+fr --> dv : Access token response
+
+
+@enduml

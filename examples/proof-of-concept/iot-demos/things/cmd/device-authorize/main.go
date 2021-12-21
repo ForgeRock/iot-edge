@@ -21,16 +21,13 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"os"
-
-	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 
 	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
-func authenticateDevice() error {
+func authorizeDevice() error {
 	var (
 		urlString   = flag.String("url", "https://am.localtest.me:8080/am", "URL of AM or Gateway")
 		realm       = flag.String("realm", "/", "AM Realm")
@@ -59,32 +56,42 @@ func authenticateDevice() error {
 		remoteKeyID = &keyID
 	}
 
-	b := builder.Session().
+	device, err := builder.Thing().
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateWith(callback.AuthenticateHandler{
-		Audience: *realm,
-		ThingID:  *thingName,
-		KeyID:    *remoteKeyID,
-		Key:      signer,
-		Claims:   nil,
-	})
-
-	session, err := b.Create()
+		AuthenticateThing(*thingName, *realm, *remoteKeyID, signer, nil).Create()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("SSO Token: %s\n", session.Token())
+	tokenResponse, err := device.RequestAccessToken()
+	if err != nil {
+		return err
+	}
+	token, err := tokenResponse.AccessToken()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Access token:", token)
+	expiresIn, err := tokenResponse.ExpiresIn()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Expires in:", expiresIn)
+	scopes, err := tokenResponse.Scope()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Scope(s):", scopes)
 	return nil
 }
 
 func main() {
 	// pipe debug to standard out
-	thing.DebugLogger().SetOutput(os.Stdout)
+	//thing.DebugLogger().SetOutput(os.Stdout)
 
-	if err := authenticateDevice(); err != nil {
+	if err := authorizeDevice(); err != nil {
 		log.Fatal(err)
 	}
 }

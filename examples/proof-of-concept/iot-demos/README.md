@@ -114,29 +114,50 @@ The device will receive an access token for the user and inspect the scopes to d
 
 ## Use case 4
 
-Integrate with GCP IoT Core and manage devices in either ForgeRock or GCP.
+Integrate with Google Cloud Platform IoT Core and manage devices in either ForgeRock or GCP.
 
 ### Synchronise devices with ForgeRock Identity Management
 
-Deploy the ForgeRock Platform from in the
+Deploy the ForgeRock Platform from the
 [Google Cloud Platform IoT Core Integration](https://github.com/ForgeRock/iot-edge/tree/main/examples/proof-of-concept/gcp-iot).
 
 Create GCP registry and populate with devices.
 
 Configure the platform:
+- Ensure Reconciliation from GCP to FR is enabled
 - Add the GCP IoT Connector in IDM
 
 View the newly synchronised devices in the ForgeRock Platform.
 
-### Publish device telemetry
+### Authenticate and authorize existing device
+
+The device's public key is synchronised to the ForgeRock Platform, which means that the device can now authenticate
+with ForgeRock to access additional features.
+
+The device can now request an OAuth 2.0 access token, which can be used to access 3rd party services.
+
+![Authorize](docs/device-authorize.png) 
+
+Run the `device-authorize` example to authenticate the device and to request an access token:
+```
+go run ./cmd/device-authorize -url "$AM_URL" -tree RegisterThings -name 2698309725841565 -keyid 2698309725841565-0
+```
+
+Access tokens can be issued as JWTs to allow services to do their own verification and access additional claims. 
+
+### Register new devices and publish device telemetry
 
 Devices can be dynamically registered in the ForgeRock Platform and synchronised to the GCP Registry.
 
 ![Publish](docs/device-publish.png)
 
+Configure the platform:
+- Disable Reconciliation from GCP to FR
+- Enable Reconciliation from FR to GCP
+
 Run the `gcp-iot` example to register a device and publish device telemetry to GCP:
 ```
-go run cmd/publish-state/main.go --url "$AM_URL" -p iec-engineering -l us-central1 -r things -n dynamic-gcp-device
+go run cmd/gcp-iot/main.go --url "$AM_URL" -p iec-engineering -l us-central1 -r things -n dynamic-gcp-device
 ```
 
 View the device's state in GCP IoT Core.

@@ -1,6 +1,6 @@
 {
   "isCron" : true,
-  "enabled" : true,
+  "enabled" : false,
   "persisted" : true,
   "type" : "cron",
   "misfirePolicy" : "fireAndProceed",
