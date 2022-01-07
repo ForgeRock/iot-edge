@@ -1,0 +1,38 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "ScriptingService",
+    "entityId" : "default/scriptConfigurations/948fc9b1-f341-4b49-b113-3a01dfe03b59",
+    "uid" : "ou=948fc9b1-f341-4b49-b113-3a01dfe03b59,ou=scriptConfigurations,ou=default,ou=OrganizationConfig,ou=1.0,ou=ScriptingService,ou=services,ou=am-config",
+    "sunServiceID" : "scriptConfiguration",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : [
+      "948fc9b1-f341-4b49-b113-3a01dfe03b59"
+    ]
+  },
+  "data" : {
+    "_id" : "default/scriptConfigurations/948fc9b1-f341-4b49-b113-3a01dfe03b59",
+    "_type" : {
+      "_id" : "ScriptingService",
+      "name" : "ScriptingService",
+      "collection" : false
+    },
+    "createdBy" : "null",
+    "lastModifiedDate" : "0",
+    "lastModifiedBy" : "null",
+    "name" : "Verify Client Assertion JS",
+    "context" : "AUTHENTICATION_TREE_DECISION_NODE",
+    "description" : null,
+    "language" : "JAVASCRIPT",
+    "creationDate" : "0",
+    "script" : {
+      "$base64:encode" : {
+        "$inline" : "VerifyClientAssertion.js"
+      }
+    }
+  }
+}
