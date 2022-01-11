@@ -4,6 +4,8 @@ This directory contains resources for deploying Things with the ForgeRock Identi
 
 ### Get Started
 
+#### Deploy using minikube
+
 Install the third party software by following the instructions in the
 [ForgeOps docs](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/minikube/setup/sw.html).
 Additionally, install [mkcert](https://github.com/FiloSottile/mkcert) for making locally-trusted development certificates.
@@ -26,20 +28,44 @@ In a new terminal, run `minikube ip` and map the output from the command to `iot
 echo "$(minikube ip) iot.iam.example.com" >> /etc/hosts
 ```
 
-The connection details for the platform will be printed to the console:
+When the script is complete it will print out the connection details for the platform.
+
+#### Deploy using Google Kubernetes Engine
+
+Follow the ForgeOps documentation to install the
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/cloud/setup/gke/clusterinfo.html).
+
+Set the following environment variables:
 ```
-=====================================================
-URL: https://iot.iam.example.com/platform
-Username: amadmin
-Password: 6KZjOxJU1xHGWHI0hrQT24Fn
-DS Password: zMO2W9IlOronDqrF2MtEha3Jiic3urZM
-=====================================================
+export PROJECT=<The name of the Google Cloud project that contains the cluster>
+export CLUSTER=<The cluster name>
+export ZONE=<The Google Cloud zone in which the cluster resides>
+export NAMESPACE=<The namespace to use in your cluster>
+export FQDN=<The fully qualified domain name of your deployment>
 ```
+
+After installing the Google Cloud SDK, authenticate and configure the SDK:
+```
+gcloud auth login
+gcloud container clusters get-credentials $CLUSTER --zone $ZONE --project $PROJECT
+```
+
+Deploy the Things CDK to GKE:
+```
+./deploy.sh
+```
+
+When the script is complete it will print out the connection details for the platform.
 
 ### Using the Platform for Things
-Once the platform is running we can register and authenticate a thing via the `authenticate` endpoint and perform actions like authorization and retrieving attributes via the `things` endpoint. This can either be done with the IoT SDK or by using the endpoints directly. The `things` endpoint in AM provides IoT-specific functionality. For example, a thing can request an OAuth 2.0 access token without having to know the credentials of the OAuth 2.0 client acting on its behalf.
+Once the platform is running we can register and authenticate a thing via the `authenticate` endpoint and perform
+actions like authorization and retrieving attributes via the `things` endpoint. This can either be done with the IoT
+SDK or by using the endpoints directly. The `things` endpoint in AM provides IoT-specific functionality. For example,
+a thing can request an OAuth 2.0 access token without having to know the credentials of the OAuth 2.0 client acting on its behalf.
 
-Before a thing can use the `things` endpoint, it must be registered with the platform and have a valid session token. A thing identity can be registered via the platform UI:
+Before a thing can use the `things` endpoint, it must be registered with the platform and have a valid session token.
+A thing identity can be registered via the platform UI:
 
 1. Open the [Thing List](https://iot.iam.example.com/platform/?realm=root#/managed-identities/managed/thing).
 1. Click the `New Thing` button.
@@ -92,6 +118,8 @@ If the request is valid and authorised, then the platform will respond with the 
 The functional test framework, Anvil, can be run against the ForgeOps IoT Platform to verify that all the IoT SDK and
 IoT Gateway features work correctly.
 
+#### On minikube
+
 Start the platform before running the tests:
 ```
 ./run.sh $(PWD)/../../tests/iotsdk/testdata/forgeops 6KZjOxJU1xHGWHI0hrQT24Fn
@@ -101,4 +129,17 @@ Run the functional tests:
 ```
 cd ../../
 ./run.sh anvil -deployment=platform -url=https://iot.iam.example.com/am -password=6KZjOxJU1xHGWHI0hrQT24Fn
+```
+
+#### On GKE
+
+Start the platform before running the tests:
+```
+./deploy.sh $(PWD)/../../tests/iotsdk/testdata/forgeops 6KZjOxJU1xHGWHI0hrQT24Fn
+```
+
+Run the functional tests:
+```
+cd ../../
+./run.sh anvil -deployment=platform -url=https://$FQDN/am -password=6KZjOxJU1xHGWHI0hrQT24Fn
 ```

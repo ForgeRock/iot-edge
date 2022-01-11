@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2020-2022 ForgeRock AS
+# Copyright 2022 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,16 @@ set -e
 # limitations under the License.
 #
 
-BASE_OVERLAY_DIR=$(PWD)/overlay
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
+BASE_OVERLAY_DIR=$(PWD)/overlay
 SECRETS_IN_DIR=$(PWD)/secrets
 SECRETS_OUT_DIR=$(PWD)/tmp/secrets
 CONFIG_PROFILE=cdk
-NAMESPACE=iot
-FQDN=iot.iam.example.com
+
+if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" ]]; then
+  echo "NAMESPACE, FQDN, CLUSTER, ZONE and PROJECT variables must be set"
+exit 1
+fi
 
 if [ -n "$1" ]; then
   CUSTOM_OVERLAY_DIR=$1
@@ -36,9 +39,18 @@ if [ -n "$2" ]; then
 fi
 
 echo "====================================================="
+echo "Environment variables"
+echo "====================================================="
+echo "PROJECT=$PROJECT"
+echo "CLUSTER=$CLUSTER"
+echo "ZONE=$ZONE"
+echo "NAMESPACE=$NAMESPACE"
+echo "FQDN=$FQDN"
+
+echo "====================================================="
 echo "Clone ForgeOps"
 echo "====================================================="
-rm -rf "${FORGEOPS_DIR}" && mkdir "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
+rm -rf "$FORGEOPS_DIR" && mkdir -p "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
 git checkout release/7.1.0
 
@@ -56,30 +68,28 @@ sed -i '' "s/&{FQDN}/$FQDN/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomiza
 sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$SECRETS_OUT_DIR/iot-secrets.yaml"
 
 echo "====================================================="
-echo "Start and configure Minikube"
-echo "====================================================="
-minikube start --memory=12288 --cpus=3 --disk-size=40g --cni=true --vm=true --driver=virtualbox --bootstrapper kubeadm --kubernetes-version=stable
-minikube addons enable ingress
-"$FORGEOPS_DIR"/bin/secret-agent install
-
-echo "====================================================="
-echo "Create 'iot' namespace"
+echo "Create '$NAMESPACE' namespace"
 echo "====================================================="
 set +e
-kubectl create namespace iot
-kubens iot
+kubectl create namespace $NAMESPACE
+kubens $NAMESPACE
 set -e
 
 echo "====================================================="
-echo "Use Minikube's built-in docker"
+echo "Configure Skaffold to use default repo"
 echo "====================================================="
-eval $(minikube docker-env)
-skaffold config set --kube-context minikube local-cluster true
+skaffold config set default-repo gcr.io/$PROJECT -k gke_$PROJECT_$ZONE_$CLUSTER
 
 echo "====================================================="
-echo "Clean out existing pods for 'iot' namespace"
+echo "Clean out existing pods for '$NAMESPACE' namespace"
 echo "====================================================="
 skaffold delete
+
+echo "====================================================="
+echo "Initialise '$CONFIG_PROFILE' configuration profile"
+echo "====================================================="
+"$FORGEOPS_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --version 7.0
+"$FORGEOPS_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --component ds --version 7.0
 
 echo "====================================================="
 echo "Apply IoT secrets"
@@ -92,26 +102,9 @@ kubectl apply --filename $SECRETS_OUT_DIR/iot-secrets.yaml
 kubectl create --filename $SECRETS_OUT_DIR/iot-secret-agent-configuration.yaml
 
 echo "====================================================="
-echo "Initialise '$CONFIG_PROFILE' configuration profile"
-echo "====================================================="
-"$FORGEOPS_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --version 7.0
-"$FORGEOPS_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --component ds --version 7.0
-
-echo "====================================================="
 echo "Run the platform"
 echo "====================================================="
 skaffold run
-
-echo "====================================================="
-echo "Create and install the certificate"
-echo "====================================================="
-if [ ! -f _wildcard.iam.example.com.pem ]; then
-  mkcert "*.iam.example.com"
-  mkcert -install
-fi
-# The very first time sslcert does not exist so the delete command will fail. The `||  true' stops the script exiting.
-kubectl delete secret sslcert || true
-kubectl create secret tls sslcert --cert=_wildcard.iam.example.com.pem --key=_wildcard.iam.example.com-key.pem
 
 echo "====================================================="
 echo "~~~ Platform login details ~~~"
