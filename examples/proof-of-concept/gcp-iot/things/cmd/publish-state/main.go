@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2021-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/jessevdk/go-flags"
-	"github.com/jpillora/backoff"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/jessevdk/go-flags"
+	"github.com/jpillora/backoff"
 
 	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"

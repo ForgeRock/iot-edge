@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 ForgeRock AS
+ * Copyright 2019-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 const (
