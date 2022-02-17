@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2021 ForgeRock AS
+# Copyright 2021-2022 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,47 +19,28 @@ set -e
 
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
-#BASE_OVERLAY_DIR=$IOT_EDGE_DIR/deployments/forgeops/overlay
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
 SECRETS_DIR=$(PWD)/forgeops/secrets
 CONFIG_PROFILE=cdk
 
-if [ -z "$NAMESPACE" ]; then
-  echo "NAMESPACE variable must be set"
-  exit 1
+if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" ]]; then
+  echo "NAMESPACE, FQDN, CLUSTER, ZONE and PROJECT variables must be set"
+exit 1
 fi
 
-if [ -z "$FQDN" ]; then
-  echo "FQDN variable must be set"
-  exit 1
-fi
-
-if [ -z "$CLUSTER" ]; then
-  echo "CLUSTER variable must be set"
-  exit 1
-fi
-
-if [ -z "$ZONE" ]; then
-  echo "ZONE variable must be set"
-  exit 1
-fi
-
-if [ -z "$PROJECT" ]; then
-  echo "PROJECT variable must be set"
-  exit 1
+if [ -n "$1" ]; then
+  PLATFORM_PASSWORD=$1
+  echo "Overriding platform password: $PLATFORM_PASSWORD"
 fi
 
 echo "====================================================="
 echo "Environment variables"
 echo "====================================================="
-echo "NAMESPACE=$NAMESPACE"
-echo "FQDN=$FQDN"
+echo "PROJECT=$PROJECT"
 echo "CLUSTER=$CLUSTER"
 echo "ZONE=$ZONE"
-echo "PROJECT=$PROJECT"
-if [ -n "$PLATFORM_PASSWORD" ]; then
-  echo "PLATFORM_PASSWORD=$PLATFORM_PASSWORD"
-fi
+echo "NAMESPACE=$NAMESPACE"
+echo "FQDN=$FQDN"
 
 echo "====================================================="
 echo "Clone Things and ForgeOps"
@@ -74,8 +55,6 @@ git checkout release/7.1.0
 echo "====================================================="
 echo "Overlay custom files"
 echo "====================================================="
-# The base overlay is not used since we want less IoT configuration on start up
-#cp -rf "$BASE_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 cp -rf "$CUSTOM_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 cp -rf "$SECRETS_DIR"/* "$IOT_EDGE_DIR/deployments/forgeops/secrets"
 sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"

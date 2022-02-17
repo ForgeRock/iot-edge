@@ -1,18 +1,65 @@
 # IoT Demos
 
-## Prerequisites
-Install:
- - Git
- - Docker
- 
-Clone the IoT repository and checkout the demo branch:  
+## Deploy ForgeOps IoT
+
+This will deploy Version 7.1.0 of the ForgeOps CDK, configured for IoT, to Google Kubernetes Engine.
+
+Follow the ForgeOps documentation to install the
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/cloud/setup/gke/sw.html) and
+[obtain the GKE cluster details](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/cloud/setup/gke/clusterinfo.html).
+
+Set the following environment variables:
+```
+PROJECT     - The name of the Google Cloud project that contains the cluster
+CLUSTER     - The cluster name
+ZONE        - The Google Cloud zone in which the cluster resides
+NAMESPACE   - The namespace to use in your cluster
+FQDN        - The fully qualified domain name of your deployment
+```
+
+for example:
+```
+export PROJECT=fr-iot-demos
+export CLUSTER=forgerock
+export ZONE=us-east1
+export NAMESPACE=iot-demo
+export FQDN=example.forgeops.com
+```
+
+After installing the Google Cloud SDK, authenticate and configure the SDK:
+```
+gcloud auth login
+gcloud container clusters get-credentials $CLUSTER --zone $ZONE --project $PROJECT
+```
+
+Clone the IoT repository and checkout the demo branch:
 ```
 git clone https://github.com/ForgeRock/iot-edge.git
 cd iot-edge
 git checkout iot-demos
-cd examples/proof-of-concept/iot-demos
 ```
 
+Deploy the ForgeOps IoT platform:
+```
+./deploy.sh
+```
+
+The deployment script will perform the following tasks:
+ - Checkout the ForgeOps and ForgeRock IoT Git repositories
+ - Apply the IoT LDAP schema for Things to DS
+ - Configure AM:
+   - with IoT identity repository objects and attributes
+   - as an OAuth 2.0 Authorization Server
+   - with the secrets required for IoT dynamic registration and OAuth 2.0 features
+ - Configure IDM:
+   - with the Thing managed object schema
+   - for User and Thing relationships
+ - Create the Kubernetes namespace and deploy the platform with Scaffold
+
+When the script is complete it will print out the connection details for the platform.
+
+## Prepare Device Environment
+ 
 Get the Go docker image:
 ```
 docker pull golang
@@ -20,7 +67,21 @@ docker pull golang
 
 Set the environment variable for the AM URL:
 ```
-export AM_URL=https://example.forgeops.com/am
+export AM_URL=https://$FQDN/am
+```
+
+Start the Go docker image to simulate a smart device:
+```
+cd examples/proof-of-concept/iot-demos
+docker run -it -e AM_URL="$AM_URL" -v "$PWD"/things:/usr/src/things -w /usr/src/things golang
+```
+
+## Populate Demo Identities
+
+Use the `(uid=admin user)` password provided at the end of the deployment script and populate the demo identities,
+for example:
+```
+./add-identities.sh zIg1LChqItAh7imtQSopLxn5uGlnMycc
 ```
 
 ## Use case 1
@@ -40,10 +101,7 @@ Configure the platform:
    - Type: `device`
    - Keys: `{"keys":[{"use":"sig","kty":"EC","kid":"cbnztC8J_l2feNf0aTFBDDQJuvrd2JbLPoOAxHR2N8o=","crv":"P-256","alg":"ES256","x":"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4","y":"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw"}]}`
 
-Start the Go docker image to simulate a smart device:
-```
-docker run -it -e AM_URL="$AM_URL" -v "$PWD"/things:/usr/src/things -w /usr/src/things golang
-```
+#### Build and Run
 
 Run the `manual-registration` example to authenticate the device:
 ```
@@ -59,6 +117,8 @@ Configure the platform:
    - `sub` : `uid`
    - `thingType` : `thingType`
    - `thingProperties` : `thingProperties`
+
+#### Build and Run
 
 Run the `dynamic-registration` example to dynamically register the device:
 ```
@@ -161,26 +221,3 @@ go run cmd/gcp-iot/main.go --url "$AM_URL" -p iec-engineering -l us-central1 -r 
 ```
 
 View the device's state in GCP IoT Core.
-
-## Deploy
-
-Set environment variables:
-```
-export PLATFORM_PASSWORD=StrongPassword
-export FQDN=example.forgeops.com
-export NAMESPACE=iot-demo
-export CLUSTER=forgerock
-export ZONE=us-east1
-export PROJECT=fr-iot-demos
-```
-
-Deploy the ForgeOps IoT platform:
-```
-./deploy.sh
-```
-
-Use the `(uid=admin user)` password provided at the end of the deployment script and populate the demo identities,
-for example:
-```
-./add-identities.sh zIg1LChqItAh7imtQSopLxn5uGlnMycc
-```
