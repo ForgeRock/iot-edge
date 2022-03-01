@@ -1,0 +1,50 @@
+@startuml
+
+skinparam sequence {
+    ArrowFontColor #062b8c
+    ArrowColor #062b8c
+    LifeLineBorderColor #062b8c
+
+    ParticipantBorderColor #062b8c
+    ParticipantBackgroundColor #fc6700
+    ParticipantFontColor #062b8c
+
+    ActorBorderColor #062b8c
+    ActorBackgroundColor #fc6700
+    ActorFontColor #062b8c
+}
+
+actor "Thing" as thing
+participant "API Gateway (IG)" as ag
+participant "Access Management" as am
+
+== OAuth 2.0 Dynamic Registration ==
+
+thing -> ag : /oauth2/register,\nsoftware_statement=JWT(jwks=thing keys)
+ag -> am: /authenticate,\ncallback=software_statement
+am -> am : Register Thing Node:\nvalidate software statement,\ngenerate ID and create identity
+am --> ag : sso token
+ag -> am : /things/*
+am --> ag : thing attributes\n_id (generated UUID)
+ag --> thing : client_id
+
+== OAuth 2.0 Client Credential Grant with JWT Bearer Auth ==
+
+thing -> ag : /oauth2/access_token,\ngrant_type=client_credentials,\nclient_assertion_type=jwt-bearer,\nclient_assertion=JWT(sub=client_id)
+ag -> am: /authenticate,\ncallback=client_assertion
+am -> am : Authenticate Thing Node:\nvalidate assertion
+am --> ag : sso token
+ag -> am : /things/*?_action=get_access_token
+am -> am : issue token based on\nclient=forgerock-iot-oauth2-client,\nissuer=forgerock-iot-jwt-issuer
+am --> ag : access token
+ag --> thing : access token
+
+
+== OpenID Connect User Info  ==
+
+thing -> ag : /userinfo,\nauth=access_token
+ag -> am : /userinfo,\nauth=access_token
+am --> ag : claims
+ag --> thing : claims
+
+@enduml

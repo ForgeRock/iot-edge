@@ -47,7 +47,7 @@
         "propertyMapping": {
           "sub": "_id"
         },
-        "queryOnResource": "managed/user",
+        "queryOnResource": "managed/{{resourceType}}",
         "userRoles": "authzRoles/*"
       }
     ],
