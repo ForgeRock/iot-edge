@@ -19,6 +19,18 @@
                   ],
                   "queryFilter": "true"
                 }
+              },
+              {
+                "path" : "managed/thing",
+                "conditionalAssociation" : true,
+                "notify" : true,
+                "label" : "Thing",
+                "query" : {
+                  "queryFilter" : "true",
+                  "fields" : [
+                    "cn"
+                  ]
+                }
               }
             ]
           }

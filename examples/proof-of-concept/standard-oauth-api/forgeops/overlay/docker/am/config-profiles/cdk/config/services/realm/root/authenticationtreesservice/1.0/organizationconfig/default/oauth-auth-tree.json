@@ -1,0 +1,58 @@
+{
+  "data": {
+    "_id": "default/oauth-auth-tree",
+    "_type": {
+      "_id": "authenticationTreesService",
+      "collection": false,
+      "name": "authenticationTreesService"
+    },
+    "description": null,
+    "entryNodeId": "6ff94823-5e05-402f-9a23-a143ce699074",
+    "identityResource": "managed/thing",
+    "nodes": {
+      "6ff94823-5e05-402f-9a23-a143ce699074": {
+        "connections": {
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        },
+        "displayName": "Authenticate Thing",
+        "nodeType": "IotAuthenticationNode",
+        "x": 210,
+        "y": 125
+      }
+    },
+    "staticNodes": {
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 443,
+        "y": 80
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 443,
+        "y": 230
+      },
+      "startNode": {
+        "x": 70,
+        "y": 155
+      }
+    },
+    "uiConfig": {
+      "categories": "[]"
+    }
+  },
+  "metadata": {
+    "entityId": "default/oauth-auth-tree",
+    "entityType": "authenticationTreesService",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "ou": [
+      "oauth-auth-tree"
+    ],
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": "tree",
+    "uid": "ou=oauth-auth-tree,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config"
+  }
+}
