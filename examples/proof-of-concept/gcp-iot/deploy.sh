@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2021 ForgeRock AS
+# Copyright 2021-2022 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ FORGEOPS_DIR=$(PWD)/tmp/forgeops
 IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
 BASE_OVERLAY_DIR=$IOT_EDGE_DIR/deployments/forgeops/overlay
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
+CONNECTOR_DIR=$(PWD)/gcp-iot-core-connector
 PLATFORM_PASSWORD=
 SECRETS_DIR=$(PWD)/forgeops/secrets
 CONFIG_PROFILE=cdk
@@ -46,10 +47,8 @@ fi
 echo "====================================================="
 echo "Build the connector"
 echo "====================================================="
-cd gcp-iot-core-connector
+cd $CONNECTOR_DIR
 mvn clean install
-rm -rf ../forgeops/docker/7.0/idm/connectors && mkdir -p ../forgeops/docker/7.0/idm/connectors
-cp target/gcp-iot-core-connector-0.1.jar "$CUSTOM_OVERLAY_DIR/docker/7.0/idm/connectors/gcp-iot-core-connector-0.1.jar"
 
 echo "====================================================="
 echo "Clone Things and ForgeOps"
@@ -70,6 +69,10 @@ cp -rf "$SECRETS_DIR"/* "$IOT_EDGE_DIR/deployments/forgeops/secrets"
 sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"
 sed -i '' "s/&{FQDN}/$FQDN/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"
 sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$IOT_EDGE_DIR/deployments/forgeops/secrets/iot-secrets.yaml"
+mkdir -p "$FORGEOPS_DIR/docker/7.0/idm/connectors"
+mkdir -p "$FORGEOPS_DIR/docker/7.0/idm/lib"
+cp -f "$CONNECTOR_DIR/target/gcp-iot-core-connector-0.1.jar" "$FORGEOPS_DIR/docker/7.0/idm/connectors/gcp-iot-core-connector-0.1.jar"
+cp -f $CONNECTOR_DIR/target/lib/* $FORGEOPS_DIR/docker/7.0/idm/lib
 
 echo "====================================================="
 echo "Create '$NAMESPACE' namespace"

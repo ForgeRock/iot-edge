@@ -1,0 +1,18 @@
+{
+  "isCron" : true,
+  "enabled" : false,
+  "persisted" : true,
+  "type" : "cron",
+  "misfirePolicy" : "fireAndProceed",
+  "invokeService" : "sync",
+  "invokeLogLevel" : "info",
+  "timeZone" : null,
+  "startTime" : null,
+  "endTime" : null,
+  "concurrentExecution" : false,
+  "invokeContext" : {
+    "action" : "reconcile",
+    "mapping" : "systemGCPIoTCoreTHINGS_managedThing"
+  },
+  "schedule" : "*/1 * * * * ?"
+}
