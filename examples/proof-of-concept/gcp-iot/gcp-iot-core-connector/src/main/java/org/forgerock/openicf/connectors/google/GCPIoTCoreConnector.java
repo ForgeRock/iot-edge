@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2022 ForgeRock AS. All Rights Reserved
  *
  * Use of this code requires a commercial software license with ForgeRock AS.
  * or with one of its affiliates. All use shall be exclusively subject
@@ -8,33 +8,80 @@
 
 package org.forgerock.openicf.connectors.google;
 
-import com.google.api.services.cloudiot.v1.model.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
+import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.JWKSet;
-import org.forgerock.json.jose.jwk.EcJWK;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.cloudiot.v1.CloudIot;
-import com.google.api.services.cloudiot.v1.CloudIotScopes;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.api.operations.CreateApiOp;
 import org.identityconnectors.framework.common.exceptions.ConnectorIOException;
 import org.identityconnectors.framework.common.exceptions.ConnectorSecurityException;
-import org.identityconnectors.framework.common.objects.*;
+import org.identityconnectors.framework.common.objects.Attribute;
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
+import org.identityconnectors.framework.common.objects.AttributeInfo;
+import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.AttributesAccessor;
+import org.identityconnectors.framework.common.objects.ConnectorObject;
+import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
+import org.identityconnectors.framework.common.objects.Name;
+import org.identityconnectors.framework.common.objects.ObjectClass;
+import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
+import org.identityconnectors.framework.common.objects.OperationOptions;
+import org.identityconnectors.framework.common.objects.ResultsHandler;
+import org.identityconnectors.framework.common.objects.Schema;
+import org.identityconnectors.framework.common.objects.SchemaBuilder;
+import org.identityconnectors.framework.common.objects.SearchResult;
+import org.identityconnectors.framework.common.objects.SyncDeltaBuilder;
+import org.identityconnectors.framework.common.objects.SyncDeltaType;
+import org.identityconnectors.framework.common.objects.SyncResultsHandler;
+import org.identityconnectors.framework.common.objects.SyncToken;
+import org.identityconnectors.framework.common.objects.Uid;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.common.objects.filter.FilterTranslator;
-import org.identityconnectors.framework.spi.*;
-import org.identityconnectors.framework.spi.operations.*;
+import org.identityconnectors.framework.spi.Configuration;
+import org.identityconnectors.framework.spi.Connector;
+import org.identityconnectors.framework.spi.ConnectorClass;
+import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.identityconnectors.framework.spi.SyncTokenResultsHandler;
+import org.identityconnectors.framework.spi.operations.CreateOp;
+import org.identityconnectors.framework.spi.operations.DeleteOp;
+import org.identityconnectors.framework.spi.operations.SchemaOp;
+import org.identityconnectors.framework.spi.operations.SearchOp;
+import org.identityconnectors.framework.spi.operations.SyncOp;
+import org.identityconnectors.framework.spi.operations.TestOp;
+import org.identityconnectors.framework.spi.operations.UpdateOp;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.PublicKey;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.cloudiot.v1.CloudIot;
+import com.google.api.services.cloudiot.v1.CloudIotScopes;
+import com.google.api.services.cloudiot.v1.model.Device;
+import com.google.api.services.cloudiot.v1.model.DeviceConfig;
+import com.google.api.services.cloudiot.v1.model.DeviceCredential;
+import com.google.api.services.cloudiot.v1.model.ModifyCloudToDeviceConfigRequest;
+import com.google.api.services.cloudiot.v1.model.PublicKeyCredential;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 
 /**
  * Main implementation of the Google Cloud Platform IoT Core Connector.
@@ -90,7 +137,7 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
                     .registries()
                     .devices()
                     .list(getRegistryPath())
-                    .setFieldMask("(blocked,config)")
+                    .setFieldMask("(blocked,config,credentials)")
                     .execute()
                     .getDevices();
         } catch (IOException e) {
@@ -195,9 +242,10 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
     }
 
     private ConnectorObject buildThing(Device device) {
+        String deviceId = device.getNumId().toString();
         ConnectorObjectBuilder builder = new ConnectorObjectBuilder();
         builder.setObjectClass(THINGS);
-        builder.setUid(device.getNumId().toString());
+        builder.setUid(deviceId);
         builder.setName(device.getId());
         builder.addAttribute(THING_TYPE_ATTR);
 
@@ -212,6 +260,21 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
             builder.addAttribute(AttributeBuilder.build("thingConfig", config));
         }
 
+        List<DeviceCredential> credentials = device.getCredentials();
+        if (credentials == null) {
+            return builder.build();
+        }
+        List<JWK> jwkList = new ArrayList<>();
+        for (int i = 0; i < credentials.size(); i++) {
+            PublicKeyCredential key = credentials.get(i).getPublicKey();
+            if (key != null && !key.isEmpty()) {
+                JWK jwk = convertPEMToJWK(key.getKey(), deviceId + "-" + i);
+                if (jwk != null) {
+                    jwkList.add(jwk);
+                }
+            }
+        }
+        builder.addAttribute(AttributeBuilder.build("publicKey", new JWKSet(jwkList).toJsonString()));
         return builder.build();
     }
 
@@ -324,6 +387,34 @@ public class GCPIoTCoreConnector implements Connector, TestOp, SchemaOp, SearchO
             logger.error("confirmation key is of an unsupported type: {}", key.toString());
             return null;
 
+        }
+    }
+
+    private JWK convertPEMToJWK(String pemString, String keyId) {
+        final KeyFactory factory;
+        try {
+            factory = KeyFactory.getInstance("EC");
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("failed to get key factory", e);
+            return null;
+        }
+        PemReader pemReader = new PemReader(new StringReader(pemString));
+        final PemObject pemObject;
+        try {
+            pemObject = pemReader.readPemObject();
+        } catch (IOException e) {
+            logger.error("failed to read PEM string", e);
+            return null;
+        }
+        byte[] content = pemObject.getContent();
+        X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(content);
+        try {
+            return EcJWK.builder((ECPublicKey) factory.generatePublic(pubKeySpec))
+                    .keyId(keyId)
+                    .build();
+        } catch (InvalidKeySpecException e) {
+            logger.error("failed to parse PEM encoded key", e);
+            return null;
         }
     }
 

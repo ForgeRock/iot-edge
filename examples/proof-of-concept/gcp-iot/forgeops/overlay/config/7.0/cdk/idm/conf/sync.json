@@ -25,6 +25,10 @@
                 {
                     "target" : "thingConfig",
                     "source" : "thingConfig"
+                },
+                {
+                    "target" : "thingKeys",
+                    "source" : "publicKey"
                 }
             ],
             "policies" : [
