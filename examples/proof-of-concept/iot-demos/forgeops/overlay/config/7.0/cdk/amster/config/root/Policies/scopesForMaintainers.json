@@ -20,7 +20,7 @@
       "type" : "NOT",
       "subject" : {
         "type" : "Identity",
-        "subjectValues" : [ "id=Technicians,ou=group,ou=am-config" ]
+        "subjectValues" : [ "id=Maintainers,ou=group,ou=am-config" ]
       }
     },
     "resourceTypeUuid" : "d60b7a71-1dc6-44a5-8e48-e4b9d92dee8b"

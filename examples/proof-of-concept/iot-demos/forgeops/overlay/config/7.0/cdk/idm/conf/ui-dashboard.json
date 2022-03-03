@@ -116,7 +116,14 @@
             "widgets" : [
                 {
                     "type" : "relationship",
-                    "size" : "large",
+                    "size" : "small",
+                    "chartType" : "collapsibleTree",
+                    "defaultObject" : "user",
+                    "searchProperty" : "userName"
+                },
+                {
+                    "type" : "relationship",
+                    "size" : "small",
                     "chartType" : "collapsibleTree",
                     "defaultObject" : "thing",
                     "searchProperty" : "cn"

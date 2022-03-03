@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2021-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,15 +80,15 @@ func createStateRequest(url, jwt, status string) (*http.Request, error) {
 }
 
 type commandlineOpts struct {
-	URL         string `long:"url" default:"https://iot.iam.example.com/am" description:"AM URL"`
+	URL         string `long:"url" default:"https://am.localtest.me:8080/am" description:"AM URL"`
 	Realm       string `long:"realm" default:"/" description:"AM Realm"`
 	Audience    string `long:"audience" default:"/" description:"JWT Audience"`
-	Tree        string `long:"tree" default:"RegisterThings" description:"Authentication tree"`
-	Name        string `short:"n" long:"name" required:"true" description:"Device name"`
+	Tree        string `long:"tree" default:"iot-journey" description:"Authentication journey"`
+	Name        string `short:"n" long:"name" default:"dynamic-gcp-device" description:"Device name"`
 	SecretStore string `long:"secrets" description:"Path to pre-created secret store"`
-	ProjectID   string `short:"p" required:"true" description:"Google Cloud Platform Project ID"`
-	Location    string `short:"l" required:"true" description:"IoT Core Device Registry Region"`
-	RegistryID  string `short:"r" required:"true" description:"IoT Core Device Registry ID"`
+	ProjectID   string `short:"p" long:"projectID" required:"true" description:"Google Cloud Platform Project ID"`
+	RegistryID  string `short:"r" long:"registryID" required:"true" description:"IoT Core Device Registry ID"`
+	Region      string `short:"l" long:"region" required:"true" description:"IoT Core Device Registry Region"`
 	Debug       bool   `short:"d" description:"Debug"`
 }
 
@@ -142,7 +142,7 @@ func registerAndUpdateState() (err error) {
 		url := fmt.Sprintf(
 			"https://cloudiotdevice.googleapis.com/v1/projects/%s/locations/%s/registries/%s/devices/%s:setState",
 			opts.ProjectID,
-			opts.Location,
+			opts.Region,
 			opts.RegistryID,
 			opts.Name)
 

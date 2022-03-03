@@ -3,12 +3,12 @@
     "realm" : "/",
     "amsterVersion" : "&{version}",
     "entityType" : "Policies",
-    "entityId" : "scopesForHCProfessionals",
+    "entityId" : "scopesForViewers",
     "pathParams" : { }
   },
   "data" : {
-    "_id" : "scopesForHCProfessionals",
-    "name" : "scopesForHCProfessionals",
+    "_id" : "scopesForViewers",
+    "name" : "scopesForViewers",
     "active" : true,
     "description" : "",
     "resources" : [ "view" ],
@@ -20,7 +20,7 @@
       "type" : "NOT",
       "subject" : {
         "type" : "Identity",
-        "subjectValues" : [ "id=Healthcare Professionals,ou=group,ou=am-config" ]
+        "subjectValues" : [ "id=Viewers,ou=group,ou=am-config" ]
       }
     },
     "resourceTypeUuid" : "d60b7a71-1dc6-44a5-8e48-e4b9d92dee8b"

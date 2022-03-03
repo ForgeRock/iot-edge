@@ -1,0 +1,175 @@
+{
+    "mappings" : [
+        {
+            "target" : "managed/thing",
+            "source" : "system/GCPIoTCore/THINGS",
+            "name" : "GCP_to_FR",
+            "displayName" : "GCP IoT Core to ForgeRock Platform",
+            "properties" : [
+                {
+                    "target" : "uid",
+                    "source" : "__UID__"
+                },
+                {
+                    "target" : "cn",
+                    "source" : "__NAME__"
+                },
+                {
+                    "target" : "thingType",
+                    "source" : "thingType"
+                },
+                {
+                    "target" : "accountStatus",
+                    "source" : "accountStatus"
+                },
+                {
+                    "target" : "thingConfig",
+                    "source" : "thingConfig"
+                },
+                {
+                    "target" : "thingKeys",
+                    "source" : "publicKey"
+                }
+            ],
+            "policies" : [
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "AMBIGUOUS"
+                },
+                {
+                    "action" : "DELETE",
+                    "situation" : "SOURCE_MISSING"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "MISSING"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "FOUND_ALREADY_LINKED"
+                },
+                {
+                    "action" : "DELETE",
+                    "situation" : "UNQUALIFIED"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "UNASSIGNED"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "LINK_ONLY"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "TARGET_IGNORED"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "SOURCE_IGNORED"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "ALL_GONE"
+                },
+                {
+                    "action" : "UPDATE",
+                    "situation" : "CONFIRMED"
+                },
+                {
+                    "action" : "UPDATE",
+                    "situation" : "FOUND"
+                },
+                {
+                    "action" : "CREATE",
+                    "situation" : "ABSENT"
+                }
+            ]
+        },
+        {
+            "target" : "system/GCPIoTCore/THINGS",
+            "source" : "managed/thing",
+            "name" : "FR_to_GCP",
+            "consentRequired" : false,
+            "icon" : null,
+            "displayName" : "ForgeRock Platform to GCP IoT Core",
+            "properties" : [
+                {
+                    "source" : "uid",
+                    "target" : "__UID__"
+                },
+                {
+                    "source" : "accountStatus",
+                    "target" : "accountStatus"
+                },
+                {
+                    "target" : "thingConfig",
+                    "source" : "thingConfig"
+                },
+                {
+                    "target" : "__NAME__",
+                    "source" : "cn"
+                },
+                {
+                    "target" : "publicKey",
+                    "source" : "thingKeys"
+                }
+            ],
+            "policies" : [
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "AMBIGUOUS"
+                },
+                {
+                    "action" : "DELETE",
+                    "situation" : "SOURCE_MISSING"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "MISSING"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "FOUND_ALREADY_LINKED"
+                },
+                {
+                    "action" : "DELETE",
+                    "situation" : "UNQUALIFIED"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "UNASSIGNED"
+                },
+                {
+                    "action" : "EXCEPTION",
+                    "situation" : "LINK_ONLY"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "TARGET_IGNORED"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "SOURCE_IGNORED"
+                },
+                {
+                    "action" : "IGNORE",
+                    "situation" : "ALL_GONE"
+                },
+                {
+                    "action" : "UPDATE",
+                    "situation" : "CONFIRMED"
+                },
+                {
+                    "action" : "UPDATE",
+                    "situation" : "FOUND"
+                },
+                {
+                    "action" : "CREATE",
+                    "situation" : "ABSENT"
+                }
+            ],
+            "links" : "GCP_to_FR"
+        }
+    ]
+}

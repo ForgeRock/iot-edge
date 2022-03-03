@@ -21,6 +21,7 @@ FORGEOPS_DIR=$(PWD)/tmp/forgeops
 IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
 SECRETS_DIR=$(PWD)/forgeops/secrets
+CONNECTOR_DIR=$(PWD)/../gcp-iot/gcp-iot-core-connector
 CONFIG_PROFILE=cdk
 
 if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" ]]; then
@@ -43,6 +44,12 @@ echo "NAMESPACE=$NAMESPACE"
 echo "FQDN=$FQDN"
 
 echo "====================================================="
+echo "Build the connector"
+echo "====================================================="
+cd $CONNECTOR_DIR
+mvn clean install
+
+echo "====================================================="
 echo "Clone Things and ForgeOps"
 echo "====================================================="
 rm -rf "$IOT_EDGE_DIR" && mkdir -p "$IOT_EDGE_DIR" && cd "$IOT_EDGE_DIR"
@@ -60,6 +67,10 @@ cp -rf "$SECRETS_DIR"/* "$IOT_EDGE_DIR/deployments/forgeops/secrets"
 sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"
 sed -i '' "s/&{FQDN}/$FQDN/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"
 sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$IOT_EDGE_DIR/deployments/forgeops/secrets/iot-secrets.yaml"
+mkdir -p "$FORGEOPS_DIR/docker/7.0/idm/connectors"
+mkdir -p "$FORGEOPS_DIR/docker/7.0/idm/lib"
+cp -f "$CONNECTOR_DIR/target/gcp-iot-core-connector-0.1.jar" "$FORGEOPS_DIR/docker/7.0/idm/connectors/gcp-iot-core-connector-0.1.jar"
+cp -f $CONNECTOR_DIR/target/lib/* $FORGEOPS_DIR/docker/7.0/idm/lib
 
 echo "====================================================="
 echo "Create '$NAMESPACE' namespace"

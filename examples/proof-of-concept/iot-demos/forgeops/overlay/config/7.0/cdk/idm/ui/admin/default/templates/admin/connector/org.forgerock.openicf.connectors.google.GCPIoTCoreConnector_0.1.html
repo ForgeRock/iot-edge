@@ -1,0 +1,47 @@
+{{!
+  Copyright 2021 ForgeRock AS. All Rights Reserved
+
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<div class="panel panel-default panel-collapse" id="forGCPIoTCoreConnector">
+    <div class="panel-heading" role="tab" id="connectorSpecificBaseHeading">
+        <h4 class="panel-title">
+            <a data-toggle="collapse" href="#connectorSpecificBase" aria-expanded="true" aria-controls="connectorSpecificBaseHeading" class="">{{t "templates.connector.baseTitle"}}</a>
+        </h4>
+    </div>
+    <div id="connectorSpecificBase" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="connectorSpecificBase" aria-expanded="true">
+        <div class="panel-body">
+            <div class="form-group has-feedback">
+                <label class="col-sm-3 control-label" for="projectId">Project ID</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" id="projectId" name="configurationProperties.projectId" value="{{connectorDefaults.configurationProperties.projectId}}"  data-validator-event="keyup blur" data-validator="required" />
+                    <span class="help-block">Google Cloud Platform Project ID</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label" for="registryId">Registry ID</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" id="registryId" name="configurationProperties.registryId" value="{{connectorDefaults.configurationProperties.registryId}}" data-validator-event="keyup blur" data-validator="required" />
+                    <span class="help-block">IoT Core Device Registry ID</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label" for="region">Region</label>
+                <div class="col-sm-8">
+                    <input class="form-control" type="text" id="region" name="configurationProperties.region" value="{{connectorDefaults.configurationProperties.region}}" data-validator-event="keyup blur" data-validator="required" />
+                    <span class="help-block">IoT Core Device Registry Region</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label" for="credentials">Credentials</label>
+                <div class="col-sm-8">
+                    <!-- autocomplete="new-password" is required to prevent chrome from auto-completing these form fields -->
+                    <input class="form-control" type="password" autocomplete="new-password" id="credentials" name="configurationProperties.credentials" value="{{connectorDefaults.configurationProperties.credentials}}" data-validator-event="keyup blur" data-validator="required" />
+                    <span class="help-block">Service Account Credentials</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
