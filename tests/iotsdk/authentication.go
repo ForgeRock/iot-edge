@@ -17,13 +17,12 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
+	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -32,11 +31,11 @@ func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
 }
 
 func thingJWTAuthWithAudience(state anvil.TestState, data anvil.ThingData, audience string) thing.Builder {
-	state.SetGatewayTree(jwtPopAuthTree)
+	state.SetGatewayTree(jwtAuthWithPoPTree)
 	return builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtPopAuthTree).
+		WithTree(jwtAuthWithPoPTree).
 		AuthenticateThing(data.Id.Name, audience, data.Signer.KID, data.Signer.Signer, nil)
 }
 
@@ -143,11 +142,11 @@ func (t *AuthenticateWithCustomClaims) Setup(state anvil.TestState) (data anvil.
 }
 
 func (t *AuthenticateWithCustomClaims) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
+	state.SetGatewayTree(jwtAuthWithPoPAndCustomClaimsTree)
 	builder := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtPopAuthTreeCustomClaims).
+		WithTree(jwtAuthWithPoPAndCustomClaimsTree).
 		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
@@ -176,11 +175,11 @@ func (t *AuthenticateWithIncorrectCustomClaim) Setup(state anvil.TestState) (dat
 }
 
 func (t *AuthenticateWithIncorrectCustomClaim) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopAuthTreeCustomClaims)
+	state.SetGatewayTree(jwtAuthWithPoPAndCustomClaimsTree)
 	builder := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtPopAuthTreeCustomClaims).
+		WithTree(jwtAuthWithPoPAndCustomClaimsTree).
 		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
@@ -262,7 +261,7 @@ func (t *AuthenticateThingThroughGateway) Setup(state anvil.TestState) (data anv
 }
 
 func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopAuthTree)
+	state.SetGatewayTree(jwtAuthWithPoPTree)
 	_, err := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
@@ -280,31 +279,17 @@ func (t *AuthenticateThingThroughGateway) Run(state anvil.TestState, data anvil.
 	return true
 }
 
-func oauthBaseURL(state anvil.TestState) string {
-	var urlRealmPath string
-	if state.RealmPath() != "/" && !state.DNSConfigured() {
-		urlRealmPath = "/realms/root"
-		realms := strings.Split(state.RealmPath(), "/")
-		for _, realmName := range realms {
-			if len(realmName) > 0 {
-				urlRealmPath += "/realms/" + realmName
-			}
-		}
-	}
-	return state.AMURL() + "/oauth2" + urlRealmPath
-}
-
 func oauthAudienceValues(state anvil.TestState) []string {
-	url := oauthBaseURL(state)
+	url := am.OAuthBaseURL(state.AMURL(), state.RealmPath(), state.DNSConfigured())
 	return []string{url, url + "/access_token", "custom-client-assertion-audience"}
 }
 
 func thingJWTBearerAuth(state anvil.TestState, data anvil.ThingData, audience string) thing.Builder {
-	state.SetGatewayTree(jwtBearerAuthTree)
+	state.SetGatewayTree(jwtAuthWithAssertionTree)
 	return builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtBearerAuthTree).
+		WithTree(jwtAuthWithAssertionTree).
 		AuthenticateThing(data.Id.Name, audience, data.Signer.KID, data.Signer.Signer, nil)
 }
 
@@ -355,12 +340,13 @@ func (t *AuthenticateWithCustomClaimsJWTBearer) Setup(state anvil.TestState) (da
 }
 
 func (t *AuthenticateWithCustomClaimsJWTBearer) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtBearerAuthTreeCustomClaims)
+	state.SetGatewayTree(jwtAuthWithAssertionAndCustomClaimsTree)
 	thingBuilder := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtBearerAuthTreeCustomClaims).
-		AuthenticateThing(data.Id.Name, oauthBaseURL(state), data.Signer.KID, data.Signer.Signer, func() interface{} {
+		WithTree(jwtAuthWithAssertionAndCustomClaimsTree).
+		AuthenticateThing(data.Id.Name, am.OAuthBaseURL(state.AMURL(), state.RealmPath(), state.DNSConfigured()),
+			data.Signer.KID, data.Signer.Signer, func() interface{} {
 			return struct {
 				LifeUniverseEverything string `json:"life_universe_everything"`
 			}{"42"}
@@ -387,10 +373,11 @@ func (t *AuthenticateThingThroughGatewayWithJWTBearer) Setup(state anvil.TestSta
 }
 
 func (t *AuthenticateThingThroughGatewayWithJWTBearer) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtBearerAuthTree)
+	state.SetGatewayTree(jwtAuthWithAssertionTree)
 	_, err := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
-		AuthenticateThing(data.Id.Name, oauthBaseURL(state), data.Signer.KID, data.Signer.Signer, nil).
+		AuthenticateThing(data.Id.Name, am.OAuthBaseURL(state.AMURL(), state.RealmPath(), state.DNSConfigured()),
+			data.Signer.KID, data.Signer.Signer, nil).
 		Create()
 	switch state.ClientType() {
 	case anvil.GatewayClientType:

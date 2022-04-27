@@ -213,28 +213,65 @@ func (h AuthenticateHandler) Handle(cb Callback) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-
+	debug.Logger.Println("handling request for " + cb.ID() + " callback with: " + response)
 	cb.Input[0].Value = response
 	return true, nil
 }
 
 // RegisterHandler handles the callback received from the Register Thing tree node.
 type RegisterHandler struct {
-	Audience     string
-	ThingID      string
-	ThingType    ThingType
-	KeyID        string
-	Key          crypto.Signer
-	Certificates []*x509.Certificate
-	Claims       func() interface{}
+	Audience          string
+	ThingID           string
+	ThingType         ThingType
+	KeyID             string
+	Key               crypto.Signer
+	Certificates      []*x509.Certificate
+	Claims            func() interface{}
+	SoftwareStatement string
+}
+
+// Register returns a new RegisterHandler for a device.
+func Register() RegisterHandler {
+	return RegisterHandler{ThingType: TypeDevice}
+}
+
+// WithCertificate adds a certificate chain to the RegisterHandler.
+func (h RegisterHandler) WithCertificate(certificates []*x509.Certificate) RegisterHandler {
+	h.Certificates = certificates
+	return h
+}
+
+// WithSoftwareStatement adds a software statement to the RegisterHandler.
+func (h RegisterHandler) WithSoftwareStatement(softwareStatement string) RegisterHandler {
+	h.SoftwareStatement = softwareStatement
+	return h
+}
+
+// WithProofOfPossession adds all the attributes required for JWT Proof of Possession registration to the RegisterHandler
+func (h RegisterHandler) WithProofOfPossession(thingID, audience, keyID string, key crypto.Signer,
+	claims func() interface{}) RegisterHandler {
+
+	h.ThingID = thingID
+	h.Audience = audience
+	h.KeyID = keyID
+	h.Key = key
+	h.Claims = claims
+	return h
 }
 
 func (h RegisterHandler) Handle(cb Callback) (bool, error) {
-	if cb.ID() != "jwt-pop-registration" {
+	jwtPoPReg := cb.ID() == "jwt-pop-registration"
+	softwareStatement := cb.ID() == "software_statement"
+	if !jwtPoPReg && !softwareStatement {
 		return false, nil
 	}
 	if len(cb.Input) == 0 {
 		return true, errNoInput
+	}
+	if softwareStatement {
+		debug.Logger.Println("handling request for software_statement callback with: " + h.SoftwareStatement)
+		cb.Input[0].Value = h.SoftwareStatement
+		return true, nil
 	}
 	var challenge string
 	for _, e := range cb.Output {
@@ -267,6 +304,7 @@ func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 		KeyID:        h.KeyID,
 		Use:          "sig",
 	}
+	claims.CNF.KID = h.KeyID
 	builder := jwt.Signed(sig).Claims(claims)
 	if h.Claims != nil {
 		builder = builder.Claims(h.Claims())
@@ -275,7 +313,7 @@ func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-
+	debug.Logger.Println("handling request for jwt-pop-registration callback with: " + response)
 	cb.Input[0].Value = response
 	return true, nil
 }

@@ -1,0 +1,31 @@
+{
+  "uiConfig": {},
+  "staticNodes": {
+    "startNode": {
+      "x": 50,
+      "y": 58.5
+    },
+    "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+      "x": 338,
+      "y": 29
+    },
+    "e301438c-0bd0-429c-ab0c-66126501069a": {
+      "x": 339,
+      "y": 90
+    }
+  },
+  "entryNodeId": "8fefd095-ed76-40eb-8fb2-0b9ba23ba088",
+  "nodes": {
+    "8fefd095-ed76-40eb-8fb2-0b9ba23ba088": {
+      "displayName": "Authenticate Thing",
+      "nodeType": "IotAuthenticationNode",
+      "x": 152.078125,
+      "y": 27.5,
+      "connections": {
+        "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+        "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+        "register": "e301438c-0bd0-429c-ab0c-66126501069a"
+      }
+    }
+  }
+}

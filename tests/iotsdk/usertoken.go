@@ -111,14 +111,9 @@ func (t *UserTokenWithUnsupportedScopes) Run(state anvil.TestState, data anvil.T
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	userCode, err := device.RequestUserCode("publish", "subscribe", "delete")
-	if err != nil {
-		anvil.DebugLogger.Println("user code request failed: ", err)
-		return false
-	}
-	err = am.SendUserConsent(state.RealmForConfiguration(), t.user, userCode, "allow")
+	_, err = device.RequestUserCode("publish", "subscribe", "delete")
 	if err == nil {
-		anvil.DebugLogger.Println("expected user consent request to fail with invalid scopes")
+		anvil.DebugLogger.Println("expected user code request to fail with invalid scopes")
 		return false
 	}
 	anvil.DebugLogger.Println("invalid scopes error: ", err)

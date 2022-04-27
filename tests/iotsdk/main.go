@@ -44,15 +44,19 @@ const (
 	gatewayDir  = execDir + "/../../cmd/gateway"
 
 	// Auth trees
-	jwtPopAuthTree                     = "AnvilJWTAuth"
-	jwtPopAuthUnrestrictedTokenTree    = "AnvilJWTPoPAuthUnrestrictedToken"
-	jwtBearerAuthTree                  = "AnvilJWTBearerAuth"
-	jwtPopAuthTreeCustomClaims         = "AnvilJWTAuthCustomClaims"
-	jwtBearerAuthTreeCustomClaims      = "AnvilJWTBearerAuthCustomClaims"
-	jwtPopRegCertTree                  = "AnvilJWTRegCert"
-	jwtPopRegCertUnrestrictedTokenTree = "AnvilJWTRegCertUnrestrictedToken"
-	jwtPopRegCertJWTBearerAuthTree     = "AnvilJWTRegCertJWTBearerAuth"
-	userPwdAuthTree                    = "AnvilUserPwd"
+	jwtAuthWithPoPTree                               = "JWTAuthWithPoP"
+	jwtAuthWithPoPWithUnrestrictedTokenTree          = "JWTAuthWithPoPWithUnrestrictedToken"
+	jwtAuthWithAssertionTree                         = "JWTAuthWithAssertion"
+	jwtAuthWithPoPAndCustomClaimsTree                = "JWTAuthWithPoPAndCustomClaims"
+	jwtAuthWithAssertionAndCustomClaimsTree          = "JWTAuthWithAssertionAndCustomClaims"
+	jwtRegWithPoPWithCertAndJWTAuthWithPoPTree       = "JWTRegWithPoPWithCertAndJWTAuthWithPoP"
+	defaultUnrestrictedTokenTree                     = "JWTRegWithPoPWithCertAndJWTAuthWithPoPWithUnrestrictedToken"
+	jwtRegWithPoPWithCertAndJWTAuthWithAssertionTree = "JWTRegWithPoPWithCertAndJWTAuthWithAssertion"
+	jwtRegWithSoftStateTree                          = "JWTRegWithSoftState"
+	jwtRegWithPoPWithSoftStateTree                   = "JWTRegWithPoPWithSoftState"
+	jwtRegWithPoPTree                                = "JWTRegWithPoP"
+	jwtRegWithPoPWithCertTree                        = "JWTRegWithPoPWithCert"
+	userPwdAuthTree                                  = "AnvilUserPwd"
 )
 
 // define the full test set
@@ -81,6 +85,10 @@ var tests = []anvil.SDKTest{
 	&RegisterServiceCert{},
 	&RegisterDeviceNoKeyID{},
 	&RegisterDeviceNoKey{},
+	&RegisterDeviceSoftState{},
+	&RegisterDevicePopAndSoftState{},
+	&RegisterDevicePop{},
+	&RegisterDevicePopAndCert{},
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},
 	&AccessTokenWithUnsupportedScopes{},
@@ -228,7 +236,7 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 	fmt.Printf("\n-- Running IoT Gateway COAP Connection Tests --\n\n")
 
 	// run the IoT Gateway
-	gateway, err := anvil.TestGateway(realm.u, realm.name, realm.path, jwtPopAuthTree, realm.dnsConfigured)
+	gateway, err := anvil.TestGateway(realm.u, realm.name, realm.path, jwtAuthWithPoPTree, realm.dnsConfigured)
 	if err != nil {
 		return false, err
 	}

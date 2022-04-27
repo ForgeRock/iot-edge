@@ -1,0 +1,11 @@
+{
+  "allowAttributeOverwrite": false,
+  "claimToAttributeMapping": {
+  },
+  "createIdentity": true,
+  "allowKeyRotation": false,
+  "jwtRegistrationMethod" : "POP_WITHOUT_TRUST",
+  "defaultAttributeValues" : {
+  },
+  "_id": "e0059fa5-b44c-4843-8f72-655b8753607f"
+}

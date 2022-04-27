@@ -170,11 +170,11 @@ func (t *UnrestrictedSessionTokenAfterAuthentication) Setup(state anvil.TestStat
 }
 
 func (t *UnrestrictedSessionTokenAfterAuthentication) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopAuthUnrestrictedTokenTree)
+	state.SetGatewayTree(jwtAuthWithPoPWithUnrestrictedTokenTree)
 	device, err := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtPopAuthUnrestrictedTokenTree).
+		WithTree(jwtAuthWithPoPWithUnrestrictedTokenTree).
 		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		Create()
 	if err != nil {
@@ -196,15 +196,15 @@ type UnrestrictedSessionTokenAfterRegistration struct {
 }
 
 func (t *UnrestrictedSessionTokenAfterRegistration) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	return populateThingDataForRegistration(jose.ES256)
+	return populateThingDataForRegistrationWithCert(jose.ES256)
 }
 
 func (t *UnrestrictedSessionTokenAfterRegistration) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopRegCertUnrestrictedTokenTree)
+	state.SetGatewayTree(defaultUnrestrictedTokenTree)
 	thingBuilder := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtPopRegCertUnrestrictedTokenTree).
+		WithTree(defaultUnrestrictedTokenTree).
 		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	device, err := thingBuilder.Create()

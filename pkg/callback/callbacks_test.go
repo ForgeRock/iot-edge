@@ -56,15 +56,11 @@ func dummyCB(callbackType string, prompts ...string) Callback {
 	return cb
 }
 
-func jwtVerifyCB(register bool) Callback {
-	id := "jwt-pop-authentication"
-	if register {
-		id = "jwt-pop-registration"
-	}
+func jwtCB(id string) Callback {
 	return Callback{
 		Type:   "HiddenValueCallback",
 		Output: []Entry{{Name: "value", Value: "12345"}, {Name: "id", Value: id}},
-		Input:  []Entry{{Name: "IDToken1", Value: "jwt-pop-authentication"}},
+		Input:  []Entry{{Name: "IDToken1", Value: id}},
 	}
 }
 
@@ -149,7 +145,7 @@ func TestAuthenticateHandler_Handle(t *testing.T) {
 				LifeUniverseEverything string `json:"life_universe_everything"`
 			}{LifeUniverseEverything: lue}
 		}}
-	cb := jwtVerifyCB(false)
+	cb := jwtCB("jwt-pop-authentication")
 	if _, err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +219,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 				SerialNumber string `json:"serialNumber"`
 			}{SerialNumber: serialNumber}
 		}}
-	cb := jwtVerifyCB(true)
+	cb := jwtCB("jwt-pop-registration")
 	if _, err := h.Handle(cb); err != nil {
 		t.Fatal(err)
 	}
@@ -233,6 +229,7 @@ func TestRegisterHandler_Handle(t *testing.T) {
 		Aud string `json:"aud"`
 		CNF struct {
 			JWK *jose.JSONWebKey `json:"jwk,omitempty"`
+			KID string           `json:"kid"`
 		} `json:"cnf"`
 		ThingType    string `json:"thingType"`
 		Iat          int64  `json:"iat"`
@@ -274,8 +271,24 @@ func TestRegisterHandler_Handle(t *testing.T) {
 	if len(claims.CNF.JWK.Certificates) == 0 {
 		t.Fatal("missing JWT-Certs")
 	}
+	if claims.CNF.KID != testKID {
+		t.Fatal("missing CNF-KID")
+	}
 	if claims.SerialNumber != serialNumber {
 		t.Fatal("incorrect serial number")
+	}
+}
+
+func TestRegisterHandler_Handle_SoftwareStatement(t *testing.T) {
+	softwareStatement := "qwertyuiop"
+	h := RegisterHandler{SoftwareStatement: softwareStatement}
+	cb := jwtCB("software_statement")
+	if _, err := h.Handle(cb); err != nil {
+		t.Fatal(err)
+	}
+	response := cb.Input[0].Value.(string)
+	if response != softwareStatement {
+		t.Fatal("missing software statement")
 	}
 }
 

@@ -1,5 +1,4 @@
 {
-  "_id": "AnvilJWTRegCertJWTBearerAuth",
   "uiConfig": {},
   "staticNodes": {
     "startNode": {
@@ -15,20 +14,9 @@
       "y": 118
     }
   },
-  "entryNodeId": "8fefd095-ed76-40eb-8fb2-0b9ba23ba088",
+  "entryNodeId": "206cfa2a-bd63-4b0f-b39a-627d22f7987b",
   "nodes": {
-    "8fefd095-ed76-40eb-8fb2-0b9ba23ba088": {
-      "displayName": "Authenticate Thing",
-      "nodeType": "IotAuthenticationNode",
-      "x": 153,
-      "y": 118,
-      "connections": {
-        "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
-        "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
-        "register": "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92"
-      }
-    },
-    "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92": {
+    "206cfa2a-bd63-4b0f-b39a-627d22f7987b": {
       "displayName": "Register Thing",
       "nodeType": "IotRegistrationNode",
       "x": 344,
