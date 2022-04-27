@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -673,4 +673,19 @@ func RevokeAccessToken(realm string, clientName string, clientPassword string, t
 		return fmt.Errorf("unexpected status code: %v", response.StatusCode)
 	}
 	return nil
+}
+
+// OAuthBaseURL constructs the OAuth base URL that can be used as the audience for OAuth based requests
+func OAuthBaseURL(amURL string, realmPath string, dnsConfigured bool) string {
+	var urlRealmPath string
+	if realmPath != "/" && !dnsConfigured {
+		urlRealmPath = "/realms/root"
+		realms := strings.Split(realmPath, "/")
+		for _, realmName := range realms {
+			if len(realmName) > 0 {
+				urlRealmPath += "/realms/" + realmName
+			}
+		}
+	}
+	return amURL + "/oauth2" + urlRealmPath
 }

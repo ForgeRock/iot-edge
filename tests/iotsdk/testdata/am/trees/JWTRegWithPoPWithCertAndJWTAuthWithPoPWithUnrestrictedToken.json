@@ -1,5 +1,4 @@
 {
-  "_id": "AnvilJWTPoPAuthUnrestrictedToken",
   "uiConfig": {},
   "staticNodes": {
     "startNode": {
@@ -7,12 +6,12 @@
       "y": 58.5
     },
     "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
-      "x": 338,
-      "y": 29
+      "x": 518,
+      "y": 178
     },
     "e301438c-0bd0-429c-ab0c-66126501069a": {
-      "x": 339,
-      "y": 90
+      "x": 520,
+      "y": 118
     }
   },
   "entryNodeId": "b115c800-71f1-4e8a-b4ac-ac889c8c6688",
@@ -20,12 +19,22 @@
     "b115c800-71f1-4e8a-b4ac-ac889c8c6688": {
       "displayName": "Authenticate Thing",
       "nodeType": "IotAuthenticationNode",
-      "x": 152.078125,
-      "y": 27.5,
+      "x": 153,
+      "y": 118,
       "connections": {
         "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
         "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
-        "register": "e301438c-0bd0-429c-ab0c-66126501069a"
+        "register": "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92"
+      }
+    },
+    "0e3bb0d2-8dd7-4f3b-a8e2-290d4e852e92": {
+      "displayName": "Register Thing",
+      "nodeType": "IotRegistrationNode",
+      "x": 344,
+      "y": 20,
+      "connections": {
+        "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+        "failure": "e301438c-0bd0-429c-ab0c-66126501069a"
       }
     }
   }

@@ -1,5 +1,4 @@
 {
-  "_id": "AnvilJWTBearerAuth",
   "uiConfig": {},
   "staticNodes": {
     "startNode": {
@@ -15,9 +14,9 @@
       "y": 90
     }
   },
-  "entryNodeId": "8fefd095-ed76-40eb-8fb2-0b9ba23ba088",
+  "entryNodeId": "b115c800-71f1-4e8a-b4ac-ac889c8c6688",
   "nodes": {
-    "8fefd095-ed76-40eb-8fb2-0b9ba23ba088": {
+    "b115c800-71f1-4e8a-b4ac-ac889c8c6688": {
       "displayName": "Authenticate Thing",
       "nodeType": "IotAuthenticationNode",
       "x": 152.078125,

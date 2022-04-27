@@ -107,7 +107,7 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 }
 
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 
 	// encode the key to PEM
 	key, err := encodeKeyToPEM(data.Signer.Signer)
@@ -123,7 +123,7 @@ func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
-		"-tree", jwtPopAuthTree,
+		"-tree", jwtAuthWithPoPTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
@@ -162,7 +162,7 @@ func (t *SimpleThingExampleTags) Setup(state anvil.TestState) (data anvil.ThingD
 }
 
 func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 
 	// encode the key to PEM
 	key, err := encodeKeyToPEM(data.Signer.Signer)
@@ -191,7 +191,7 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
-		"-tree", jwtPopAuthTree,
+		"-tree", jwtAuthWithPoPTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
 		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
@@ -227,19 +227,13 @@ type CertRegistrationExample struct {
 func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.Name = anvil.RandomName()
-
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
 	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
 
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	certificate, err := anvil.CreateCertificate(data.Id.Name, data.Signer.Signer)
 	if err != nil {
 		return data, false
 	}
@@ -249,7 +243,7 @@ func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.Thing
 }
 
 func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 
 	// encode the key to PEM
 	key, err := encodeKeyToPEM(data.Signer.Signer)
@@ -268,7 +262,7 @@ func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingDat
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
-		"-tree", jwtPopRegCertTree,
+		"-tree", jwtRegWithPoPWithCertAndJWTAuthWithPoPTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
 		"-cert", string(cert))
@@ -303,18 +297,13 @@ func (t *DeviceTokenExample) Setup(state anvil.TestState) (data anvil.ThingData,
 	}
 
 	data.Id.Name = anvil.RandomName()
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
 	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
 
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	certificate, err := anvil.CreateCertificate(data.Id.Name, data.Signer.Signer)
 	if err != nil {
 		return data, false
 	}
@@ -324,7 +313,7 @@ func (t *DeviceTokenExample) Setup(state anvil.TestState) (data anvil.ThingData,
 }
 
 func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 
 	// encode the key to PEM
 	key, err := encodeKeyToPEM(data.Signer.Signer)
@@ -343,7 +332,7 @@ func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
-		"-tree", jwtPopRegCertTree,
+		"-tree", jwtRegWithPoPWithCertAndJWTAuthWithPoPTree,
 		"-name", data.Id.Name,
 		"-key", string(key),
 		"-cert", string(cert))
@@ -434,7 +423,7 @@ func (t *GatewayAppAuth) Run(state anvil.TestState, data anvil.ThingData) bool {
 		"--url", state.ConnectionURL().String(),
 		"--realm", state.Realm(),
 		"--audience", state.RealmPath(),
-		"--tree", jwtPopAuthTree,
+		"--tree", jwtAuthWithPoPTree,
 		"--name", data.Id.Name,
 		"--address", nextAvailablePort,
 		"--key", keyFile.Name())
@@ -511,7 +500,7 @@ func (t *GatewayAppAuthNonDefaultKID) Run(state anvil.TestState, data anvil.Thin
 		"--url", state.ConnectionURL().String(),
 		"--realm", state.Realm(),
 		"--audience", state.RealmPath(),
-		"--tree", jwtPopAuthTree,
+		"--tree", jwtAuthWithPoPTree,
 		"--name", data.Id.Name,
 		"--address", nextAvailablePort,
 		"--key", keyFile.Name(),
@@ -545,19 +534,13 @@ type GatewayAppReg struct {
 func (t *GatewayAppReg) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
 	var err error
 	data.Id.Name = anvil.RandomName()
-
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
 	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
 	if err != nil {
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
 
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	certificate, err := anvil.CreateCertificate(data.Id.Name, data.Signer.Signer)
 	if err != nil {
 		return data, false
 	}
@@ -611,7 +594,7 @@ func (t *GatewayAppReg) Run(state anvil.TestState, data anvil.ThingData) bool {
 		"--url", state.ConnectionURL().String(),
 		"--realm", state.Realm(),
 		"--audience", state.RealmPath(),
-		"--tree", jwtPopRegCertTree,
+		"--tree", jwtRegWithPoPWithCertAndJWTAuthWithPoPTree,
 		"--name", data.Id.Name,
 		"--address", nextAvailablePort,
 		"--key", keyFile.Name(),

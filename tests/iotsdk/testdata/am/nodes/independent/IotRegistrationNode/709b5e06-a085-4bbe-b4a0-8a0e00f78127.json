@@ -1,0 +1,12 @@
+{
+  "allowAttributeOverwrite": false,
+  "claimToAttributeMapping": {
+  },
+  "createIdentity": true,
+  "allowKeyRotation": false,
+  "jwtRegistrationMethod" : "SOFTWARE_STATEMENT_WITHOUT_POP",
+  "defaultAttributeValues" : {
+    "thingType" : "device"
+  },
+  "_id": "709b5e06-a085-4bbe-b4a0-8a0e00f78127"
+}

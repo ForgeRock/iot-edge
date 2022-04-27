@@ -79,7 +79,7 @@ type Thing interface {
 	// block until the user authorizes the request or the device code expires.
 	RequestUserToken(authorizationResponse DeviceAuthorizationResponse) (response AccessTokenResponse, err error)
 
-	// Logout will invalidate the thing's session with AM. It is good practice to log out if the thing will not make
+	// Logout will invalidate the thing's session with AM. It is good practice logging out if the thing will not make
 	// new requests for a prolonged period. Once logged out the thing will automatically create a new session when a
 	// new request is made.
 	Logout() error

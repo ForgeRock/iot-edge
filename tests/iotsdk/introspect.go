@@ -111,7 +111,7 @@ func (t *IntrospectAccessToken) Run(state anvil.TestState, data anvil.ThingData)
 }
 
 func (t IntrospectAccessToken) Cleanup(state anvil.TestState, data anvil.ThingData) error {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
 }
 
@@ -259,7 +259,7 @@ func (t *IntrospectAccessTokenFromCustomClient) Run(state anvil.TestState, data 
 }
 
 func (t IntrospectAccessTokenFromCustomClient) Cleanup(state anvil.TestState, data anvil.ThingData) error {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 	return anvil.RestoreOAuth2Service(state.RealmForConfiguration(), t.originalOAuthConfig)
 }
 

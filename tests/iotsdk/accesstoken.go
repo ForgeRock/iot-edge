@@ -503,12 +503,7 @@ func (t *AccessTokenAfterDynamicRegistration) Setup(state anvil.TestState) (data
 		anvil.DebugLogger.Println("failed to generate confirmation key", err)
 		return data, false
 	}
-	serverWebKey, err := anvil.CertVerificationKey()
-	if err != nil {
-		return data, false
-	}
-
-	certificate, err := anvil.CreateCertificate(serverWebKey, data.Id.Name, data.Signer.Signer)
+	certificate, err := anvil.CreateCertificate(data.Id.Name, data.Signer.Signer)
 	if err != nil {
 		return data, false
 	}
@@ -517,11 +512,11 @@ func (t *AccessTokenAfterDynamicRegistration) Setup(state anvil.TestState) (data
 }
 
 func (t *AccessTokenAfterDynamicRegistration) Run(state anvil.TestState, data anvil.ThingData) bool {
-	state.SetGatewayTree(jwtPopRegCertTree)
+	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 	thingBuilder := builder.Thing().
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
-		WithTree(jwtPopRegCertTree).
+		WithTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree).
 		AuthenticateThing(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
 		RegisterThing(data.Certificates, nil)
 	device, err := thingBuilder.Create()

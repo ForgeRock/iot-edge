@@ -40,6 +40,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
 	"github.com/dchest/uniuri"
 	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 const (
@@ -206,6 +207,12 @@ func ConfigureTestRealm(realm string, testDataDir string) (err error) {
 	if err != nil {
 		return err
 	}
+	// create the Software Publisher for things registering with a software statement
+	err = am.CreateAgent(realm, "SoftwarePublisher/iot-software-publisher",
+		filepath.Join(testDataDir, "agents/iot-software-publisher.json"))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -223,7 +230,12 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	}
 
 	// delete the OAuth 2.0 agents
-	for _, agent := range []string{"OAuth2Client/forgerock-iot-oauth2-client", "OAuth2Client/thing-oauth2-client", "TrustedJwtIssuer/forgerock-iot-jwt-issuer"} {
+	for _, agent := range []string{
+		"OAuth2Client/forgerock-iot-oauth2-client",
+		"OAuth2Client/thing-oauth2-client",
+		"TrustedJwtIssuer/forgerock-iot-jwt-issuer",
+		"SoftwarePublisher/iot-software-publisher",
+	} {
 		err = am.DeleteAgent(realm, agent)
 		if err != nil {
 			return err
@@ -387,8 +399,8 @@ func CreateCertVerificationMapping() error {
 	return am.CreateSecretMapping("am.services.iot.cert.verification", []string{"es256test"})
 }
 
-// CertVerificationKey returns the test JSON web key used by AM to verify certificates
-func CertVerificationKey() (*jose.JSONWebKey, error) {
+// certVerificationKey returns the test JSON web key used by AM to verify certificates
+func certVerificationKey() (*jose.JSONWebKey, error) {
 	ec256TestBytes := []byte(`{"kty": "EC",
 		"kid": "Fol7IpdKeLZmzKtCEgi1LDhSIzM=",
 		"x": "N7MtObVf92FJTwYvY2ZvTVT3rgZp7a7XDtzT_9Rw7IA",
@@ -408,12 +420,11 @@ func CertVerificationKey() (*jose.JSONWebKey, error) {
 var maxSerialNumber = new(big.Int).Exp(big.NewInt(2), big.NewInt(159), nil)
 
 // CreateCertificate creates a certificate for a Thing signed by the given CA JSON web key
-func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypto.Signer) (*x509.Certificate, error) {
-	// check that server web key contains a certificate
-	if len(caWebKey.Certificates) == 0 {
-		return nil, fmt.Errorf("server WebKey does not contain a certificate")
+func CreateCertificate(thingID string, thingKey crypto.Signer) (*x509.Certificate, error) {
+	caWebKey, err := certVerificationKey()
+	if err != nil {
+		return nil, err
 	}
-
 	serialNumber, err := rand.Int(rand.Reader, maxSerialNumber)
 	if err != nil {
 		return nil, err
@@ -433,6 +444,63 @@ func CreateCertificate(caWebKey *jose.JSONWebKey, thingID string, thingKey crypt
 		return nil, err
 	}
 	return x509.ParseCertificate(cert)
+}
+
+func softwareStatementSigningKey() (*jose.JSONWebKey, error) {
+	ec256TestBytes := []byte(`{
+      "use": "sig",
+      "kty": "EC",
+      "kid": "gLcQhotEZygUuVUrt3Z6azql3dVfqQS7lo3vereyU7Y=",
+      "crv": "P-256",
+      "alg": "ES256",
+      "x": "IUuXjru5zb3ixx23uM-qYsFX47eQNWJ6jTkHudFpVr4",
+      "y": "VDSoP-7XBc8KLSeVb2fwzg36458AV3a8MrBx1RZHNho",
+      "d": "Aqg5rp2nqvpFTISkOBNfMGjoU2CY1rXCZlWJ8PVUvf0"
+    }`)
+	var key jose.JSONWebKey
+	if err := json.Unmarshal(ec256TestBytes, &key); err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
+// CreateSoftwareStatement creates a software statement for a Thing signed with the configured Software Publisher key
+func CreateSoftwareStatement(clientJWK jose.JSONWebKey) (string, error) {
+	softStateJWK, err := softwareStatementSigningKey()
+	if err != nil {
+		return "", err
+	}
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("alg", softStateJWK.Algorithm)
+	opts.WithHeader("kid", softStateJWK.KeyID)
+	signer, err := jose.NewSigner(jose.SigningKey{
+		Algorithm: jose.SignatureAlgorithm(softStateJWK.Algorithm),
+		Key:       softStateJWK.Key.(crypto.Signer),
+	}, opts)
+	if err != nil {
+		return "", err
+	}
+	keySet := jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{clientJWK},
+	}
+	jwtBuilder := jwt.Signed(signer).Claims(struct {
+		Issuer       string             `json:"iss"`
+		RedirectURIs []string           `json:"redirect_uris"`
+		GrantTypes   []string           `json:"grant_types"`
+		Scope        string             `json:"scope"`
+		JWKS         jose.JSONWebKeySet `json:"jwks"`
+	}{
+		Issuer:       "https://soft-pub.example.com",
+		RedirectURIs: []string{"https://client.example.com:8443/callback"},
+		GrantTypes:   []string{"client_credentials", "urn:ietf:params:oauth:grant-type:device_code", "refresh_token"},
+		Scope:        "publish subscribe",
+		JWKS:         keySet,
+	})
+	response, err := jwtBuilder.CompactSerialize()
+	if err != nil {
+		return "", err
+	}
+	return response, err
 }
 
 // TestGateway creates a test IoT Gateway
@@ -466,9 +534,10 @@ func TestGateway(u *url.URL, realm string, audience string, authTree string, dns
 
 // ThingData holds information about a Thing used in a test
 type ThingData struct {
-	Id           am.IdAttributes
-	Signer       SigningKey
-	Certificates []*x509.Certificate
+	Id                am.IdAttributes
+	Signer            SigningKey
+	Certificates      []*x509.Certificate
+	SoftwareStatement string
 }
 
 // TestState contains client and realm data required to run a test
@@ -564,8 +633,8 @@ type NopSetupCleanup struct {
 }
 
 // Setup is a no op function
-func (t NopSetupCleanup) Setup() bool {
-	return true
+func (t NopSetupCleanup) Setup(state TestState) (data ThingData, ok bool) {
+	return data, true
 }
 
 // Cleanup is a no op function
