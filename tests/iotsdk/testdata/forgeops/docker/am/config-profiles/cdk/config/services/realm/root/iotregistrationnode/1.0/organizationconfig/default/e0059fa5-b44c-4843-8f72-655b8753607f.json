@@ -1,0 +1,31 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "IotRegistrationNode",
+    "entityId" : "default/e0059fa5-b44c-4843-8f72-655b8753607f",
+    "uid" : "ou=e0059fa5-b44c-4843-8f72-655b8753607f,ou=default,ou=OrganizationConfig,ou=1.0,ou=IotRegistrationNode,ou=services,ou=am-config",
+    "sunServiceID" : "instance",
+    "objectClass" : [ "top", "sunServiceComponent" ],
+    "pathParams" : { },
+    "ou" : [ "e0059fa5-b44c-4843-8f72-655b8753607f" ]
+  },
+  "data" : {
+    "_id": "default/e0059fa5-b44c-4843-8f72-655b8753607f",
+    "_type": {
+      "_id": "IotRegistrationNode",
+      "name": "IotRegistrationNode",
+      "collection": false
+    },
+    "allowAttributeOverwrite": false,
+    "claimToAttributeMapping" : {
+      "sub": "uid",
+      "thingType": "thingType",
+      "thingProperties":  "thingProperties"
+    },
+    "createIdentity": true,
+    "allowKeyRotation": false,
+    "jwtRegistrationMethod": "POP_WITHOUT_TRUST",
+    "defaultAttributeValues": {
+    }
+  }
+}

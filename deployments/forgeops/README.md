@@ -4,32 +4,6 @@ This directory contains resources for deploying Things with the ForgeRock Identi
 
 ### Get Started
 
-#### Deploy using minikube
-
-Install the third party software by following the instructions in the
-[ForgeOps docs](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/minikube/setup/sw.html).
-Additionally, install [mkcert](https://github.com/FiloSottile/mkcert) for making locally-trusted development certificates.
-
-Clone this repo:
-```
-git clone https://github.com/ForgeRock/iot-edge.git
-cd iot-edge
-git checkout release/v7.1.0
-cd deployments/forgeops
-```
-
-Start the platform:
-```
-./run.sh
-```
-
-In a new terminal, run `minikube ip` and map the output from the command to `iot.iam.example.com` in your hosts file:
-```
-echo "$(minikube ip) iot.iam.example.com" >> /etc/hosts
-```
-
-When the script is complete it will print out the connection details for the platform.
-
 #### Deploy using Google Kubernetes Engine
 
 Follow the ForgeOps documentation to install the
@@ -45,10 +19,9 @@ export NAMESPACE=<The namespace to use in your cluster>
 export FQDN=<The fully qualified domain name of your deployment>
 ```
 
-After installing the Google Cloud SDK, authenticate and configure the SDK:
+After installing the Google Cloud SDK, authenticate the SDK:
 ```
 gcloud auth login
-gcloud container clusters get-credentials $CLUSTER --zone $ZONE --project $PROJECT
 ```
 
 Deploy the Things CDK to GKE:
@@ -117,19 +90,6 @@ If the request is valid and authorised, then the platform will respond with the 
 
 The functional test framework, Anvil, can be run against the ForgeOps IoT Platform to verify that all the IoT SDK and
 IoT Gateway features work correctly.
-
-#### On minikube
-
-Start the platform before running the tests:
-```
-./run.sh $(PWD)/../../tests/iotsdk/testdata/forgeops 6KZjOxJU1xHGWHI0hrQT24Fn
-```
-
-Run the functional tests:
-```
-cd ../../
-./run.sh anvil -deployment=platform -url=https://iot.iam.example.com/am -password=6KZjOxJU1xHGWHI0hrQT24Fn
-```
 
 #### On GKE
 

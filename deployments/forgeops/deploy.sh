@@ -18,9 +18,8 @@ set -e
 #
 
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
+SCRIPTS_DIR=$(PWD)/scripts
 BASE_OVERLAY_DIR=$(PWD)/overlay
-SECRETS_IN_DIR=$(PWD)/secrets
-SECRETS_OUT_DIR=$(PWD)/tmp/secrets
 CONFIG_PROFILE=cdk
 
 if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" ]]; then
@@ -48,11 +47,15 @@ echo "NAMESPACE=$NAMESPACE"
 echo "FQDN=$FQDN"
 
 echo "====================================================="
+echo "Configure GCP SDK"
+echo "====================================================="
+gcloud container clusters get-credentials $CLUSTER --zone $ZONE --project $PROJECT
+
+echo "====================================================="
 echo "Clone ForgeOps"
 echo "====================================================="
 rm -rf "$FORGEOPS_DIR" && mkdir -p "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
-git checkout release/7.1.0
 
 echo "====================================================="
 echo "Overlay base and custom files"
@@ -61,52 +64,34 @@ cp -rf "$BASE_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
   cp -rf  "$CUSTOM_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 fi
-rm -rf "$SECRETS_OUT_DIR" && mkdir -p "$SECRETS_OUT_DIR"
-cp -rf "$SECRETS_IN_DIR"/* "$SECRETS_OUT_DIR"
-sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"
-sed -i '' "s/&{FQDN}/$FQDN/g" "$FORGEOPS_DIR/kustomize/overlay/7.0/all/kustomization.yaml"
-sed -i '' "s/&{NAMESPACE}/$NAMESPACE/g" "$SECRETS_OUT_DIR/iot-secrets.yaml"
 
 echo "====================================================="
 echo "Create '$NAMESPACE' namespace"
 echo "====================================================="
-set +e
-kubectl create namespace $NAMESPACE
+kubectl create namespace $NAMESPACE || true
 kubens $NAMESPACE
-set -e
-
-echo "====================================================="
-echo "Configure Skaffold to use default repo"
-echo "====================================================="
-skaffold config set default-repo gcr.io/$PROJECT -k gke_$PROJECT_$ZONE_$CLUSTER
-
-echo "====================================================="
-echo "Clean out existing pods for '$NAMESPACE' namespace"
-echo "====================================================="
-skaffold delete
-
-echo "====================================================="
-echo "Initialise '$CONFIG_PROFILE' configuration profile"
-echo "====================================================="
-"$FORGEOPS_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --version 7.0
-"$FORGEOPS_DIR"/bin/config.sh init --profile $CONFIG_PROFILE --component ds --version 7.0
 
 echo "====================================================="
 echo "Apply IoT secrets"
 echo "====================================================="
 if [ -n "$PLATFORM_PASSWORD" ]; then
-  kubectl delete secret am-env-secrets || true
-  kubectl create secret generic am-env-secrets --from-literal=AM_PASSWORDS_AMADMIN_CLEAR=$PLATFORM_PASSWORD
+  kubectl create secret generic am-env-secrets --from-literal=AM_PASSWORDS_AMADMIN_CLEAR=$PLATFORM_PASSWORD || true
 fi
-kubectl apply --filename $SECRETS_OUT_DIR/iot-secrets.yaml
-kubectl create --filename $SECRETS_OUT_DIR/iot-secret-agent-configuration.yaml
 
 echo "====================================================="
-echo "Run the platform"
+echo "Building AM and IDM"
 echo "====================================================="
-skaffold run
+cd $FORGEOPS_DIR/bin
+./forgeops build am --config-profile $CONFIG_PROFILE
+./forgeops build idm --config-profile $CONFIG_PROFILE
 
 echo "====================================================="
-echo "~~~ Platform login details ~~~"
-$FORGEOPS_DIR/bin/print-secrets
+echo "Installing the Platform"
 echo "====================================================="
+./forgeops install --cdk --fqdn $FQDN
+
+echo "====================================================="
+echo "Applying custom DS schema"
+echo "====================================================="
+kubectl cp $SCRIPTS_DIR/apply_schema.sh ds-idrepo-0:/tmp
+kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"

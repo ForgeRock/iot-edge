@@ -1,0 +1,36 @@
+{
+  "filters": [
+    {
+      "condition": {
+        "source": "context.caller.external === true",
+        "type": "text/javascript"
+      },
+      "onRequest": {
+        "source": "require('router-authz').testAccess()",
+        "type": "text/javascript"
+      }
+    },
+    {
+      "methods": [
+        "create",
+        "update"
+      ],
+      "onRequest": {
+        "file": "policyFilter.js",
+        "type": "text/javascript"
+      },
+      "pattern": "^(managed|internal)($|(/.+))"
+    },
+    {
+      "condition": {
+        "source": "(context.caller.external === true) && (typeof context.privilege === 'undefined' || Object.keys(context.privilege.matchingPrivileges).length === 0)",
+        "type": "text/javascript"
+      },
+      "onResponse": {
+        "source": "require('relationshipFilter').filterResponse()",
+        "type": "text/javascript"
+      },
+      "pattern": "^(managed|internal)($|(/.+))"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "data": {
+    "_id": "forgerock-iot-jwt-issuer",
+    "_type": {
+      "_id": "TrustedJwtIssuer",
+      "collection": true,
+      "name": "OAuth2 Trusted JWT Issuer"
+    },
+    "agentgroup": null,
+    "allowedSubjects": [],
+    "consentedScopesClaim": "scope",
+    "issuer": "forgerock-iot-service",
+    "jwkSet": null,
+    "jwkStoreCacheMissCacheTime": 60000,
+    "jwksCacheTimeout": 3600000,
+    "jwksUri": null,
+    "resourceOwnerIdentityClaim": "sub"
+  },
+  "metadata": {
+    "amsterVersion": "&{version}",
+    "entityId": "forgerock-iot-jwt-issuer",
+    "entityType": "TrustedJwtIssuer",
+    "pathParams": {},
+    "realm": "/"
+  }
+}

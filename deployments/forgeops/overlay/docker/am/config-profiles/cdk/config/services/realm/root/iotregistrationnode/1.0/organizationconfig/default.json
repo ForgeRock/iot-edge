@@ -1,0 +1,23 @@
+{
+  "data": {
+    "_id": "default",
+    "_type": {
+      "_id": "IotRegistrationNode",
+      "collection": false,
+      "name": "IotRegistrationNode"
+    }
+  },
+  "metadata": {
+    "entityId": "default",
+    "entityType": "IotRegistrationNode",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "ou": null,
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": null,
+    "uid": "ou=default,ou=OrganizationConfig,ou=1.0,ou=IotRegistrationNode,ou=services,ou=am-config"
+  }
+}
