@@ -1,0 +1,50 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "authenticationTreesService",
+    "entityId" : "default/JWTAuthWithPoPWithUnrestrictedToken",
+    "uid" : "ou=JWTAuthWithPoPWithUnrestrictedToken,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID" : "tree",
+    "objectClass" : [ "top", "sunServiceComponent" ],
+    "pathParams" : { },
+    "ou" : [ "JWTAuthWithPoPWithUnrestrictedToken" ]
+  },
+  "data" : {
+    "_id": "default/JWTAuthWithPoPWithUnrestrictedToken",
+    "_type": {
+      "_id": "authenticationTreesService",
+      "name": "authenticationTreesService",
+      "collection": false
+    },
+    "uiConfig": {},
+    "staticNodes": {
+      "startNode": {
+        "x": 50,
+        "y": 58.5
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 338,
+        "y": 29
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 339,
+        "y": 90
+      }
+    },
+    "entryNodeId": "b115c800-71f1-4e8a-b4ac-ac889c8c6688",
+    "nodes": {
+      "b115c800-71f1-4e8a-b4ac-ac889c8c6688": {
+        "displayName": "Authenticate Thing",
+        "nodeType": "IotAuthenticationNode",
+        "x": 152.078125,
+        "y": 27.5,
+        "connections": {
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    },
+    "identityResource" : "managed/thing"
+  }
+}

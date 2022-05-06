@@ -19,6 +19,6 @@ set -e
 
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 
-cd "$FORGEOPS_DIR"
-skaffold delete
-kubectl delete pvc --all
+cd "$FORGEOPS_DIR"/bin
+./forgeops delete -y -f --namespace $NAMESPACE
+kubectl delete namespace $NAMESPACE

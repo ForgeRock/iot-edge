@@ -1,0 +1,6 @@
+{
+  "defaultDir": "&{idm.install.dir}/ui/api/default",
+  "enabled": false,
+  "extensionDir": "&{idm.install.dir}/ui/api/extension",
+  "urlContextRoot": "/swagger"
+}
