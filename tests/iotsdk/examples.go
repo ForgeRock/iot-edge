@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -90,6 +91,20 @@ func saveToTempFile(pattern string, content []byte) (*os.File, error) {
 	return file, nil
 }
 
+func saveToSecrets(signer crypto.Signer, name string) (string, error) {
+	thingPK := jose.JSONWebKey{Key: signer, KeyID: name, Algorithm: string(jose.ES256), Use: "sig"}
+	b, err := json.Marshal(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{thingPK}})
+	if err != nil {
+		return "", err
+	}
+	fileName := filepath.Join(filepath.Dir(secretsPath), name+".jwks")
+	err = ioutil.WriteFile(fileName, b, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+	return fileName, nil
+}
+
 // SimpleThingExample tests the simple thing example
 type SimpleThingExample struct {
 	anvil.NopSetupCleanup
@@ -109,24 +124,23 @@ func (t *SimpleThingExample) Setup(state anvil.TestState) (data anvil.ThingData,
 func (t *SimpleThingExample) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 
-	// encode the key to PEM
-	key, err := encodeKeyToPEM(data.Signer.Signer)
+	keyFile, err := saveToSecrets(data.Signer.Signer, data.Id.Name)
 	if err != nil {
-		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		anvil.DebugLogger.Println("failed to store confirmation key", err)
 		return false
 	}
 
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/simple",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/manual-registration",
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
 		"-tree", jwtAuthWithPoPTree,
 		"-name", data.Id.Name,
-		"-key", string(key),
-		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
+		"-secrets", keyFile,
+		"-debug")
 
 	// set the working directory
 	cmd.Dir = examplesDir
@@ -164,10 +178,9 @@ func (t *SimpleThingExampleTags) Setup(state anvil.TestState) (data anvil.ThingD
 func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
 
-	// encode the key to PEM
-	key, err := encodeKeyToPEM(data.Signer.Signer)
+	keyFile, err := saveToSecrets(data.Signer.Signer, data.Id.Name)
 	if err != nil {
-		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
+		anvil.DebugLogger.Println("failed to store confirmation key", err)
 		return false
 	}
 
@@ -187,14 +200,14 @@ func (t *SimpleThingExampleTags) Run(state anvil.TestState, data anvil.ThingData
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "-tags", tags,
-		"github.com/ForgeRock/iot-edge/examples/thing/simple",
+		"github.com/ForgeRock/iot-edge/examples/thing/manual-registration",
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
 		"-tree", jwtAuthWithPoPTree,
 		"-name", data.Id.Name,
-		"-key", string(key),
-		"-keyid", data.Id.ThingKeys.Keys[0].KeyID)
+		"-secrets", keyFile,
+		"-debug")
 
 	// set the working directory
 	cmd.Dir = examplesDir
@@ -224,48 +237,126 @@ type CertRegistrationExample struct {
 	anvil.NopSetupCleanup
 }
 
-func (t *CertRegistrationExample) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
-	var err error
-	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-
-	certificate, err := anvil.CreateCertificate(data.Id.Name, data.Signer.Signer)
-	if err != nil {
-		return data, false
-	}
-	data.Certificates = []*x509.Certificate{certificate}
-	data.Id.ThingType = callback.TypeDevice
-	return data, true
-}
-
 func (t *CertRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
-
-	// encode the key to PEM
-	key, err := encodeKeyToPEM(data.Signer.Signer)
-	if err != nil {
-		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
-		return false
-	}
-
-	// encode the certificate to PEM
-	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data.Certificates[0].Raw})
-
 	ctx, cancel := testContext()
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/cert-registration",
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/dynamic-registration/pop-cert",
 		"-url", state.ConnectionURL().String(),
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
 		"-tree", jwtRegWithPoPWithCertAndJWTAuthWithPoPTree,
-		"-name", data.Id.Name,
-		"-key", string(key),
-		"-cert", string(cert))
+		"-name", anvil.RandomName(),
+		"-secrets", secretsPath,
+		"-debug")
+
+	// set the working directory
+	cmd.Dir = examplesDir
+
+	// send standard out and error to debugger
+	stdout, _ := cmd.StdoutPipe()
+	pipeToDebugger(stdout)
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
+		return false
+	}
+	return true
+}
+
+// PoPRegistrationExample tests the Proof of Possession registration thing example
+type PoPRegistrationExample struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *PoPRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtRegWithPoPTree)
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/dynamic-registration/pop",
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", state.RealmPath(),
+		"-tree", jwtRegWithPoPTree,
+		"-name", anvil.RandomName(),
+		"-secrets", secretsPath,
+		"-debug")
+
+	// set the working directory
+	cmd.Dir = examplesDir
+
+	// send standard out and error to debugger
+	stdout, _ := cmd.StdoutPipe()
+	pipeToDebugger(stdout)
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
+		return false
+	}
+	return true
+}
+
+// PoPSwStmtRegistrationExample tests the Proof of Possession with Software Statement registration thing example
+type PoPSwStmtRegistrationExample struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *PoPSwStmtRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtRegWithPoPWithSoftStateTree)
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/dynamic-registration/pop-sw-stmt",
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", state.RealmPath(),
+		"-tree", jwtRegWithPoPWithSoftStateTree,
+		"-name", anvil.RandomName(),
+		"-secrets", secretsPath,
+		"-debug")
+
+	// set the working directory
+	cmd.Dir = examplesDir
+
+	// send standard out and error to debugger
+	stdout, _ := cmd.StdoutPipe()
+	pipeToDebugger(stdout)
+	stderr, _ := cmd.StderrPipe()
+	pipeToDebugger(stderr)
+
+	if err := cmd.Run(); err != nil {
+		anvil.DebugLogger.Println("cmd failed\n", err)
+		return false
+	}
+	return true
+}
+
+// SwStmtRegistrationExample tests the Software Statement registration thing example
+type SwStmtRegistrationExample struct {
+	anvil.NopSetupCleanup
+}
+
+func (t *SwStmtRegistrationExample) Run(state anvil.TestState, data anvil.ThingData) bool {
+	if state.ClientType() == anvil.GatewayClientType {
+		// the example use multiple trees, which currently can not be configured for the gateway
+		return true
+	}
+	ctx, cancel := testContext()
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", "github.com/ForgeRock/iot-edge/examples/thing/dynamic-registration/sw-stmt",
+		"-url", state.ConnectionURL().String(),
+		"-realm", state.Realm(),
+		"-audience", am.OAuthBaseURL(state.AMURL(), state.RealmPath(), state.DNSConfigured()),
+		"-reg-tree", jwtRegWithSoftStateTree,
+		"-auth-tree", jwtAuthWithAssertionTree,
+		"-debug")
 
 	// set the working directory
 	cmd.Dir = examplesDir
@@ -295,36 +386,11 @@ func (t *DeviceTokenExample) Setup(state anvil.TestState) (data anvil.ThingData,
 	if err != nil {
 		return data, false
 	}
-
-	data.Id.Name = anvil.RandomName()
-	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
-	if err != nil {
-		anvil.DebugLogger.Println("failed to generate confirmation key", err)
-		return data, false
-	}
-
-	certificate, err := anvil.CreateCertificate(data.Id.Name, data.Signer.Signer)
-	if err != nil {
-		return data, false
-	}
-	data.Certificates = []*x509.Certificate{certificate}
-	data.Id.ThingType = callback.TypeDevice
 	return data, true
 }
 
 func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bool {
 	state.SetGatewayTree(jwtRegWithPoPWithCertAndJWTAuthWithPoPTree)
-
-	// encode the key to PEM
-	key, err := encodeKeyToPEM(data.Signer.Signer)
-	if err != nil {
-		anvil.DebugLogger.Printf("unable to marshal private key; %v", err)
-		return false
-	}
-
-	// encode the certificate to PEM
-	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: data.Certificates[0].Raw})
-
 	ctx, cancel := testContext()
 	defer cancel()
 
@@ -333,9 +399,8 @@ func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bo
 		"-realm", state.Realm(),
 		"-audience", state.RealmPath(),
 		"-tree", jwtRegWithPoPWithCertAndJWTAuthWithPoPTree,
-		"-name", data.Id.Name,
-		"-key", string(key),
-		"-cert", string(cert))
+		"-name", anvil.RandomName(),
+		"-secrets", secretsPath)
 
 	// set the working directory
 	cmd.Dir = examplesDir
@@ -355,7 +420,7 @@ func (t *DeviceTokenExample) Run(state anvil.TestState, data anvil.ThingData) bo
 				return
 			}
 
-			err = am.SendUserConsent(state.RealmForConfiguration(), t.user, deviceCodeResponse, "allow")
+			err := am.SendUserConsent(state.RealmForConfiguration(), t.user, deviceCodeResponse, "allow")
 			if err != nil {
 				anvil.DebugLogger.Println("user consent request failed: ", err)
 				*result = false

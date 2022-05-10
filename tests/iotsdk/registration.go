@@ -303,8 +303,7 @@ func (t *RegisterDeviceSoftState) Run(state anvil.TestState, data anvil.ThingDat
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
 		WithTree(jwtRegWithSoftStateTree).
-		HandleCallbacksWith(callback.Register().
-			WithSoftwareStatement(data.SoftwareStatement))
+		HandleCallbacksWith(callback.SoftwareStatementHandler(data.SoftwareStatement))
 	device, err := thingBuilder.Create()
 	if err != nil {
 		anvil.DebugLogger.Println("failed to register device", err)
@@ -347,9 +346,9 @@ func (t *RegisterDevicePopAndSoftState) Run(state anvil.TestState, data anvil.Th
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
 		WithTree(jwtRegWithPoPWithSoftStateTree).
-		HandleCallbacksWith(callback.Register().
-			WithProofOfPossession(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
-			WithSoftwareStatement(data.SoftwareStatement))
+		HandleCallbacksWith(
+			callback.ProofOfPossessionHandler(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer),
+			callback.SoftwareStatementHandler(data.SoftwareStatement))
 	_, err := thingBuilder.Create()
 	return err == nil
 }
@@ -377,8 +376,8 @@ func (t *RegisterDevicePop) Run(state anvil.TestState, data anvil.ThingData) boo
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
 		WithTree(jwtRegWithPoPTree).
-		HandleCallbacksWith(callback.Register().
-			WithProofOfPossession(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil))
+		HandleCallbacksWith(
+			callback.ProofOfPossessionHandler(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer))
 	_, err := thingBuilder.Create()
 	return err == nil
 }
@@ -400,9 +399,9 @@ func (t *RegisterDevicePopAndCert) Run(state anvil.TestState, data anvil.ThingDa
 		ConnectTo(state.ConnectionURL()).
 		InRealm(state.Realm()).
 		WithTree(jwtRegWithPoPWithCertTree).
-		HandleCallbacksWith(callback.Register().
-			WithProofOfPossession(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer, nil).
-			WithCertificate(data.Certificates))
+		HandleCallbacksWith(
+			callback.ProofOfPossessionHandler(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer).
+				WithCertificate(data.Certificates))
 	_, err := thingBuilder.Create()
 	return err == nil
 }
