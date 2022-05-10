@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,8 @@
 package main
 
 import (
-	"crypto"
-	"crypto/x509"
-	"encoding/pem"
 	"flag"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 
@@ -31,65 +27,44 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
 
-func decodePrivateKey(key string) (crypto.Signer, error) {
-	var err error
-	block, _ := pem.Decode([]byte(key))
-	if block == nil {
-		return nil, fmt.Errorf("unable to decode key")
-	}
-	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	return privateKey.(crypto.Signer), nil
-}
+var (
+	urlString   = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
+	realm       = flag.String("realm", "/", "AM Realm")
+	audience    = flag.String("audience", "/", "JWT audience")
+	authTree    = flag.String("tree", "iot-tree", "Authentication tree")
+	thingName   = flag.String("name", "manual-thing", "Thing name")
+	secretStore = flag.String("secrets", "./resources/example.secrets", "Path to pre-created JWK set file")
+	debug       = flag.Bool("debug", false, "Enable debug output")
+)
 
-// simpleThing initialises a Thing with AM.
-// A successful initialisation means that the Thing has successfully authenticated with AM.
+// manualThing authenticates a Thing with AM, using manual registration and either Proof of Possession or
+// Client Assertion authentication.
 //
 // To pre-provision an identity in AM, create an identity with
-//	name: simple-thing
+//	name: manual-thing
 //	password: password
-// Modify the "simple-thing" entry in DS
+// Modify the "manual-thing" entry in DS
 //	thingType: Device
-//	thingKeys: <see examples/resources/public.jwks>
-func simpleThing() error {
-	var (
-		urlString   = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-		realm       = flag.String("realm", "/", "AM Realm")
-		audience    = flag.String("audience", "/", "JWT audience")
-		authTree    = flag.String("tree", "iot-tree", "Authentication tree")
-		thingName   = flag.String("name", "simple-thing", "Thing name")
-		key         = flag.String("key", "", "The Thing's key in PEM format")
-		keyID       = flag.String("keyid", "pop.cnf", "The Thing's key ID")
-		secretStore = flag.String("secrets", "./resources/example.secrets", "Path to pre-created JWK set file")
-	)
-	flag.Parse()
-
+//	thingKeys: <see examples/resources/manual-thing.jwks>
+func manualThing() error {
 	u, err := url.Parse(*urlString)
 	if err != nil {
 		return err
 	}
 
-	var signer crypto.Signer
-	if *key != "" {
-		signer, err = decodePrivateKey(*key)
-		if err != nil {
-			return err
-		}
-	} else {
-		store := secrets.Store{Path: *secretStore}
-		signer, err = store.Signer(*keyID)
-		if err != nil {
-			return err
-		}
+	store := secrets.Store{Path: *secretStore}
+	signer, err := store.Signer(*thingName)
+	if err != nil {
+		return err
 	}
+	keyID, _ := thing.JWKThumbprint(signer)
+	fmt.Println(keyID)
 
 	builder := builder.Thing().
 		ConnectTo(u).
 		InRealm(*realm).
 		WithTree(*authTree).
-		AuthenticateThing(*thingName, *audience, *keyID, signer, nil)
+		AuthenticateThing(*thingName, *audience, keyID, signer, nil)
 
 	fmt.Printf("Creating Thing %s... ", *thingName)
 	device, err := builder.Create()
@@ -124,10 +99,14 @@ func simpleThing() error {
 }
 
 func main() {
+	flag.Parse()
 	// pipe debug to standard out
-	thing.DebugLogger().SetOutput(os.Stdout)
+	if *debug {
+		thing.DebugLogger().SetOutput(os.Stdout)
+	}
 
-	if err := simpleThing(); err != nil {
-		log.Fatal(err)
+	if err := manualThing(); err != nil {
+		fmt.Printf("Fatal error: %s", err)
+		os.Exit(1)
 	}
 }

@@ -230,35 +230,6 @@ type RegisterHandler struct {
 	SoftwareStatement string
 }
 
-// Register returns a new RegisterHandler for a device.
-func Register() RegisterHandler {
-	return RegisterHandler{ThingType: TypeDevice}
-}
-
-// WithCertificate adds a certificate chain to the RegisterHandler.
-func (h RegisterHandler) WithCertificate(certificates []*x509.Certificate) RegisterHandler {
-	h.Certificates = certificates
-	return h
-}
-
-// WithSoftwareStatement adds a software statement to the RegisterHandler.
-func (h RegisterHandler) WithSoftwareStatement(softwareStatement string) RegisterHandler {
-	h.SoftwareStatement = softwareStatement
-	return h
-}
-
-// WithProofOfPossession adds all the attributes required for JWT Proof of Possession registration to the RegisterHandler
-func (h RegisterHandler) WithProofOfPossession(thingID, audience, keyID string, key crypto.Signer,
-	claims func() interface{}) RegisterHandler {
-
-	h.ThingID = thingID
-	h.Audience = audience
-	h.KeyID = keyID
-	h.Key = key
-	h.Claims = claims
-	return h
-}
-
 func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	jwtPoPReg := cb.ID() == "jwt-pop-registration"
 	softwareStatement := cb.ID() == "software_statement"
@@ -316,4 +287,70 @@ func (h RegisterHandler) Handle(cb Callback) (bool, error) {
 	debug.Logger.Println("handling request for jwt-pop-registration callback with: " + response)
 	cb.Input[0].Value = response
 	return true, nil
+}
+
+// JWTPoPHandler handles the JWT Proof of Possession callbacks received from the Register and Authenticate Thing tree nodes.
+type JWTPoPHandler struct {
+	AuthenticateHandler
+	RegisterHandler
+}
+
+// ProofOfPossessionHandler creates a callback handler capable of handling JWT Proof of Possession registration and
+// authentication callbacks.
+func ProofOfPossessionHandler(thingID, audience, keyID string, key crypto.Signer) JWTPoPHandler {
+	return JWTPoPHandler{
+		AuthenticateHandler: AuthenticateHandler{
+			Audience: audience,
+			ThingID:  thingID,
+			KeyID:    keyID,
+			Key:      key,
+		},
+		RegisterHandler: RegisterHandler{
+			Audience:  audience,
+			ThingID:   thingID,
+			ThingType: TypeDevice,
+			KeyID:     keyID,
+			Key:       key,
+		},
+	}
+}
+
+// WithCertificate adds a certificate chain to the JWTPoPHandler.
+func (h JWTPoPHandler) WithCertificate(certificates []*x509.Certificate) JWTPoPHandler {
+	h.Certificates = certificates
+	return h
+}
+
+// WithClaims adds additional claims to the JWTPoPHandler.
+func (h JWTPoPHandler) WithClaims(claims func() interface{}) JWTPoPHandler {
+	h.AuthenticateHandler.Claims = claims
+	h.RegisterHandler.Claims = claims
+	return h
+}
+
+func (h JWTPoPHandler) Handle(cb Callback) (bool, error) {
+	if cb.ID() == "jwt-pop-registration" {
+		return h.RegisterHandler.Handle(cb)
+	}
+	if cb.ID() == "jwt-pop-authentication" {
+		return h.AuthenticateHandler.Handle(cb)
+	}
+	return false, nil
+}
+
+// softStateHandler handles the Software Statement callback received from the Register Thing tree node.
+type softStateHandler struct {
+	RegisterHandler
+}
+
+// SoftwareStatementHandler creates a callback handler capable of handling Software Statement registration callbacks.
+func SoftwareStatementHandler(softwareStatement string) Handler {
+	return softStateHandler{RegisterHandler{SoftwareStatement: softwareStatement}}
+}
+
+func (h softStateHandler) Handle(cb Callback) (bool, error) {
+	if cb.ID() == "software_statement" {
+		return h.RegisterHandler.Handle(cb)
+	}
+	return false, nil
 }

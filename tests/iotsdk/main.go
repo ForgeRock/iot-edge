@@ -59,6 +59,8 @@ const (
 	userPwdAuthTree                                  = "AnvilUserPwd"
 )
 
+var secretsPath = execDir + "/debug/keys/.secrets"
+
 // define the full test set
 var tests = []anvil.SDKTest{
 	&AuthenticateThingJWT{},
@@ -117,6 +119,9 @@ var tests = []anvil.SDKTest{
 	&SimpleThingExampleTags{limitedTags: false},
 	&SimpleThingExampleTags{limitedTags: true},
 	&CertRegistrationExample{},
+	&PoPRegistrationExample{},
+	&PoPSwStmtRegistrationExample{},
+	&SwStmtRegistrationExample{},
 	&DeviceTokenExample{},
 	&GatewayAppAuth{},
 	&GatewayAppAuthNonDefaultKID{},
@@ -375,6 +380,15 @@ func runTests() (err error) {
 
 	// delete old debug files by removing the debug directory
 	err = os.RemoveAll(debugDir)
+	if err != nil {
+		return err
+	}
+	// create a temp secrets file
+	secretsPath, err = filepath.Abs(secretsPath)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Dir(secretsPath), 0777)
 	if err != nil {
 		return err
 	}

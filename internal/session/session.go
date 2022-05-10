@@ -169,5 +169,8 @@ func handlerSigningKey(handler callback.Handler) crypto.Signer {
 	if handler, ok := handler.(callback.RegisterHandler); ok {
 		return handler.Key
 	}
+	if handler, ok := handler.(callback.JWTPoPHandler); ok {
+		return handler.AuthenticateHandler.Key
+	}
 	return nil
 }
