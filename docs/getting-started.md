@@ -44,7 +44,7 @@ cd iot-edge
 ### Install and configure AM
 
 The examples require AM to be installed with a fully qualified domain name of `am.localtest.me`, using port `8080`.
-Follow the [AM Evaluation Guide](https://backstage.forgerock.com/docs/am/7/eval-guide/) to quickly set up an instance.
+Follow the [AM Evaluation Guide](https://backstage.forgerock.com/docs/am/7.1/eval-guide/) to quickly set up an instance.
 
 Log in to AM and go to [Services](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/services):
 
@@ -55,27 +55,42 @@ Log in to AM and go to [Services](http://am.localtest.me:8080/am/ui-admin/#realm
 
 Go to the [IoT OAuth 2.0 Client](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/applications-oauth2-clients/clients/edit/forgerock-iot-oauth2-client):
 
-- Add `publish` to _Scope(s)_
+- Add `publish` and `subscribe` to _Scope(s)_
 - Save Changes
 
-Create an [authentication tree](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/authentication-trees) called `auth-tree`:
+Create the follow [authentication trees](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/authentication-trees).
 
-<img src="auth-tree.png" width="400"/></br>
+Authentication only called `auth-tree`:
 
-Create a second authentication tree called `reg-tree` and enable _Create Identity_ for the _Register Thing_ node:
+![](auth-tree.png)
 
-<img src="reg-tree.png" width="600"/></br>
+Registration and authentication called `reg-tree`:
+
+![](reg-tree.png)
+
+Registration only called `oauth2-reg-tree`:
+
+![](oauth2-reg-tree.png)
+
+Each SDK example will modify the configuration of the nodes as required.
 
 Go to the [default keystore mappings](http://am.localtest.me:8080/am/ui-admin/#configure/secretStores/KeyStoreSecretStore/edit/default-keystore)
 and add the mapping: _Secret ID_: `am.services.iot.cert.verification`, _Alias_: `es256test`. The CA certificate used in
 this example is one of the test certificates (es256test) that AM includes by default. This mapping tells the
 _Register Thing_ node what key to use when verifying the registration certificate.
 
+Create a [Software Publisher Agent](http://am.localtest.me:8080/am/ui-admin/#realms/%2F/applications-oauth2-softwarePublisher)
+with the following settings:
+- Agent ID: `iot-software-publisher`
+- Software publisher issuer: `https://soft-pub.example.com`
+- Software statement signing Algorithm: `ES256`
+- Public key selector: `JWKs`
+- Json Web Key: `{"keys": [{"use":"sig","kty":"EC","kid":"gLcQhotEZygUuVUrt3Z6azql3dVfqQS7lo3vereyU7Y=","crv":"P-256","alg":"ES256","x":"IUuXjru5zb3ixx23uM-qYsFX47eQNWJ6jTkHudFpVr4","y":"VDSoP-7XBc8KLSeVb2fwzg36458AV3a8MrBx1RZHNho"}]}`
+
 ### Run the IoT SDK examples
 
 #### Manual Registration
-
-<img src="manual-registration.png" width="520"/></br>
+![](manual-registration.png)
 
 This example will authenticate and request an access token for the thing. It requires the thing to be in possession
 of an asymmetric key pair for signing.
@@ -83,34 +98,134 @@ of an asymmetric key pair for signing.
 Before running the example, [register the thing manually](getting-started.md#register-identity) using `manual-thing` as
 the thing's ID.
 
-Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go):
+In `auth-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+  - Set _JWT Authentication Method_ to `Proof of Possession`
+  - Enable _Issue Restricted Token_
+
+Run the [example](../examples/thing/manual-registration/main.go):
 ```bash
-./run.sh example "thing/simple" \
+./run.sh example "thing/manual-registration" \
     -name "manual-thing" \
     -url "http://am.localtest.me:8080/am" \
-    -audience "/" \
-    -realm "/" \
-    -tree "auth-tree" \
-    -secrets "./resources/example.secrets"
+    -tree "auth-tree"
 ```
 
+For more information, see the [Authenticate Thing node documentation](iot-authentication-nodes.md#authenticate-thing-node).
+
 #### Dynamic Registration
-    
-<img src="dynamic-registration.png" width="650"/></br>
+Dynamic registration allows a thing to create a new identity without human interaction. The _Register Thing_ node
+supports multiple registration methods and the following examples demonstrates how to use them.
+
+##### Proof of Possession & Certificate
+![](pop-cert-registration.png)
 
 This example will create a new identity, authenticate and request an access token for the thing. It requires the thing
 to be in possession of an asymmetric key pair for signing, and a CA signed X.509 certificate containing the key pair's
 public key.
 
-Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/cert-registration/main.go):
+In `reg-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+    - Set _JWT Authentication Method_ to `Proof of Possession`
+    - Enable _Issue Restricted Token_
+- On the _Register Thing_ node
+  - Set _JWT Registration Method_ to `Proof of Possession & Certificate`
+  - Enable _Create Identity_
+
+Run the [example](../examples/thing/dynamic-registration/pop-cert/main.go):
 ```bash
-./run.sh example "thing/cert-registration" \
-    -name "dynamic-thing" \
+./run.sh example "thing/dynamic-registration/pop-cert" \
+    -name "dynamic-pop-cert-thing" \
     -url "http://am.localtest.me:8080/am" \
-    -audience "/" \
-    -realm "/" \
     -tree "reg-tree"
 ```
+
+For more information, see the [Register Thing node documentation](iot-authentication-nodes.md#pop-cert-reg).
+
+##### Proof of Possession & Software Statement
+![](pop-sw-stmt-registration.png)
+
+This example will create a new identity, authenticate and request an access token for the thing. It requires the thing
+to be in possession of an asymmetric key pair for signing, and a [Software Statement](https://datatracker.ietf.org/doc/html/rfc7591#section-2.3)
+containing the key pair's public key in the `jwks` claim.
+
+In `reg-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+    - Set _JWT Authentication Method_ to `Proof of Possession`
+    - Enable _Issue Restricted Token_
+- On the _Register Thing_ node
+  - Set _JWT Registration Method_ to `Proof of Possession & Software Statement`
+  - Enable _Create Identity_
+
+Run the [example](../examples/thing/dynamic-registration/pop-sw-stmt/main.go):
+```bash
+./run.sh example "thing/dynamic-registration/pop-sw-stmt" \
+    -name "dynamic-pop-sw-stmt-thing" \
+    -url "http://am.localtest.me:8080/am" \
+    -tree "reg-tree"
+```
+
+For more information, see the [Register Thing node documentation](iot-authentication-nodes.md#pop-sw-stmt-reg).
+
+##### Software Statement
+![](sw-stmt-registration.png)
+
+This example will create a new identity with a unique ID. The ID will be retrieved after registration and then used to
+authenticate the thing. Once authenticated, an access token will be requested for the thing. This flow mimics
+[OAuth 2.0 Dynamic Registration](https://datatracker.ietf.org/doc/html/rfc7591) and
+[OAuth 2.0 JWT Bearer Authentication](https://datatracker.ietf.org/doc/html/rfc7523) to request an access token via a 
+standard API.
+
+It requires the thing to be in possession of an asymmetric key pair for signing, and a
+[Software Statement](https://datatracker.ietf.org/doc/html/rfc7591#section-2.3) containing the key pair's public key
+in the `jwks` claim.
+
+In `oauth2-reg-tree` apply the following configuration:
+- On the _Register Thing_ node
+  - Set _JWT Registration Method_ to `Software Statement`
+  - Enable _Create Identity_
+  - Add `thingType` as key and `device` as value to _Default Attribute Values_
+
+In `auth-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+  - Set _JWT Authentication Method_ to `Client Assertion`
+  - Disable _Issue Restricted Token_
+
+Run the [example](../examples/thing/dynamic-registration/sw-stmt/main.go):
+```bash
+./run.sh example "thing/dynamic-registration/sw-stmt" \
+    -url "http://am.localtest.me:8080/am" \
+    -audience "http://am.localtest.me:8080/am/oauth2/access_token" \
+    -reg-tree "oauth2-reg-tree" \
+    -auth-tree "auth-tree"
+```
+
+For more information, see the [Register Thing node documentation](iot-authentication-nodes.md#sw-stmt-reg).
+
+##### Proof of Possession
+![](pop-registration.png)
+
+This example will create a new identity, authenticate and request an access token for the thing. It requires the thing
+to be in possession of an asymmetric key pair for signing. This registration method should only be used when the thing
+registering is already trusted as no trusted third party is used in this flow.
+
+In `reg-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+  - Set _JWT Authentication Method_ to `Proof of Possession`
+  - Enable _Issue Restricted Token_
+- On the _Register Thing_ node
+  - Set _JWT Registration Method_ to `Proof of Possession`
+  - Enable _Create Identity_
+
+Run the [example](../examples/thing/dynamic-registration/pop/main.go):
+```bash
+./run.sh example "thing/dynamic-registration/pop" \
+    -name "dynamic-pop-thing" \
+    -url "http://am.localtest.me:8080/am" \
+    -tree "reg-tree"
+```
+
+For more information, see the [Register Thing node documentation](iot-authentication-nodes.md#pop-reg).
 
 #### User Token Request
 
@@ -124,13 +239,19 @@ example demonstrates how the thing can manage the access token's lifecycle by in
 Requesting a user token requires a user to be registered and authenticated before approving the request. Upon
 running the example the user will be given a URL to go to in order to perform the authorization.
 
-Run the [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/user-token/main.go):
+In `reg-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+  - Set _JWT Authentication Method_ to `Proof of Possession`
+  - Enable _Issue Restricted Token_
+- On the _Register Thing_ node
+  - Set _JWT Registration Method_ to `Proof of Possession & Certificate`
+  - Enable _Create Identity_
+
+Run the [example](../examples/thing/user-token/main.go):
 ```bash
 ./run.sh example "thing/user-token" \
     -name "user-authorized-thing" \
     -url "http://am.localtest.me:8080/am" \
-    -audience "/" \
-    -realm "/" \
     -tree "reg-tree"
 ```
 
@@ -148,6 +269,11 @@ This example will start the gateway and authenticate it.
 Before running the example, [register the gateway manually](getting-started.md#register-identity) using `manual-gateway`
 as the gateway's ID.
 
+In `auth-tree` apply the following configuration:
+- On the _Authenticate Thing_ node
+  - Set _JWT Authentication Method_ to `Proof of Possession`
+  - Enable _Issue Restricted Token_
+
 Run the gateway:
 
 ```bash
@@ -157,7 +283,7 @@ Run the gateway:
     --audience "/" \
     --realm "/" \
     --tree "auth-tree" \
-    --kid "pop.cnf" \
+    --kid "cbnztC8J_l2feNf0aTFBDDQJuvrd2JbLPoOAxHR2N8o=" \
     --key "../../examples/resources/eckey1.key.pem" \
     --address ":5683" \
     -d
@@ -166,7 +292,7 @@ Run the gateway:
 The message `IoT Gateway server started` will appear if the `manual-gateway` has started up and authenticated itself
 successfully.
 
-In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-the-thing-gateway).
+In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-gateway).
 
 To stop the gateway process, press `Ctrl+C` in the window where the process is running.
 
@@ -192,11 +318,11 @@ Run the gateway:
 The message `IoT Gateway server started` will appear if the gateway has started up, registered and authenticated
 itself successfully.
 
-In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-the-thing-gateway).
+In a different terminal window, [connect a thing to the gateway](getting-started.md#connect-to-gateway).
 
 To stop the gateway process, press `Ctrl+C` in the window where the process is running.
 
-#### Connect to the IoT Gateway
+#### Connect to the IoT Gateway <a name="connect-to-gateway"></a>
 
 This example will connect a thing to the IoT Gateway. Once the thing has connected it will authenticate and request
 an access token.
@@ -204,14 +330,13 @@ an access token.
 Before running the example, [register the thing manually](getting-started.md#register-identity) using `gateway-thing`
 as the thing's ID.
 
-Run the SDK [example](https://github.com/ForgeRock/iot-edge/blob/master/examples/thing/simple/main.go)
+Run the SDK [example](../examples/thing/manual-registration/main.go)
 to connect the thing to the gateway:
 
 ```bash
-./run.sh example "thing/simple" \
+./run.sh example "thing/manual-registration" \
     -name "gateway-thing" \
-    -url "coap://:5683" \
-    -secrets "./resources/example.secrets"
+    -url "coap://:5683"
 ```
 
 ### Register Identity
@@ -250,7 +375,7 @@ curl -v --request PUT "http://am.localtest.me:8080/am/json/realms/root/users/${I
 --data '{
     "userPassword": "5tr0ngG3n3r@ted",
     "thingType": "device",
-    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
+    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"cbnztC8J_l2feNf0aTFBDDQJuvrd2JbLPoOAxHR2N8o=\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
 }'
 ```
 
@@ -264,7 +389,7 @@ curl -v --request PUT "http://am.localtest.me:8080/am/json/realms/root/users/${I
 --data '{
     "userPassword": "5tr0ngG3n3r@ted",
     "thingType": "gateway",
-    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"pop.cnf\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
+    "thingKeys": "{\"keys\":[{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"cbnztC8J_l2feNf0aTFBDDQJuvrd2JbLPoOAxHR2N8o=\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"wjC9kMzwIeXNn6lsjdqplcq9aCWpAOZ0af1_yruCcJ4\",\"y\":\"ihIziCymBnU8W8m5zx69DsQr0sWDiXsDMq04lBmfEHw\"}]}"
 }'
 ```
 

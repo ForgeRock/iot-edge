@@ -58,7 +58,6 @@ func manualThing() error {
 		return err
 	}
 	keyID, _ := thing.JWKThumbprint(signer)
-	fmt.Println(keyID)
 
 	builder := builder.Thing().
 		ConnectTo(u).
