@@ -11,7 +11,7 @@ AM provides REST APIs under`/json/things/*` for the following use cases:
 * [Obtain an OAuth 2.0 User Token](#Obtain-an-OAuth-20-User-Token)
 * [Refresh an OAuth 2.0 User Token](#Refresh-an-OAuth-20-User-Token)
 
-To use the endpoint, a Thing must be in prosession of a valid session token (SSO Token). How a request to AM is constructed is dependant on the type of SSO token it has received from AM:
+To use the endpoint, a Thing must be in possession of a valid session token (SSO Token). How a request to AM is constructed is dependent on the type of SSO token it has received from AM:
 
 * If the Thing has authenticated with a journey that contains the FR IoT Authenticate and/or Register nodes, then its SSO Token is restricted and the request payload to the Things endpoint must be a signed JWT. The JWT must be signed with the same key that was used during the authenication. See [Creating a signed JWT for the Things Endpoint](#creating-a-signed-jwt-for-the-things-endpoint).
 * Otherwise, the SSO Token is unrestricted and the request payload to the Things endpoint must be a JSON payload.
@@ -203,8 +203,6 @@ To obtain an new User Token by exchanging a Refresh Token, perform an HTTP POST 
     ```bash
     git clone https://github.com/ForgeRock/iot-edge.git
     cd iot-edge
-    git checkout release/v7.1.0
-    go install ./cmd/auth-jwt ./cmd/things-jwt
     ```
 
 1. Install and configure AM as described in the [IoT evaluation guide](https://backstage.forgerock.com/docs/iot/7.1/evaluation-guide/before-you-start.html#install-am).
@@ -215,8 +213,7 @@ To obtain an new User Token by exchanging a Refresh Token, perform an HTTP POST 
     amURL=http://am.localtest.me:8080/openam
     thingId=thingymabot
     tree=auth-tree
-    keyfile=path/to/iot-edge/examples/resources/eckey1.key.pem
-
+    keyfile=$(pwd)/examples/resources/eckey1.key.pem
     ```
 
 ### Authenticate the Thing
@@ -236,7 +233,7 @@ challenge=$(echo "$authCallback" | \
 
 
 # Create the signed authentication JWT:
-signedJWT=$(auth-jwt -a "/" -s "$thingId" -c "$challenge" --key "$keyfile")
+signedJWT=$(go run ./cmd/auth-jwt -a "/" -s "$thingId" -c "$challenge" --key "$keyfile")
 
 # Modify callback:
 authCallback=$(echo "$authCallback" | \
@@ -258,7 +255,7 @@ echo "${ssoToken}"
 ### Get Attributes with Restricted SSO Token
 
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?realm=/&_fields=thingConfig" \
     -k "$keyfile" )
 
@@ -277,7 +274,7 @@ echo "$attributes" | jq '.'
 ### Get Access Token with Restricted SSO Token
 
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?_action=get_access_token&realm=/" \
     -k "$keyfile" \
     --custom '{"scope":["publish"]}')
@@ -298,7 +295,7 @@ echo "$accessTokenResponse" | jq '.'
 ### Introspect Access Token with Restricted SSO Token
 
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?_action=introspect_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"token\":\"$accessToken\"}")
@@ -318,7 +315,7 @@ echo "$introspection" | jq '.'
 ### Get User Code with Restricted SSO Token
 
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?_action=get_user_code&realm=/" \
     -k "$keyfile" \
     --custom '{"scope":["publish"]}')
@@ -340,7 +337,7 @@ echo "Visit $verifyURI and authenticate and authorise as the human user"
 ### Get User Token with Restricted SSO Token
 
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?_action=get_user_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"device_code\":\"$deviceCode\"}")
@@ -363,7 +360,7 @@ echo "$userTokenResponse" | jq '.'
 
 Note: using the `get_access_token` action.
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?_action=get_access_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"scope\":[\"publish\"],\"refresh_token\":\"$refreshToken\"}")
@@ -384,7 +381,7 @@ echo "$userTokenResponse" | jq '.'
 ### Introspect a User Token with Restricted SSO Token
 
 ```bash
-jwt=$(things-jwt \
+jwt=$(go run ./cmd/things-jwt \
     -u "$amURL/json/things/*?_action=introspect_token&realm=/" \
     -k "$keyfile" \
     --custom "{\"token\":\"$userToken\"}")
