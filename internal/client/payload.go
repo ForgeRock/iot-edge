@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,16 @@ import (
 
 // AMInfoResponse contains the information required to construct valid signed JWTs
 type AMInfoResponse struct {
-	Realm          string
-	AccessTokenURL string
-	IntrospectURL  string
-	AttributesURL  string
-	ThingsVersion  string
-	UserCodeURL    string
-	UserTokenURL   string
+	Realm              string
+	AccessTokenURL     string
+	IntrospectURL      string
+	AttributesURL      string
+	ThingsVersion      string
+	UserCodeURL        string
+	UserTokenURL       string
+	SessionsVersion    string
+	SessionValidateURL string
+	SessionLogoutURL   string
 }
 
 // AuthenticatePayload represents the outbound and inbound data during an authentication request

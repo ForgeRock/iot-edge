@@ -589,6 +589,31 @@ func LogoutSession(token string) (err error) {
 	return err
 }
 
+// ValidateSession will validate the session represented by the given token
+func ValidateSession(token string) (valid bool, err error) {
+	payload := struct {
+		TokenID string `json:"tokenId"`
+	}{TokenID: token}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return false, err
+	}
+	response, err := crestAction(
+		AMURL+"/json/sessions",
+		"validate",
+		"resource=4.0",
+		bytes.NewReader(b),
+		http.StatusOK)
+	if err != nil {
+		return false, err
+	}
+	data := struct {
+		Valid bool `json:"valid"`
+	}{}
+	err = json.Unmarshal(response, &data)
+	return data.Valid, err
+}
+
 func GetAdvancedServerProperties() (properties map[string]interface{}, err error) {
 	b, err := get(AMURL+"/json/global-config/servers/server-default/properties/advanced", "resource=1.0")
 	if err != nil {

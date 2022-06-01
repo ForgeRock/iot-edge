@@ -140,7 +140,7 @@ func (t *SessionLogout) Run(state anvil.TestState, data anvil.ThingData) bool {
 	}
 
 	// check that session has been invalidated
-	valid, err := sesh.Valid()
+	valid, err := am.ValidateSession(sesh.Token())
 	if err != nil {
 		anvil.DebugLogger.Println("session validation failed", err)
 		return false
@@ -217,5 +217,98 @@ func (t *UnrestrictedSessionTokenAfterRegistration) Run(state anvil.TestState, d
 		anvil.DebugLogger.Println("failed to retrieve thing attributes", err)
 		return false
 	}
+	return true
+}
+
+// SessionValidWithRestrictedToken will authenticate and receive a PoP restricted token and then validate the session
+// Note that this is currently not working in AM - OPENAM-19492
+type SessionValidWithRestrictedToken struct {
+	alg jose.SignatureAlgorithm
+	anvil.NopSetupCleanup
+}
+
+func (t *SessionValidWithRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.Name = anvil.RandomName()
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	return data, true
+}
+
+func (t *SessionValidWithRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtRegWithPoPTree)
+	sessionBuilder := builder.Session().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtRegWithPoPTree).
+		AuthenticateWith(
+			callback.ProofOfPossessionHandler(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer))
+	session, err := sessionBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	valid, err := session.Valid()
+	if err != nil {
+		anvil.DebugLogger.Println("session validation failed", err)
+		return false
+	} else if !valid {
+		anvil.DebugLogger.Println("session is invalid")
+		return false
+	}
+	return true
+}
+
+// SessionLogoutWithRestrictedToken will authenticate and receive a PoP restricted token and then log out of the session
+type SessionLogoutWithRestrictedToken struct {
+	alg jose.SignatureAlgorithm
+	anvil.NopSetupCleanup
+}
+
+func (t *SessionLogoutWithRestrictedToken) Setup(state anvil.TestState) (data anvil.ThingData, ok bool) {
+	var err error
+	data.Id.Name = anvil.RandomName()
+	data.Id.ThingKeys, data.Signer, err = anvil.ConfirmationKey(jose.ES256)
+	if err != nil {
+		anvil.DebugLogger.Println("failed to generate confirmation key", err)
+		return data, false
+	}
+	return data, true
+}
+
+func (t *SessionLogoutWithRestrictedToken) Run(state anvil.TestState, data anvil.ThingData) bool {
+	state.SetGatewayTree(jwtRegWithPoPTree)
+	sessionBuilder := builder.Session().
+		ConnectTo(state.ConnectionURL()).
+		InRealm(state.Realm()).
+		WithTree(jwtRegWithPoPTree).
+		AuthenticateWith(
+			callback.ProofOfPossessionHandler(data.Id.Name, state.RealmPath(), data.Signer.KID, data.Signer.Signer))
+	session, err := sessionBuilder.Create()
+	if err != nil {
+		anvil.DebugLogger.Println(err)
+		return false
+	}
+
+	err = session.Logout()
+	if err != nil {
+		anvil.DebugLogger.Println("session logout failed", err)
+		return false
+	}
+
+	// check that session has been invalidated
+	valid, err := am.ValidateSession(session.Token())
+	if err != nil {
+		anvil.DebugLogger.Println("session validation failed", err)
+		return false
+	} else if valid {
+		anvil.DebugLogger.Println("invalidated session is shown as valid")
+		return false
+	}
+
 	return true
 }

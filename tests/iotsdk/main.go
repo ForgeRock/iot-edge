@@ -135,6 +135,8 @@ var tests = []anvil.SDKTest{
 	&SessionLogout{},
 	&UnrestrictedSessionTokenAfterAuthentication{},
 	&UnrestrictedSessionTokenAfterRegistration{},
+	//&SessionValidWithRestrictedToken{}, // OPENAM-19492
+	&SessionLogoutWithRestrictedToken{},
 	&UserTokenAllow{},
 	&UserTokenDeny{},
 	&UserTokenWithUnsupportedScopes{},

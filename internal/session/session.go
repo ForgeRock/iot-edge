@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,11 @@ import (
 	"time"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
+	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/session"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 type DefaultSession struct {
@@ -37,29 +40,65 @@ func (s *DefaultSession) Token() string {
 }
 
 func (s *DefaultSession) Valid() (bool, error) {
-	return s.connection.ValidateSession(s.token)
+	return s.connection.ValidateSession(s.token, client.ApplicationJSON, "")
 }
 
 func (s *DefaultSession) Logout() error {
-	return s.connection.LogoutSession(s.token)
+	return s.connection.LogoutSession(s.token, client.ApplicationJSON, "")
 }
 
+// PoPSession is produced when the thing was authenticated using a signed JWT.
 type PoPSession struct {
 	DefaultSession
 	nonce int
 	key   crypto.Signer
 }
 
-func (s *PoPSession) SigningKey() crypto.Signer {
-	return s.key
-}
-
-func (s *PoPSession) Nonce() int {
-	return s.nonce
-}
-
-func (s *PoPSession) IncrementNonce() {
+// SignRequestBody will sign the request in order to satisfy the Proof of Possession restriction added to AM sessions.
+func (s *PoPSession) SignRequestBody(url, version string, body interface{}) (signedJWT string, err error) {
+	opts := &jose.SignerOptions{}
+	opts.WithHeader("aud", url)
+	opts.WithHeader("api", version)
+	opts.WithHeader("nonce", s.nonce)
+	// increment the nonce so that the token can be used in a subsequent request
 	s.nonce++
+	sig, err := jws.NewSigner(s.key, opts)
+	if err != nil {
+		return
+	}
+	builder := jwt.Signed(sig).Claims(struct {
+		CSRF string `json:"csrf"`
+	}{
+		CSRF: s.Token(),
+	})
+	if body != nil {
+		builder = builder.Claims(body)
+	}
+	return builder.CompactSerialize()
+}
+
+func (s *PoPSession) Valid() (bool, error) {
+	info, err := s.connection.AMInfo()
+	if err != nil {
+		return false, err
+	}
+	requestBody, err := s.SignRequestBody(info.SessionValidateURL, info.SessionsVersion, nil)
+	if err != nil {
+		return false, err
+	}
+	return s.connection.ValidateSession(s.token, client.ApplicationJOSE, requestBody)
+}
+
+func (s *PoPSession) Logout() error {
+	info, err := s.connection.AMInfo()
+	if err != nil {
+		return err
+	}
+	requestBody, err := s.SignRequestBody(info.SessionLogoutURL, info.SessionsVersion, nil)
+	if err != nil {
+		return err
+	}
+	return s.connection.LogoutSession(s.token, client.ApplicationJOSE, requestBody)
 }
 
 type Builder struct {

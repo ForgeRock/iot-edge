@@ -128,6 +128,9 @@ func softwareStatementRegistration() (err error) {
 	}
 	fmt.Println("Scope(s):", scopes)
 
+	if err = device.Logout(); err != nil {
+		return err
+	}
 	return nil
 }
 

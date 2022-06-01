@@ -2,7 +2,7 @@
 // +build coap !coap,!http
 
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,32 +231,37 @@ func (c *gatewayConnection) makeAuthorisedPost(tokenID string, endpoint string, 
 }
 
 // makeSessionRequest sends a request to the session endpoint with the given action
-func (c *gatewayConnection) makeSessionRequest(tokenID string, action string) (response coap.Message, err error) {
+func (c *gatewayConnection) makeSessionRequest(tokenID, action, payload string, content ContentType) (response coap.Message, err error) {
 	conn, err := c.dial()
 	if err != nil {
 		return response, err
 	}
-
 	ctx, cancel := c.context()
 	defer cancel()
 
-	b, err := json.Marshal(SessionToken{TokenID: tokenID})
+	var coapFormat coap.MediaType
+	switch content {
+	case ApplicationJOSE:
+		coapFormat = AppJOSE
+	case ApplicationJSON:
+		coapFormat = coap.AppJSON
+		b, err := json.Marshal(SessionToken{TokenID: tokenID})
+		if err != nil {
+			return nil, err
+		}
+		payload = string(b)
+	}
+	message, err := conn.NewPostRequest("/session", coapFormat, strings.NewReader(payload))
 	if err != nil {
 		return response, err
 	}
-
-	message, err := conn.NewPostRequest("/session", coap.AppJSON, bytes.NewReader(b))
-	if err != nil {
-		return response, err
-	}
-
 	message.SetQueryString(fmt.Sprintf("_action=%s", action))
 	return conn.ExchangeWithContext(ctx, message)
 }
 
 // ValidateSession represented by the given token
-func (c *gatewayConnection) ValidateSession(tokenID string) (ok bool, err error) {
-	response, err := c.makeSessionRequest(tokenID, "validate")
+func (c *gatewayConnection) ValidateSession(tokenID string, content ContentType, payload string) (ok bool, err error) {
+	response, err := c.makeSessionRequest(tokenID, "validate", payload, content)
 	if err != nil {
 		return false, err
 	}
@@ -272,8 +277,8 @@ func (c *gatewayConnection) ValidateSession(tokenID string) (ok bool, err error)
 }
 
 // LogoutSession represented by the given token
-func (c *gatewayConnection) LogoutSession(tokenID string) (err error) {
-	response, err := c.makeSessionRequest(tokenID, "logout")
+func (c *gatewayConnection) LogoutSession(tokenID string, content ContentType, payload string) (err error) {
+	response, err := c.makeSessionRequest(tokenID, "logout", payload, content)
 	if err != nil {
 		return err
 	}

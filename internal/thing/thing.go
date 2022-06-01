@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,10 @@ import (
 
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
 	"github.com/ForgeRock/iot-edge/v7/internal/debug"
-	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	isession "github.com/ForgeRock/iot-edge/v7/internal/session"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/session"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 const (
@@ -78,30 +75,6 @@ func (t *DefaultThing) makeAuthorisedRequest(f func(session session.Session) err
 	return err
 }
 
-// signedRequestClaims defines the claims expected in the signed JWT provided with a signed request
-type signedRequestClaims struct {
-	CSRF string `json:"csrf"`
-}
-
-func signedJWTBody(session *isession.PoPSession, url string, version string, body interface{}) (string, error) {
-	opts := &jose.SignerOptions{}
-	opts.WithHeader("aud", url)
-	opts.WithHeader("api", version)
-	opts.WithHeader("nonce", session.Nonce())
-	// increment the nonce so that the token can be used in a subsequent request
-	session.IncrementNonce()
-
-	sig, err := jws.NewSigner(session.SigningKey(), opts)
-	if err != nil {
-		return "", err
-	}
-	builder := jwt.Signed(sig).Claims(signedRequestClaims{CSRF: session.Token()})
-	if body != nil {
-		builder = builder.Claims(body)
-	}
-	return builder.CompactSerialize()
-}
-
 func (t *DefaultThing) RequestAccessToken(scopes ...string) (response thing.AccessTokenResponse, err error) {
 	payload := client.GetAccessTokenPayload{Scope: scopes}
 	return t.accessToken(payload)
@@ -123,7 +96,7 @@ func (t *DefaultThing) accessToken(payload client.GetAccessTokenPayload) (respon
 			if err != nil {
 				return err
 			}
-			requestBody, err = signedJWTBody(popSession, info.AccessTokenURL, info.ThingsVersion, payload)
+			requestBody, err = popSession.SignRequestBody(info.AccessTokenURL, info.ThingsVersion, payload)
 			if err != nil {
 				return err
 			}
@@ -159,7 +132,7 @@ func (t *DefaultThing) IntrospectAccessToken(token string) (introspection thing.
 			if err != nil {
 				return err
 			}
-			requestBody, err = signedJWTBody(popSession, info.IntrospectURL, info.ThingsVersion, payload)
+			requestBody, err = popSession.SignRequestBody(info.IntrospectURL, info.ThingsVersion, payload)
 			if err != nil {
 				return err
 			}
@@ -208,7 +181,7 @@ func (t *DefaultThing) RequestAttributes(names ...string) (response thing.Attrib
 				}
 				urlString += prefix + "_fields=" + strings.Join(names, ",")
 			}
-			requestBody, err = signedJWTBody(popSession, urlString, info.ThingsVersion, nil)
+			requestBody, err = popSession.SignRequestBody(urlString, info.ThingsVersion, nil)
 			if err != nil {
 				return err
 			}
@@ -241,7 +214,7 @@ func (t *DefaultThing) RequestUserCode(scopes ...string) (response thing.DeviceA
 			if err != nil {
 				return err
 			}
-			requestBody, err = signedJWTBody(popSession, info.UserCodeURL, info.ThingsVersion, payload)
+			requestBody, err = popSession.SignRequestBody(info.UserCodeURL, info.ThingsVersion, payload)
 			if err != nil {
 				return err
 			}
@@ -287,7 +260,7 @@ func (t *DefaultThing) RequestUserToken(authorizationResponse thing.DeviceAuthor
 			if err != nil {
 				return err
 			}
-			requestBody, err = signedJWTBody(popSession, info.UserTokenURL, info.ThingsVersion, payload)
+			requestBody, err = popSession.SignRequestBody(info.UserTokenURL, info.ThingsVersion, payload)
 			if err != nil {
 				return err
 			}
