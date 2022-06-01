@@ -120,6 +120,9 @@ func userTokenThing() (err error) {
 		return err
 	}
 
+	if err = device.Logout(); err != nil {
+		return err
+	}
 	return nil
 }
 

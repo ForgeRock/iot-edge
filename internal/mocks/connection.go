@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@ type MockClient struct {
 	IntrospectAccessTokenFunc func(string, string) ([]byte, error)
 }
 
-func (m *MockClient) ValidateSession(tokenID string) (ok bool, err error) {
+func (m *MockClient) ValidateSession(tokenID string, content client.ContentType, payload string) (ok bool, err error) {
 	return true, nil
 }
 
-func (m *MockClient) LogoutSession(tokenID string) (err error) {
+func (m *MockClient) LogoutSession(tokenID string, content client.ContentType, payload string) (err error) {
 	return nil
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,30 +228,30 @@ func (r ResponseError) Error() string {
 	return r.Name
 }
 
-// connection to the ForgeRock platform
+// Connection to the ForgeRock platform
 type Connection interface {
-	// initialise the client. Must be called before the Client is used by a Thing
+	// Initialise the client. Must be called before the Client is used by a Thing
 	Initialise() error
 
-	// authenticate sends an authenticate request to the ForgeRock platform
+	// Authenticate sends an authenticate request to the ForgeRock platform
 	Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error)
 
-	// amInfo returns the information required to construct valid signed JWTs
+	// AMInfo returns the information required to construct valid signed JWTs
 	AMInfo() (info AMInfoResponse, err error)
 
-	// validateSession sends a validate session request
-	ValidateSession(tokenID string) (ok bool, err error)
+	// ValidateSession sends a validate session request
+	ValidateSession(tokenID string, content ContentType, payload string) (ok bool, err error)
 
-	// logoutSession makes a request to logout the session
-	LogoutSession(tokenID string) (err error)
+	// LogoutSession makes a request to logout the session
+	LogoutSession(tokenID string, content ContentType, payload string) (err error)
 
-	// accessToken makes an access token request with the given session token and payload
+	// AccessToken makes an access token request with the given session token and payload
 	AccessToken(tokenID string, content ContentType, payload string) (reply []byte, err error)
 
 	// IntrospectAccessToken makes a request to introspect an access token
 	IntrospectAccessToken(tokenID string, content ContentType, payload string) (introspection []byte, err error)
 
-	// attributes makes a thing attributes request with the given session token and payload
+	// Attributes makes a thing attributes request with the given session token and payload
 	Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error)
 
 	// UserCode makes a user code request with the given session token and payload

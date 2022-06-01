@@ -1,7 +1,7 @@
 // +build coap,!http
 
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@ func (c amConnection) AMInfo() (info AMInfoResponse, err error) {
 	return info, errHTTPNotBuilt
 }
 
-func (c amConnection) ValidateSession(tokenID string) (ok bool, err error) {
+func (c amConnection) ValidateSession(tokenID string, content ContentType, payload string) (ok bool, err error) {
 	return ok, errHTTPNotBuilt
 }
 
-func (c amConnection) LogoutSession(tokenID string) (err error) {
+func (c amConnection) LogoutSession(tokenID string, content ContentType, payload string) (err error) {
 	return errHTTPNotBuilt
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -290,15 +290,15 @@ func (c *Gateway) attributesHandler(w coap.ResponseWriter, r *coap.Request) {
 func (c *Gateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 	debug.Logger.Println("sessionHandler")
 
-	var token client.SessionToken
-	if err := json.Unmarshal(r.Msg.Payload(), &token); err != nil {
+	token, payload, contentType, err := decodeSessionTokenRequest(r.Msg)
+	if err != nil {
 		w.SetCode(codes.BadRequest)
 		writeResponse(w, []byte(err.Error()))
 		return
 	}
 	switch r.Msg.QueryString() {
 	case "_action=validate":
-		valid, err := c.amConnection.ValidateSession(token.TokenID)
+		valid, err := c.amConnection.ValidateSession(token, contentType, payload)
 		if err != nil {
 			w.SetCode(codes.GatewayTimeout)
 			writeResponse(w, []byte(err.Error()))
@@ -312,7 +312,7 @@ func (c *Gateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 		writeResponse(w, nil)
 		debug.Logger.Printf("sessionHandler: success. validate %v", valid)
 	case "_action=logout":
-		err := c.amConnection.LogoutSession(token.TokenID)
+		err = c.amConnection.LogoutSession(token, contentType, payload)
 		if err != nil {
 			w.SetCode(codes.GatewayTimeout)
 			writeResponse(w, []byte(err.Error()))
@@ -326,6 +326,35 @@ func (c *Gateway) sessionHandler(w coap.ResponseWriter, r *coap.Request) {
 		writeResponse(w, []byte("unknown/missing query"))
 		return
 	}
+}
+
+func decodeSessionTokenRequest(msg coap.Message) (token, payload string, contentType client.ContentType, err error) {
+	coapFormat, ok := msg.Option(coap.ContentFormat).(coap.MediaType)
+	if !ok {
+		return token, payload, contentType, fmt.Errorf("missing content format")
+	}
+
+	switch coapFormat {
+	case coap.AppJSON:
+		var request client.SessionToken
+		if err = json.Unmarshal(msg.Payload(), &request); err != nil {
+			return
+		}
+		token = request.TokenID
+		contentType = client.ApplicationJSON
+	case client.AppJOSE:
+		payload = string(msg.Payload())
+		// get SSO token from the CSRF claim in the JWT
+		var claims struct {
+			CSRF string `json:"csrf"`
+		}
+		if err = jws.ExtractClaims(payload, &claims); err != nil {
+			return
+		}
+		token = claims.CSRF
+		contentType = client.ApplicationJOSE
+	}
+	return
 }
 
 // introspectHandler handles an introspect OAuth2 access token request

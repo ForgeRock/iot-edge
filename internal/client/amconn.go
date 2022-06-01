@@ -2,7 +2,7 @@
 // +build !coap,!http http
 
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -39,7 +40,7 @@ const (
 	serverInfoEndpointVersion = "resource=1.1"
 	authNEndpointVersion      = "protocol=1.0,resource=2.1"
 	thingsEndpointVersion     = "protocol=2.0,resource=1.0"
-	sessionEndpointVersion    = "resource=4.0"
+	sessionsEndpointVersion   = "resource=4.0"
 	httpContentType           = "Content-Type"
 	// Query keys
 	fieldQueryKey         = "_fields"
@@ -49,24 +50,25 @@ const (
 )
 
 // newSessionRequest returns a new session request
-func (c *amConnection) newSessionRequest(tokenID string, action string) (request *http.Request, err error) {
-	request, err = http.NewRequest(
-		http.MethodPost,
-		fmt.Sprintf("%s/json/sessions?_action=%s", c.baseURL, action),
-		nil)
+func (c *amConnection) newSessionRequest(tokenID, url, payload string, content ContentType) (request *http.Request, err error) {
+	var body io.Reader
+	if payload != "" {
+		body = strings.NewReader(payload)
+	}
+	request, err = http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
 
-	request.Header.Add(acceptAPIVersion, sessionEndpointVersion)
-	request.Header.Add(httpContentType, string(ApplicationJSON))
+	request.Header.Add(acceptAPIVersion, sessionsEndpointVersion)
+	request.Header.Add(httpContentType, string(content))
 	request.AddCookie(&http.Cookie{Name: c.cookieName, Value: tokenID})
 	return request, nil
 }
 
-// logoutSession represented by the given token
-func (c *amConnection) LogoutSession(tokenID string) (err error) {
-	request, err := c.newSessionRequest(tokenID, "logout")
+// LogoutSession represented by the given token
+func (c *amConnection) LogoutSession(tokenID string, content ContentType, payload string) (err error) {
+	request, err := c.newSessionRequest(tokenID, c.sessionLogoutURL(), payload, content)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return err
@@ -85,9 +87,9 @@ func (c *amConnection) LogoutSession(tokenID string) (err error) {
 	return nil
 }
 
-// validateSession represented by the given token
-func (c *amConnection) ValidateSession(tokenID string) (ok bool, err error) {
-	request, err := c.newSessionRequest(tokenID, "validate")
+// ValidateSession represented by the given token
+func (c *amConnection) ValidateSession(tokenID string, content ContentType, payload string) (ok bool, err error) {
+	request, err := c.newSessionRequest(tokenID, c.sessionValidateURL(), payload, content)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, nil))
 		return false, err
@@ -124,7 +126,7 @@ func (c *amConnection) ValidateSession(tokenID string) (ok bool, err error) {
 
 }
 
-// initialise checks that the server can be reached and prepares the client for further communication
+// Initialise checks that the server can be reached and prepares the client for further communication
 func (c *amConnection) Initialise() error {
 	info, err := c.getServerInfo()
 	if err != nil {
@@ -135,7 +137,7 @@ func (c *amConnection) Initialise() error {
 	return nil
 }
 
-// authenticate with the AM authTree using the given payload
+// Authenticate with the AM authTree using the given payload
 // This is a single round trip
 func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply AuthenticatePayload, err error) {
 	requestBody, err := json.Marshal(payload)
@@ -343,16 +345,27 @@ func (c *amConnection) attributesURL(names []string) string {
 	return u + "?" + strings.Join(q, "&")
 }
 
-// amInfo returns AM related information to the client
+func (c *amConnection) sessionValidateURL() string {
+	return fmt.Sprintf("%s/json/sessions?_action=validate", c.baseURL)
+}
+
+func (c *amConnection) sessionLogoutURL() string {
+	return fmt.Sprintf("%s/json/sessions?_action=logout", c.baseURL)
+}
+
+// AMInfo returns AM related information to the client
 func (c *amConnection) AMInfo() (info AMInfoResponse, err error) {
 	return AMInfoResponse{
-		Realm:          c.realm,
-		AccessTokenURL: c.accessTokenURL(),
-		IntrospectURL:  c.introspectURL(),
-		AttributesURL:  c.attributesURL(nil),
-		ThingsVersion:  thingsEndpointVersion,
-		UserCodeURL:    c.userCodeURL(),
-		UserTokenURL:   c.userTokenURL(),
+		Realm:              c.realm,
+		AccessTokenURL:     c.accessTokenURL(),
+		IntrospectURL:      c.introspectURL(),
+		AttributesURL:      c.attributesURL(nil),
+		ThingsVersion:      thingsEndpointVersion,
+		UserCodeURL:        c.userCodeURL(),
+		UserTokenURL:       c.userTokenURL(),
+		SessionsVersion:    sessionsEndpointVersion,
+		SessionValidateURL: c.sessionValidateURL(),
+		SessionLogoutURL:   c.sessionLogoutURL(),
 	}, nil
 }
 
@@ -448,7 +461,7 @@ func (c *amConnection) IntrospectAccessToken(tokenID string, content ContentType
 	return c.introspectAccessTokenLocally(token)
 }
 
-// attributes makes a thing attributes request with the given session token and payload
+// Attributes makes a thing attributes request with the given session token and payload
 func (c *amConnection) Attributes(tokenID string, content ContentType, payload string, names []string) (reply []byte, err error) {
 	request, err := http.NewRequest(http.MethodGet, c.attributesURL(names), strings.NewReader(payload))
 	if err != nil {
