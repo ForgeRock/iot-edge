@@ -21,6 +21,10 @@ ldapmodify \
         --bindDN uid=admin \
         --bindPassword $(cat $DS_UID_ADMIN_PASSWORD_FILE) \
         --trustAll <<EOF
+dn: ou=things,ou=identities
+objectClass: top
+objectClass: organizationalUnit
+
 dn: cn=schema
 changetype: modify
 add: attributeTypes
@@ -33,5 +37,5 @@ attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.25 NAME 'fr-idm-managed-thing-custom-a
 -
 add: objectClasses
 objectClasses: ( 1.3.6.1.4.1.36733.2.2.2.20 NAME 'fr-iot' DESC 'Auxiliary class for ForgeRock IoT Identity attributes'
- SUP top AUXILIARY MAY ( thingType $ thingKeys $ thingOAuth2ClientName $ thingConfig $ thingProperties $ fr-idm-managed-thing-custom-attrs ) X-ORIGIN 'OpenAM' )
+ SUP top STRUCTURAL MAY ( thingType $ thingKeys $ thingOAuth2ClientName $ thingConfig $ thingProperties $ fr-idm-managed-thing-custom-attrs ) X-ORIGIN 'OpenAM' )
 EOF

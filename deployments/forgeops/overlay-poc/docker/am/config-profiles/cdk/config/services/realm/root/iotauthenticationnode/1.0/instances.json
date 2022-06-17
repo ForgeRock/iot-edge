@@ -1,0 +1,23 @@
+{
+  "data": {
+    "_id": "Instances",
+    "_type": {
+      "_id": "IotAuthenticationNode",
+      "collection": false,
+      "name": "IotAuthenticationNode"
+    }
+  },
+  "metadata": {
+    "entityId": "Instances",
+    "entityType": "IotAuthenticationNode",
+    "objectClass": [
+      "top",
+      "organizationalunit"
+    ],
+    "ou": null,
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": null,
+    "uid": "ou=Instances,ou=1.0,ou=IotAuthenticationNode,ou=services,ou=am-config"
+  }
+}

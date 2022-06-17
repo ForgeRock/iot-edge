@@ -19,7 +19,7 @@ set -e
 
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 SCRIPTS_DIR=$(PWD)/scripts
-BASE_OVERLAY_DIR=$(PWD)/overlay
+BASE_OVERLAY_DIR=$(PWD)/overlay-poc
 CONFIG_PROFILE=cdk
 
 if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" ]]; then

@@ -1,0 +1,25 @@
+{
+  "data": {
+    "_id": "IoTSoftwarePublisherAgent",
+    "_type": {
+      "_id": "SoftwarePublisher",
+      "collection": true,
+      "name": "OAuth2 Software Publisher"
+    },
+    "agentgroup": null,
+    "issuer": "https://soft-pub.example.com",
+    "jwkSet": "{\"keys\": [{\"use\":\"sig\",\"kty\":\"EC\",\"kid\":\"gLcQhotEZygUuVUrt3Z6azql3dVfqQS7lo3vereyU7Y=\",\"crv\":\"P-256\",\"alg\":\"ES256\",\"x\":\"IUuXjru5zb3ixx23uM-qYsFX47eQNWJ6jTkHudFpVr4\",\"y\":\"VDSoP-7XBc8KLSeVb2fwzg36458AV3a8MrBx1RZHNho\"}]}",
+    "jwkStoreCacheMissCacheTime": 60000,
+    "jwksCacheTimeout": 3600000,
+    "jwksUri": null,
+    "publicKeyLocation": "jwks",
+    "softwareStatementSigningAlgorithm": "ES256"
+  },
+  "metadata": {
+    "amsterVersion": "&{version}",
+    "entityId": "IoTSoftwarePublisherAgent",
+    "entityType": "SoftwarePublisher",
+    "pathParams": {},
+    "realm": "/"
+  }
+}

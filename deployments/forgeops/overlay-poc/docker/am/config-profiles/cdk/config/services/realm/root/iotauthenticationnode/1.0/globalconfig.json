@@ -1,0 +1,23 @@
+{
+  "data": {
+    "_id": "GlobalConfig",
+    "_type": {
+      "_id": "IotAuthenticationNode",
+      "collection": false,
+      "name": "IotAuthenticationNode"
+    }
+  },
+  "metadata": {
+    "entityId": "GlobalConfig",
+    "entityType": "IotAuthenticationNode",
+    "objectClass": [
+      "top",
+      "organizationalunit"
+    ],
+    "ou": null,
+    "pathParams": {},
+    "realm": null,
+    "sunServiceID": null,
+    "uid": "ou=GlobalConfig,ou=1.0,ou=IotAuthenticationNode,ou=services,ou=am-config"
+  }
+}

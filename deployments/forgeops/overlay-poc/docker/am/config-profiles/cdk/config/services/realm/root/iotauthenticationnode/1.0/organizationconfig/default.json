@@ -1,0 +1,23 @@
+{
+  "data": {
+    "_id": "default",
+    "_type": {
+      "_id": "IotAuthenticationNode",
+      "collection": false,
+      "name": "IotAuthenticationNode"
+    }
+  },
+  "metadata": {
+    "entityId": "default",
+    "entityType": "IotAuthenticationNode",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "ou": null,
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": null,
+    "uid": "ou=default,ou=OrganizationConfig,ou=1.0,ou=IotAuthenticationNode,ou=services,ou=am-config"
+  }
+}

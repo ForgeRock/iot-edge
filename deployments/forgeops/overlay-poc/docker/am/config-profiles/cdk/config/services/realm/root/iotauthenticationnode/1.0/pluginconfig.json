@@ -1,0 +1,23 @@
+{
+  "data": {
+    "_id": "PluginConfig",
+    "_type": {
+      "_id": "IotAuthenticationNode",
+      "collection": false,
+      "name": "IotAuthenticationNode"
+    }
+  },
+  "metadata": {
+    "entityId": "PluginConfig",
+    "entityType": "IotAuthenticationNode",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "ou": null,
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": null,
+    "uid": "ou=PluginConfig,ou=1.0,ou=IotAuthenticationNode,ou=services,ou=am-config"
+  }
+}

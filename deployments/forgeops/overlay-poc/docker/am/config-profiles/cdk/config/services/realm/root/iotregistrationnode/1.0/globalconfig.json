@@ -1,0 +1,23 @@
+{
+  "data": {
+    "_id": "GlobalConfig",
+    "_type": {
+      "_id": "IotRegistrationNode",
+      "collection": false,
+      "name": "IotRegistrationNode"
+    }
+  },
+  "metadata": {
+    "entityId": "GlobalConfig",
+    "entityType": "IotRegistrationNode",
+    "objectClass": [
+      "top",
+      "organizationalunit"
+    ],
+    "ou": null,
+    "pathParams": {},
+    "realm": null,
+    "sunServiceID": null,
+    "uid": "ou=GlobalConfig,ou=1.0,ou=IotRegistrationNode,ou=services,ou=am-config"
+  }
+}
