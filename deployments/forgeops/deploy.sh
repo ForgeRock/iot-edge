@@ -56,6 +56,7 @@ echo "Clone ForgeOps"
 echo "====================================================="
 rm -rf "$FORGEOPS_DIR" && mkdir -p "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
+git checkout release/7.2.0
 
 echo "====================================================="
 echo "Overlay base and custom files"
