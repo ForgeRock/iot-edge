@@ -2,8 +2,8 @@
   "metadata" : {
     "realm": "/",
     "entityType" : "sunIdentityRepositoryService",
-    "entityId" : "default/OpenDJ",
-    "uid" : "ou=OpenDJ,ou=default,ou=OrganizationConfig,ou=1.0,ou=sunIdentityRepositoryService,ou=services,ou=am-config",
+    "entityId" : "default/Things",
+    "uid" : "ou=Things,ou=default,ou=OrganizationConfig,ou=1.0,ou=sunIdentityRepositoryService,ou=services,ou=am-config",
     "sunServiceID" : "&{am.stores.user.type}",
     "objectClass" : [
       "top",
@@ -11,19 +11,72 @@
     ],
     "pathParams" : { },
     "ou" : [
-      "OpenDJ"
+      "Things"
     ]
   },
   "data" : {
     "pluginconfig" : {
       "sunIdRepoClass" : "org.forgerock.openam.idrepo.ldap.DJLDAPv3Repo",
       "sunIdRepoSupportedOperations" : [
-        "realm=read,create,edit,delete,service",
-        "group=read,create,edit,delete",
-        "user=read,create,edit,delete,service"
+        "oauthclient=read,create,edit,delete",
+        "thing=read,create,edit,delete"
       ],
       "sunIdRepoAttributeMapping" : [
-
+        "com.forgerock.openam.oauth2provider.clientType=clientType",
+        "com.forgerock.openam.oauth2provider.loopback.interface.redirection=loopbackInterfaceRedirection",
+        "com.forgerock.openam.oauth2provider.redirectionURIs=redirectionUris",
+        "com.forgerock.openam.oauth2provider.claimsRedirectionURIs=claimsRedirectionUris",
+        "com.forgerock.openam.oauth2provider.scopes=scopes",
+        "com.forgerock.openam.oauth2provider.claims=claims",
+        "com.forgerock.openam.oauth2provider.defaultScopes=defaultScopes",
+        "com.forgerock.openam.oauth2provider.name=name",
+        "com.forgerock.openam.oauth2provider.description=descriptions",
+        "com.forgerock.openam.oauth2provider.clientName=clientName",
+        "com.forgerock.openam.oauth2provider.tosURI=tosURI",
+        "com.forgerock.openam.oauth2provider.responseTypes=responseTypes",
+        "com.forgerock.openam.oauth2provider.contacts=contacts",
+        "com.forgerock.openam.oauth2provider.tokenEndPointAuthMethod=tokenEndpointAuthMethod",
+        "com.forgerock.openam.oauth2provider.sectorIdentifierURI=sectorIdentifierUri",
+        "com.forgerock.openam.oauth2provider.subjectType=subjectType",
+        "com.forgerock.openam.oauth2provider.idTokenSignedResponseAlg=idTokenSignedResponseAlg",
+        "com.forgerock.openam.oauth2provider.defaultMaxAge=defaultMaxAge",
+        "com.forgerock.openam.oauth2provider.defaultMaxAgeEnabled=defaultMaxAgeEnabled",
+        "com.forgerock.openam.oauth2provider.postLogoutRedirectURI=postLogoutRedirectUri",
+        "com.forgerock.openam.oauth2provider.accessToken=updateAccessToken",
+        "com.forgerock.openam.oauth2provider.clientSessionURI=clientSessionUri",
+        "sunIdentityServerDeviceStatus=status",
+        "com.forgerock.openam.oauth2provider.publicKeyLocation=publicKeyLocation",
+        "com.forgerock.openam.oauth2provider.jwksURI=jwksUri",
+        "com.forgerock.openam.oauth2provider.jwksCacheTimeout=jwksCacheTimeout",
+        "com.forgerock.openam.oauth2provider.jwkStoreCacheMissCacheTime=jwkStoreCacheMissCacheTime",
+        "com.forgerock.openam.oauth2provider.tokenEndpointAuthSigningAlgorithm=tokenEndpointAuthSigningAlgorithm",
+        "com.forgerock.openam.oauth2provider.jwks=jwkSet",
+        "com.forgerock.openam.oauth2provider.clientJwtPublicKey=clientJwtPublicKey",
+        "com.forgerock.openam.oauth2provider.tlsTrustedCert=mTLSTrustedCert",
+        "com.forgerock.openam.oauth2provider.subjectDn=mTLSSubjectDN",
+        "com.forgerock.openam.oauth2provider.useCertificateBoundAccessTokens=mTLSCertificateBoundAccessTokens",
+        "com.forgerock.openam.oauth2provider.authorizationCodeLifeTime=authorizationCodeLifetime",
+        "com.forgerock.openam.oauth2provider.refreshTokenLifeTime=refreshTokenLifetime",
+        "com.forgerock.openam.oauth2provider.accessTokenLifeTime=accessTokenLifetime",
+        "com.forgerock.openam.oauth2provider.authLevel=tokenExchangeAuthLevel",
+        "com.forgerock.openam.oauth2provider.jwtTokenLifeTime=jwtTokenLifetime",
+        "com.forgerock.openam.oauth2provider.userinfo.signedResponseAlg=userinfoSignedResponseAlg",
+        "com.forgerock.openam.oauth2provider.userinfo.encryptedResponseAlg=userinfoEncryptedResponseAlg",
+        "com.forgerock.openam.oauth2provider.userinfo.encryptedResponseEnc=userinfoEncryptedResponseEncryptionAlgorithm",
+        "com.forgerock.openam.oauth2provider.userinfo.responseFormat=userinfoResponseFormat",
+        "com.forgerock.openam.oauth2provider.oauth.mixUpMitigationEnabled=mixUpMitigation",
+        "com.forgerock.openam.oauth2provider.requestObjectSigningAlg=requestParameterSignedAlg",
+        "com.forgerock.openam.oauth2provider.requestObjectEncryptionAlg=requestParameterEncryptedAlg",
+        "com.forgerock.openam.oauth2provider.requestObjectEncryptionEnc=requestParameterEncryptedEncryptionAlgorithm",
+        "com.forgerock.openam.oauth2provider.tokenintrospection.responseFormat=tokenIntrospectionResponseFormat",
+        "com.forgerock.openam.oauth2provider.tokenintrospection.signedResponseAlg=tokenIntrospectionSignedResponseAlg",
+        "com.forgerock.openam.oauth2provider.tokenintrospection.encryptedResponseAlg=tokenIntrospectionEncryptedResponseAlg",
+        "com.forgerock.openam.oauth2provider.tokenintrospection.encryptedResponseEnc=tokenIntrospectionEncryptedResponseEncryptionAlgorithm",
+        "com.forgerock.openam.oauth2provider.requestURIs=requestUris",
+        "com.forgerock.openam.oauth2provider.grantTypes=grantTypes",
+        "oauth2ClientCustomProperties=customProperties",
+        "com.forgerock.openam.oauth2provider.softwareIdentity=softwareIdentity",
+        "com.forgerock.openam.oauth2provider.softwareVersion=softwareVersion"
       ]
     },
     "ldapsettings" : {
