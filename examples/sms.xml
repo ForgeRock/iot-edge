@@ -1,0 +1,1249 @@
+<SubSchema name="OAuth2Client" inheritance="multiple" i18nKey="a7001" hideConfigUI="yes">
+    <AttributeSchema
+            name="agentgroup"
+            type="single"
+            syntax="string"
+            i18nKey="a650"
+            order="100">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema
+            name="userpassword"
+            type="single"
+            syntax="password"
+            validator="RequiredValueValidator"
+            i18nKey="a700"
+            order="23000">
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.clientType"
+                     type="single_choice"
+                     syntax="string"
+                     validator="RequiredValueValidator"
+                     i18nKey="a701"
+                     order="23100" resourceName="clientType">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a702">Confidential</ChoiceValue>
+            <ChoiceValue i18nKey="a703">Public</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>Confidential</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.loopback.interface.redirection"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="loopback.interface.redirection"
+                     order="23150" resourceName="loopbackInterfaceRedirection">
+        <IsOptional/>
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="a105">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="a106">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.redirectionURIs"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     validator="RedirectUriValidator"
+                     i18nKey="a704"
+                     order="23200" resourceName="redirectionUris">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.claimsRedirectionURIs"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     validator="RedirectUriValidator"
+                     i18nKey="claimsRedirectionUris"
+                     order="23200" resourceName="claimsRedirectionUris">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.scopes"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a705"
+                     order="23300"
+                     resourceName="scopes">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.claims"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a7055"
+                     order="23400" resourceName="claims">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.defaultScopes"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a708"
+                     order="23700" resourceName="defaultScopes">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.name"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a706"
+                     order="23500" resourceName="name">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.description"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a707"
+                     order="23600" resourceName="descriptions">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.clientName"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a746"
+                     order="25300" resourceName="clientName">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="clientUri"
+                     i18nKey="clientUri"
+                     order="25325">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="logoUri"
+                     i18nKey="logoUri"
+                     order="25350">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="policyUri"
+                     i18nKey="policyUri"
+                     order="25375">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.tosURI"
+                     i18nKey="tosURI"
+                     resourceName="tosURI"
+                     order="25390">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.responseTypes"
+            type="list"
+            syntax="string"
+            i18nKey="a715"
+            order="23800"
+            uitype="unorderedlist" resourceName="responseTypes">
+        <DefaultValues>
+            <Value>[0]=code</Value>
+            <Value>[1]=token</Value>
+            <Value>[2]=id_token</Value>
+            <Value>[3]=code token</Value>
+            <Value>[4]=token id_token</Value>
+            <Value>[5]=code id_token</Value>
+            <Value>[6]=code token id_token</Value>
+            <Value>[7]=device_code</Value>
+            <Value>[8]=device_code id_token</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.contacts"
+            type="list"
+            syntax="string"
+            i18nKey="a716"
+            order="23900"
+            uitype="unorderedlist" resourceName="contacts">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.tokenEndPointAuthMethod"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="a719"
+                     order="24000" resourceName="tokenEndpointAuthMethod">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a740">client_secret_post</ChoiceValue>
+            <ChoiceValue i18nKey="a741">client_secret_basic</ChoiceValue>
+            <!--     <ChoiceValue i18nKey="a742">client_secret_jwt</ChoiceValue> -->
+            <ChoiceValue i18nKey="a743">private_key_jwt</ChoiceValue>
+            <ChoiceValue i18nKey="a7410">tls_client_auth</ChoiceValue>
+            <ChoiceValue i18nKey="a7431">self_signed_tls_client_auth</ChoiceValue>
+            <ChoiceValue i18nKey="a7432">none</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>client_secret_basic</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.sectorIdentifierURI"
+            type="single"
+            syntax="string"
+            validator=""
+            i18nKey="a723"
+            order="24300" resourceName="sectorIdentifierUri">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.subjectType"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="a724"
+                     order="24400" resourceName="subjectType">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a725">pairwise</ChoiceValue>
+            <ChoiceValue i18nKey="a726">public</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>public</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="authorizationResponseSigningAlgorithm"
+            type="single"
+            i18nKey="authorizationResponseSigningAlgorithm"
+            order="24801">
+        <DefaultValues>
+            <Value>RS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="authorizationResponseEncryptionAlgorithm"
+            type="single"
+            i18nKey="authorizationResponseEncryptionAlgorithm"
+            order="24803">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="authorizationResponseEncryptionMethod"
+            type="single"
+            i18nKey="authorizationResponseEncryptionMethod"
+            order="24804">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.idTokenSignedResponseAlg"
+            type="single"
+            syntax="string"
+            i18nKey="a731"
+            order="24500" resourceName="idTokenSignedResponseAlg">
+        <DefaultValues>
+            <Value>RS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="idTokenEncryptionEnabled"
+            type="single"
+            syntax="boolean"
+            i18nKey="a731a"
+            order="24600">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="idTokenEncryptionAlgorithm"
+            type="single"
+            syntax="string"
+            i18nKey="a732"
+            order="24700">
+        <DefaultValues>
+            <Value>RSA-OAEP-256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="idTokenEncryptionMethod"
+            type="single"
+            syntax="string"
+            i18nKey="a733"
+            order="24800">
+        <DefaultValues>
+            <Value>A128CBC-HS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="idTokenPublicEncryptionKey"
+            type="single"
+            syntax="paragraph"
+            i18nKey="a734"
+            order="24900">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.defaultMaxAge"
+                     type="single"
+                     syntax="number_range" rangeStart="1" rangeEnd="2147483647"
+                     i18nKey="a748"
+                     order="25500" resourceName="defaultMaxAge">
+        <DefaultValues>
+            <Value>600</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.defaultMaxAgeEnabled"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="a749"
+                     order="25600" resourceName="defaultMaxAgeEnabled">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="defaultAcrValues"
+            type="list"
+            syntax="string"
+            uitype="orderedlist"
+            validator="ListValueValidator"
+            i18nKey="a775"
+            order="25650">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.postLogoutRedirectURI"
+            type="list"
+            syntax="string"
+            i18nKey="a738"
+            order="25000"
+            uitype="unorderedlist" resourceName="postLogoutRedirectUri">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.accessToken"
+            type="single"
+            syntax="string"
+            i18nKey="a744"
+            order="25100" resourceName="updateAccessToken">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.clientSessionURI"
+            type="single"
+            syntax="string"
+            i18nKey="a745"
+            order="25200" resourceName="clientSessionUri">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema name="sunIdentityServerDeviceStatus"
+                     type="single_choice"
+                     syntax="string"
+                     validator="RequiredValueValidator"
+                     i18nKey="a101"
+                     order="200" resourceName="status">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a102">Active</ChoiceValue>
+            <ChoiceValue i18nKey="a103">Inactive</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>Active</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.publicKeyLocation"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="a750"
+                     order="25700" resourceName="publicKeyLocation">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a751">jwks_uri</ChoiceValue>
+            <ChoiceValue i18nKey="a752">jwks</ChoiceValue>
+            <ChoiceValue i18nKey="a753">x509</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>jwks_uri</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.jwksURI"
+            type="single"
+            syntax="string"
+            i18nKey="a722"
+            order="24100" resourceName="jwksUri">
+        <IsOptional/>
+        <ExampleValue>
+            <!-- Example does not tagswap: @SERVER_PROTO@://@SERVER_HOST@:@SERVER_PORT@@AM_SERVICES_DEPLOY_URI@/oauth2@REALM@/connect/jwk_uri -->
+            <Value>https://{{jwks-www}}/oauth2/{{realm}}/connect/jwk_uri</Value>
+        </ExampleValue>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.jwksCacheTimeout"
+            type="single"
+            syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+            i18nKey="a759"
+            order="24110" resourceName="jwksCacheTimeout">
+        <DefaultValues>
+            <Value>3600000</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.jwkStoreCacheMissCacheTime"
+            type="single"
+            syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+            i18nKey="a760"
+            order="24120" resourceName="jwkStoreCacheMissCacheTime">
+        <DefaultValues>
+            <Value>60000</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.tokenEndpointAuthSigningAlgorithm"
+            type="single"
+            syntax="string"
+            i18nKey="a769"
+            order="24130" resourceName="tokenEndpointAuthSigningAlgorithm">
+        <DefaultValues>
+            <Value>RS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.jwks"
+            type="single"
+            syntax="string"
+            i18nKey="a722b"
+            order="24200" resourceName="jwkSet">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.clientJwtPublicKey"
+            type="single"
+            syntax="paragraph"
+            i18nKey="a747"
+            order="25400" resourceName="clientJwtPublicKey">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.tlsTrustedCert"
+            type="single"
+            syntax="paragraph"
+            i18nKey="a826"
+            order="25405" resourceName="mTLSTrustedCert">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.subjectDn"
+            type="single"
+            syntax="string"
+            i18nKey="a827"
+            order="25406" resourceName="mTLSSubjectDN">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.useCertificateBoundAccessTokens"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="a828"
+                     order="25507" resourceName="mTLSCertificateBoundAccessTokens">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.authorizationCodeLifeTime"
+            type="single"
+            syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+            i18nKey="a754"
+            order="25800" resourceName="authorizationCodeLifetime">
+        <DefaultValues>
+            <Value>0</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.refreshTokenLifeTime"
+            type="single"
+            syntax="number_range" rangeStart="-1" rangeEnd="2147483647"
+            i18nKey="a755"
+            order="25900" resourceName="refreshTokenLifetime">
+        <DefaultValues>
+            <Value>0</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.accessTokenLifeTime"
+            type="single"
+            syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+            i18nKey="a756"
+            order="26000" resourceName="accessTokenLifetime">
+        <DefaultValues>
+            <Value>0</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.authLevel"
+            type="single"
+            syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+            i18nKey="oauthClient.tokenExchangeAuthLevel"
+            order="10100" resourceName="tokenExchangeAuthLevel">
+        <DefaultValues>
+            <Value>0</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.jwtTokenLifeTime"
+            type="single"
+            syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+            i18nKey="a757"
+            order="26100" resourceName="jwtTokenLifetime">
+        <DefaultValues>
+            <Value>0</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="refreshTokenGracePeriod"
+            type="single"
+            syntax="number_range" rangeStart="-1" rangeEnd="2147483647"
+            validator="GracePeriodValidator"
+            order="26150"
+            i18nKey="refreshTokenGracePeriod">
+        <DefaultValues>
+            <Value>0</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="GracePeriodValidator"
+                     type="validator"
+                     syntax="string">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>org.forgerock.openam.oauth2.validation.GracePeriodValidator</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="isConsentImplied"
+            type="single"
+            syntax="boolean"
+            i18nKey="a758"
+            order="26200">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.userinfo.signedResponseAlg"
+            type="single"
+            syntax="string"
+            i18nKey="a761"
+            order="27200" resourceName="userinfoSignedResponseAlg">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.userinfo.encryptedResponseAlg"
+            type="single"
+            syntax="string"
+            i18nKey="a762"
+            order="27300" resourceName="userinfoEncryptedResponseAlg">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.userinfo.encryptedResponseEnc"
+            type="single"
+            syntax="string"
+            i18nKey="a763"
+            order="27400" resourceName="userinfoEncryptedResponseEncryptionAlgorithm">
+        <DefaultValues>
+            <Value>A128CBC-HS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.userinfo.responseFormat"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="a764"
+                     order="27100" resourceName="userinfoResponseFormat">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a765">JSON</ChoiceValue>
+            <ChoiceValue i18nKey="a766">SIGNED_JWT</ChoiceValue>
+            <ChoiceValue i18nKey="a767">ENCRYPTED_JWT</ChoiceValue>
+            <ChoiceValue i18nKey="a768">SIGNED_THEN_ENCRYPTED_JWT</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>JSON</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.oauth.mixUpMitigationEnabled"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="a770"
+                     order="26300"
+                     resourceName="mixUpMitigation">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="RequiredValueValidator"
+                     type="validator"
+                     syntax="string">
+        <DefaultValues>
+            <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.requestObjectSigningAlg"
+            type="single"
+            syntax="string"
+            i18nKey="a771"
+            order="27500" resourceName="requestParameterSignedAlg">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.requestObjectEncryptionAlg"
+            type="single"
+            syntax="string"
+            i18nKey="a772"
+            order="27600" resourceName="requestParameterEncryptedAlg">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.requestObjectEncryptionEnc"
+            type="single"
+            syntax="string"
+            i18nKey="a773"
+            order="27700" resourceName="requestParameterEncryptedEncryptionAlgorithm">
+        <DefaultValues>
+            <Value>A128CBC-HS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.tokenintrospection.responseFormat"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="a7770"
+                     order="27800" resourceName="tokenIntrospectionResponseFormat">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a77701">JSON</ChoiceValue>
+            <ChoiceValue i18nKey="a77702">SIGNED_JWT</ChoiceValue>
+            <ChoiceValue i18nKey="a77703">SIGNED_THEN_ENCRYPTED_JWT</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>JSON</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.tokenintrospection.signedResponseAlg"
+            type="single_choice"
+            syntax="string"
+            i18nKey="a7771"
+            order="27810" resourceName="tokenIntrospectionSignedResponseAlg">
+        <ChoiceValues>
+            <ChoiceValue>HS256</ChoiceValue>
+            <ChoiceValue>HS384</ChoiceValue>
+            <ChoiceValue>HS512</ChoiceValue>
+            <ChoiceValue>RS256</ChoiceValue>
+            <ChoiceValue>RS384</ChoiceValue>
+            <ChoiceValue>RS512</ChoiceValue>
+            <ChoiceValue>ES256</ChoiceValue>
+            <ChoiceValue>ES384</ChoiceValue>
+            <ChoiceValue>ES512</ChoiceValue>
+            <ChoiceValue>PS256</ChoiceValue>
+            <ChoiceValue>PS384</ChoiceValue>
+            <ChoiceValue>PS512</ChoiceValue>
+            <ChoiceValue>EDDSA</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>RS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.tokenintrospection.encryptedResponseAlg"
+            type="single_choice"
+            syntax="string"
+            i18nKey="a7772"
+            order="27820" resourceName="tokenIntrospectionEncryptedResponseAlg">
+        <ChoiceValues>
+            <ChoiceValue>RSA1_5</ChoiceValue>
+            <ChoiceValue>RSA-OAEP</ChoiceValue>
+            <ChoiceValue>RSA-OAEP-256</ChoiceValue>
+            <ChoiceValue>dir</ChoiceValue>
+            <ChoiceValue>A128KW</ChoiceValue>
+            <ChoiceValue>A192KW</ChoiceValue>
+            <ChoiceValue>A256KW</ChoiceValue>
+            <ChoiceValue>ECDH-ES</ChoiceValue>
+            <ChoiceValue>ECDH-ES+A128KW</ChoiceValue>
+            <ChoiceValue>ECDH-ES+A192KW</ChoiceValue>
+            <ChoiceValue>ECDH-ES+A256KW</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>RSA-OAEP-256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.tokenintrospection.encryptedResponseEnc"
+            type="single_choice"
+            syntax="string"
+            i18nKey="a7773"
+            order="27830" resourceName="tokenIntrospectionEncryptedResponseEncryptionAlgorithm">
+        <ChoiceValues>
+            <ChoiceValue>A128CBC-HS256</ChoiceValue>
+            <ChoiceValue>A192CBC-HS384</ChoiceValue>
+            <ChoiceValue>A256CBC-HS512</ChoiceValue>
+            <ChoiceValue>A128GCM</ChoiceValue>
+            <ChoiceValue>A192GCM</ChoiceValue>
+            <ChoiceValue>A256GCM</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>A128CBC-HS256</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <AttributeSchema name="javascriptOrigins"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="javascriptOrigins"
+                     order="23650"
+                     isSearchable="yes">
+        <IsOptional/>
+    </AttributeSchema>
+
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.requestURIs"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a774"
+                     order="23700" resourceName="requestUris">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="com.forgerock.openam.oauth2provider.grantTypes"
+                     type="list"
+                     uitype="unorderedlist"
+                     syntax="string"
+                     i18nKey="a776"
+                     order="23800" resourceName="grantTypes">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="a777">authorization_code</ChoiceValue>
+            <ChoiceValue i18nKey="a778">implicit</ChoiceValue>
+            <ChoiceValue i18nKey="a779">password</ChoiceValue>
+            <ChoiceValue i18nKey="a780">client_credentials</ChoiceValue>
+            <ChoiceValue i18nKey="a781">refresh_token</ChoiceValue>
+            <ChoiceValue i18nKey="a782">urn:ietf:params:oauth:grant-type:uma-ticket</ChoiceValue>
+            <ChoiceValue i18nKey="a783">urn:ietf:params:oauth:grant-type:device_code</ChoiceValue>
+            <ChoiceValue i18nKey="a784">urn:ietf:params:oauth:grant-type:saml2-bearer</ChoiceValue>
+            <ChoiceValue i18nKey="back.channel.request">urn:openid:params:grant-type:ciba</ChoiceValue>
+            <ChoiceValue i18nKey="a785">urn:ietf:params:oauth:grant-type:jwt-bearer</ChoiceValue>
+            <ChoiceValue i18nKey="a786">urn:ietf:params:oauth:grant-type:token-exchange</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[0]=authorization_code</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="RedirectUriValidator" type="validator" syntax="string">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>org.forgerock.oauth2.core.ClientRedirectUriValidator</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="oauth2ClientCustomProperties"
+            type="list"
+            syntax="string"
+            i18nKey="oauth2ClientCustomProperties"
+            order="35100" resourceName="customProperties">
+        <IsOptional/>
+        <DefaultValues>
+            <Value></Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="URLValidator" type="validator" syntax="string">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>org.forgerock.openam.sm.validation.URLValidator</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="backchannel_logout_uri"
+                     type="single"
+                     syntax="string"
+                     i18nKey="oauth2BackChannelLogoutUri"
+                     validator="URLValidator"
+                     order="35200" resourceName="backchannel_logout_uri">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="backchannel_logout_session_required"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="oauth2BackchannelLogoutSessionRequired"
+                     order="35300" resourceName="backchannel_logout_session_required">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.softwareIdentity"
+            type="single"
+            syntax="string"
+            i18nKey="softwareIdentity"
+            resourceName="softwareIdentity"
+            order="35400">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema
+            name="com.forgerock.openam.oauth2provider.softwareVersion"
+            type="single"
+            syntax="string"
+            i18nKey="softwareVersion"
+            resourceName="softwareVersion"
+            order="35500">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="require_pushed_authorization_requests"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="require_pushed_authorization_requests"
+                     order="35600"
+                     resourceName="require_pushed_authorization_requests">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+
+    <!--                    Overridable attributes from the provider-->
+    <AttributeSchema name="providerOverridesEnabled"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="providerOverridesEnabled"
+                     order="40000">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="issueRefreshToken"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="issueRefreshToken"
+                     order="40100">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>true</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="issueRefreshTokenOnRefreshedToken"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="issueRefreshTokenOnRefreshedToken"
+                     order="40200">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>true</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="usePolicyEngineForScope"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="usePolicyEngineForScope"
+                     order="40300">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="scopesPolicySet"
+            type="single"
+            i18nKey="scopesPolicySet"
+            order="40310"
+            resourceName="scopesPolicySet">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>oauth2Scopes</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="accessTokenModificationPluginType"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="accessTokenModificationPluginType"
+                     order="40390"
+                     resourceName="accessTokenModificationPluginType">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="pluginTypeScripted">SCRIPTED</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeJava">JAVA</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeProvider">PROVIDER</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>PROVIDER</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="accessTokenModificationScript"
+                     type="single_choice"
+                     uitype="scriptSelect"
+                     syntax="string"
+                     i18nKey="accessTokenModificationScript"
+                     order="40400">
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"/>
+                    <Value>OAUTH2_ACCESS_TOKEN_MODIFICATION</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="accessTokenModifierClass"
+                     type="single"
+                     syntax="string"
+                     resourceName="accessTokenModifierClass"
+                     i18nKey="accessTokenModifierClass"
+                     order="40410">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="accessTokenMayActScript"
+                     type="single_choice"
+                     uitype="scriptSelect"
+                     syntax="string"
+                     i18nKey="accessTokenMayActScript"
+                     order="40500">
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"/>
+                    <Value>OAUTH2_MAY_ACT</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="oidcMayActScript"
+                     type="single_choice"
+                     uitype="scriptSelect"
+                     syntax="string"
+                     i18nKey="oidcMayActScript"
+                     order="40600">
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"/>
+                    <Value>OAUTH2_MAY_ACT</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="oidcClaimsPluginType"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="oidcClaimsPluginType"
+                     order="40690"
+                     resourceName="oidcClaimsPluginType">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="pluginTypeScripted">SCRIPTED</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeJava">JAVA</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeProvider">PROVIDER</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>PROVIDER</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="oidcClaimsScript"
+                     type="single_choice"
+                     uitype="scriptSelect"
+                     syntax="string"
+                     i18nKey="oidcClaimsScript"
+                     order="40700">
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"/>
+                    <Value>OIDC_CLAIMS</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="oidcClaimsClass"
+                     type="single"
+                     syntax="string"
+                     resourceName="oidcClaimsClass"
+                     i18nKey="oidcClaimsClass"
+                     order="40710">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="customLoginUrlTemplate"
+                     type="single"
+                     syntax="string"
+                     i18nKey="customLoginUrlTemplate"
+                     order="40900">
+        <IsOptional/>
+    </AttributeSchema>
+    <AttributeSchema name="statelessTokensEnabled"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="statelessTokensEnabled"
+                     order="41000">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="tokenEncryptionEnabled"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="tokenEncryptionEnabled"
+                     order="41100">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="clientsCanSkipConsent"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="clientsCanSkipConsent"
+                     order="41300">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="enableRemoteConsent"
+                     type="single"
+                     syntax="boolean"
+                     i18nKey="enableRemoteConsent"
+                     order="41400">
+        <BooleanValues>
+            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+        </BooleanValues>
+        <DefaultValues>
+            <Value>false</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="remoteConsentServiceId"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="remoteConsentServiceId"
+                     order="41500">
+        <IsOptional/>
+        <ChoiceValues>
+            <ChoiceValuesClassName
+                    className="org.forgerock.openam.oauth2.remoteconsent.RemoteConsentAgentChoiceValues"/>
+        </ChoiceValues>
+    </AttributeSchema>
+    <AttributeSchema name="evaluateScopePluginType"
+                     type="single_choice"
+                     syntax="string"
+                     i18nKey="evaluateScopePluginType"
+                     order="42100"
+                     resourceName="evaluateScopePluginType">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="pluginTypeJava">JAVA</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeProvider">PROVIDER</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeScripted">SCRIPTED</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>PROVIDER</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="evaluateScopeScript"
+                     type="single_choice"
+                     uitype="scriptSelect"
+                     syntax="string"
+                     i18nKey="evaluateScopeScript"
+                     order="42200">
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"/>
+                    <Value>OAUTH2_EVALUATE_SCOPE</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="evaluateScopeClass"
+                     type="single"
+                     syntax="string"
+                     resourceName="evaluateScopeClass"
+                     i18nKey="evaluateScopeClass"
+                     order="42300">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>org.forgerock.oauth2.core.plugins.registry.DefaultScopeEvaluator</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="validateScopePluginType"
+                     type="single_choice"
+                     syntax="string"
+                     resourceName="validateScopePluginType"
+                     i18nKey="validateScopePluginType"
+                     order="42400">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="pluginTypeJava">JAVA</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeProvider">PROVIDER</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeScripted">SCRIPTED</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>PROVIDER</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="validateScopeScript"
+                     type="single_choice"
+                     syntax="string"
+                     uitype="scriptSelect"
+                     resourceName="validateScopeScript"
+                     i18nKey="validateScopeScript"
+                     order="42500">
+        <IsOptional/>
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"></Attribute>
+                    <Value>OAUTH2_VALIDATE_SCOPE</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="validateScopeClass"
+                     type="single"
+                     syntax="string"
+                     resourceName="validateScopeClass"
+                     i18nKey="validateScopeClass"
+                     order="42600">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>org.forgerock.oauth2.core.plugins.registry.DefaultScopeValidator</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema
+            name="authorizeEndpointDataProviderPluginType"
+            type="single_choice"
+            syntax="string"
+            resourceName="authorizeEndpointDataProviderPluginType"
+            i18nKey="authorizeEndpointDataProviderPluginType"
+            order="42700">
+        <ChoiceValues>
+            <ChoiceValue i18nKey="pluginTypeJava">JAVA</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeProvider">PROVIDER</ChoiceValue>
+            <ChoiceValue i18nKey="pluginTypeScripted">SCRIPTED</ChoiceValue>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>PROVIDER</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="authorizeEndpointDataProviderScript"
+                     type="single_choice"
+                     uitype="scriptSelect"
+                     syntax="string"
+                     i18nKey="authorizeEndpointDataProviderScript"
+                     order="42800">
+        <ChoiceValues>
+            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                <AttributeValuePair>
+                    <Attribute name="ContextId"/>
+                    <Value>OAUTH2_AUTHORIZE_ENDPOINT_DATA_PROVIDER</Value>
+                </AttributeValuePair>
+            </ChoiceValuesClassName>
+        </ChoiceValues>
+        <DefaultValues>
+            <Value>[Empty]</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="authorizeEndpointDataProviderClass"
+                     type="single"
+                     syntax="string"
+                     resourceName="authorizeEndpointDataProviderClass"
+                     i18nKey="authorizeEndpointDataProviderClass"
+                     order="42900">
+        <IsOptional/>
+        <DefaultValues>
+            <Value>org.forgerock.oauth2.core.plugins.registry.DefaultEndpointDataProvider</Value>
+        </DefaultValues>
+    </AttributeSchema>
+    <AttributeSchema name="overrideableOIDCClaims"
+                     type="list"
+                     syntax="string"
+                     i18nKey="overrideableOIDCClaims"
+                     order="43300">
+        <IsOptional/>
+    </AttributeSchema>
+</SubSchema>

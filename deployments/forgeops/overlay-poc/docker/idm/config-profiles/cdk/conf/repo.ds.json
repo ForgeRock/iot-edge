@@ -1244,6 +1244,10 @@
             "type": "simple",
             "ldapAttribute": "inetUserStatus"
           },
+          "password": {
+            "type": "simple",
+            "ldapAttribute": "userPassword"
+          },
           "thingType": {
             "type": "simple",
             "ldapAttribute": "thingType"
@@ -1263,6 +1267,430 @@
           "thingOAuth2ClientName": {
             "type": "simple",
             "ldapAttribute": "thingOAuth2ClientName"
+          },
+          "oauthclientbackchannellogoutsessionrequired": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-backchannel-logout-session-required"
+          },
+          "oauthclientauthorizationResponseEncryptionMethod": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizationResponseEncryptionMethod"
+          },
+          "oauthclientidTokenEncryptionAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-idTokenEncryptionAlgorithm"
+          },
+          "oauthclientrefreshTokenLifetime": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-refreshTokenLifetime"
+          },
+          "oauthclientauthorizeEndpointDataProviderPluginType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizeEndpointDataProviderPluginType"
+          },
+          "oauthclientjwksCacheTimeout": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-jwksCacheTimeout"
+          },
+          "oauthclientcustomProperties": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-customProperties"
+          },
+          "oauthclientstatelessTokensEnabled": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-statelessTokensEnabled"
+          },
+          "oauthclientsectorIdentifierUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-sectorIdentifierUri"
+          },
+          "oauthclientidTokenEncryptionMethod": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-idTokenEncryptionMethod"
+          },
+          "oauthclienttokenExchangeAuthLevel": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenExchangeAuthLevel"
+          },
+          "oauthclientaccessTokenModificationPluginType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-accessTokenModificationPluginType"
+          },
+          "oauthclientscopes": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-scopes"
+          },
+          "oauthclientisConsentImplied": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-isConsentImplied"
+          },
+          "oauthclientscopesPolicySet": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-scopesPolicySet"
+          },
+          "oauthclientbackchannellogouturi": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-backchannel-logout-uri"
+          },
+          "oauthclientclaims": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-claims"
+          },
+          "oauthclientname": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-name"
+          },
+          "oauthclientuserinfoEncryptedResponseEncryptionAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-userinfoEncryptedResponseEncryptionAlgorithm"
+          },
+          "oauthclienttokenIntrospectionEncryptedResponseAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenIntrospectionEncryptedResponseAlg"
+          },
+          "oauthclientclientSessionUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-clientSessionUri"
+          },
+          "oauthclientuserinfoEncryptedResponseAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-userinfoEncryptedResponseAlg"
+          },
+          "oauthclientloopbackInterfaceRedirection": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-loopbackInterfaceRedirection"
+          },
+          "oauthclientidTokenSignedResponseAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-idTokenSignedResponseAlg"
+          },
+          "oauthclientpostLogoutRedirectUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-postLogoutRedirectUri"
+          },
+          "oauthclientupdateAccessToken": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-updateAccessToken"
+          },
+          "oauthclientauthorizationCodeLifetime": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizationCodeLifetime"
+          },
+          "oauthclientjavascriptOrigins": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-javascriptOrigins"
+          },
+          "oauthclientoidcClaimsScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-oidcClaimsScript"
+          },
+          "oauthclientsubjectType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-subjectType"
+          },
+          "oauthclientauthorizationResponseEncryptionAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizationResponseEncryptionAlgorithm"
+          },
+          "oauthclientclientJwtPublicKey": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-clientJwtPublicKey"
+          },
+          "oauthclientrequestParameterSignedAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-requestParameterSignedAlg"
+          },
+          "oauthclientRedirectUriValidator": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-RedirectUriValidator"
+          },
+          "oauthclientvalidateScopeScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-validateScopeScript"
+          },
+          "oauthclientoverrideableOIDCClaims": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-overrideableOIDCClaims"
+          },
+          "oauthclientidTokenEncryptionEnabled": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-idTokenEncryptionEnabled"
+          },
+          "oauthclientdefaultMaxAgeEnabled": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-defaultMaxAgeEnabled"
+          },
+          "oauthclientmTLSTrustedCert": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-mTLSTrustedCert"
+          },
+          "oauthclientjwtTokenLifetime": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-jwtTokenLifetime"
+          },
+          "oauthclientauthorizeEndpointDataProviderScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizeEndpointDataProviderScript"
+          },
+          "oauthclientclientUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-clientUri"
+          },
+          "oauthclientstatus": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-status"
+          },
+          "oauthclientaccessTokenModifierClass": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-accessTokenModifierClass"
+          },
+          "oauthclientoidcMayActScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-oidcMayActScript"
+          },
+          "oauthclientdescriptions": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-descriptions"
+          },
+          "oauthclientpublicKeyLocation": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-publicKeyLocation"
+          },
+          "oauthclientjwkSet": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-jwkSet"
+          },
+          "oauthclientuserinfoSignedResponseAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-userinfoSignedResponseAlg"
+          },
+          "oauthclientauthorizeEndpointDataProviderClass": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizeEndpointDataProviderClass"
+          },
+          "oauthclientjwksUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-jwksUri"
+          },
+          "oauthclientclientsCanSkipConsent": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-clientsCanSkipConsent"
+          },
+          "oauthclientremoteConsentServiceId": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-remoteConsentServiceId"
+          },
+          "oauthclientredirectionUris": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-redirectionUris"
+          },
+          "oauthclientURLValidator": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-URLValidator"
+          },
+          "oauthclientrequirepushedauthorizationrequests": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-require-pushed-authorization-requests"
+          },
+          "oauthclientissueRefreshTokenOnRefreshedToken": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-issueRefreshTokenOnRefreshedToken"
+          },
+          "oauthclientevaluateScopePluginType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-evaluateScopePluginType"
+          },
+          "oauthclientgrantTypes": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-grantTypes"
+          },
+          "oauthclientclientType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-clientType"
+          },
+          "oauthclientclientName": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-clientName"
+          },
+          "oauthclientresponseTypes": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-responseTypes"
+          },
+          "oauthclientuserinfoResponseFormat": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-userinfoResponseFormat"
+          },
+          "oauthclientmixUpMitigation": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-mixUpMitigation"
+          },
+          "oauthclienttokenIntrospectionResponseFormat": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenIntrospectionResponseFormat"
+          },
+          "oauthclientevaluateScopeScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-evaluateScopeScript"
+          },
+          "oauthclientmTLSCertificateBoundAccessTokens": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-mTLSCertificateBoundAccessTokens"
+          },
+          "oauthclientoidcClaimsPluginType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-oidcClaimsPluginType"
+          },
+          "oauthclientRequiredValueValidator": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-RequiredValueValidator"
+          },
+          "oauthclientenableRemoteConsent": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-enableRemoteConsent"
+          },
+          "oauthclientaccessTokenModificationScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-accessTokenModificationScript"
+          },
+          "oauthclientcontacts": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-contacts"
+          },
+          "oauthclientaccessTokenLifetime": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-accessTokenLifetime"
+          },
+          "oauthclientauthorizationResponseSigningAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-authorizationResponseSigningAlgorithm"
+          },
+          "oauthclientdefaultAcrValues": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-defaultAcrValues"
+          },
+          "oauthclienttokenIntrospectionEncryptedResponseEncryptionAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenIntrospectionEncryptedResponseEncryptionAlgorithm"
+          },
+          "oauthclientjwkStoreCacheMissCacheTime": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-jwkStoreCacheMissCacheTime"
+          },
+          "oauthclientrequestUris": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-requestUris"
+          },
+          "oauthclientsoftwareIdentity": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-softwareIdentity"
+          },
+          "oauthclientagentgroup": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-agentgroup"
+          },
+          "oauthclientdefaultScopes": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-defaultScopes"
+          },
+          "oauthclienttokenIntrospectionSignedResponseAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenIntrospectionSignedResponseAlg"
+          },
+          "oauthclientissueRefreshToken": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-issueRefreshToken"
+          },
+          "oauthclientcustomLoginUrlTemplate": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-customLoginUrlTemplate"
+          },
+          "oauthclientvalidateScopeClass": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-validateScopeClass"
+          },
+          "oauthclientidTokenPublicEncryptionKey": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-idTokenPublicEncryptionKey"
+          },
+          "oauthclientsoftwareVersion": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-softwareVersion"
+          },
+          "oauthclientGracePeriodValidator": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-GracePeriodValidator"
+          },
+          "oauthclientrequestParameterEncryptedAlg": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-requestParameterEncryptedAlg"
+          },
+          "oauthclientproviderOverridesEnabled": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-providerOverridesEnabled"
+          },
+          "oauthclientoidcClaimsClass": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-oidcClaimsClass"
+          },
+          "oauthclienttosURI": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tosURI"
+          },
+          "oauthclientmTLSSubjectDN": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-mTLSSubjectDN"
+          },
+          "oauthclientaccessTokenMayActScript": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-accessTokenMayActScript"
+          },
+          "oauthclienttokenEncryptionEnabled": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenEncryptionEnabled"
+          },
+          "oauthclientrequestParameterEncryptedEncryptionAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-requestParameterEncryptedEncryptionAlgorithm"
+          },
+          "oauthclientusePolicyEngineForScope": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-usePolicyEngineForScope"
+          },
+          "oauthclientclaimsRedirectionUris": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-claimsRedirectionUris"
+          },
+          "oauthclientpolicyUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-policyUri"
+          },
+          "oauthclienttokenEndpointAuthMethod": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenEndpointAuthMethod"
+          },
+          "oauthclientdefaultMaxAge": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-defaultMaxAge"
+          },
+          "oauthclientrefreshTokenGracePeriod": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-refreshTokenGracePeriod"
+          },
+          "oauthclientvalidateScopePluginType": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-validateScopePluginType"
+          },
+          "oauthclientlogoUri": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-logoUri"
+          },
+          "oauthclienttokenEndpointAuthSigningAlgorithm": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-tokenEndpointAuthSigningAlgorithm"
+          },
+          "oauthclientevaluateScopeClass": {
+            "type": "simple",
+            "ldapAttribute": "oauth-client-evaluateScopeClass"
           }
         }
       },
