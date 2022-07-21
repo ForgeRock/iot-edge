@@ -260,7 +260,7 @@
         "redirect_uris"
       ],
       "generateRegistrationAccessTokens" : true,
-      "allowDynamicRegistration" : false
+      "allowDynamicRegistration" : true
     },
     "_type" : {
       "_id" : "OAuth2Provider",
