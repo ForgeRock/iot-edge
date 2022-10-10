@@ -2,8 +2,8 @@
   "metadata" : {
     "realm": "/",
     "entityType" : "sunIdentityRepositoryService",
-    "entityId" : "default/OpenDJ",
-    "uid" : "ou=OpenDJ,ou=default,ou=OrganizationConfig,ou=1.0,ou=sunIdentityRepositoryService,ou=services,ou=am-config",
+    "entityId" : "default/HybridAgent",
+    "uid" : "ou=HybridAgent,ou=default,ou=OrganizationConfig,ou=1.0,ou=sunIdentityRepositoryService,ou=services,ou=am-config",
     "sunServiceID" : "&{am.stores.user.type}",
     "objectClass" : [
       "top",
@@ -11,16 +11,16 @@
     ],
     "pathParams" : { },
     "ou" : [
-      "OpenDJ"
+      "HybridAgent"
     ]
   },
   "data" : {
     "pluginconfig" : {
-      "sunIdRepoClass" : "org.forgerock.openam.idrepo.ldap.DJLDAPv3Repo",
+      "sunIdRepoClass" : "org.forgerock.openam.idrepo.ldap.HybridAgentsRepo",
       "sunIdRepoSupportedOperations" : [
-        "realm=read,create,edit,delete,service",
-        "group=read,create,edit,delete",
-        "user=read,create,edit,delete,service"
+        "agentonly=read,create",
+        "agent=read,create",
+        "user=read"
       ],
       "sunIdRepoAttributeMapping" : [
 
@@ -70,133 +70,52 @@
         "kbaInfoAttempts"
       ],
       "sun-idrepo-ldapv3-config-user-objectclass" : [
-        "iplanet-am-managed-person",
-        "inetuser",
-        "sunFMSAML2NameIdentifier",
-        "inetorgperson",
-        "devicePrintProfilesContainer",
-        "deviceProfilesContainer",
-        "pushDeviceProfilesContainer",
-        "iPlanetPreferences",
-        "iplanet-am-user-service",
-        "forgerock-am-dashboard-service",
-        "organizationalperson",
         "top",
-        "kbaInfoContainer",
-        "oathDeviceProfilesContainer",
-        "person",
-        "webauthnDeviceProfilesContainer",
-        "sunAMAuthAccountLockout",
-        "iplanet-am-auth-configuration-service",
         "fr-idm-managed-user-explicit",
-        "fr-iot"
+        "fr-client",
+        "inetuser",
+        "OrganizationalUnit"
       ],
       "sun-idrepo-ldapv3-config-active" : "Active",
       "sun-idrepo-ldapv3-config-people-container-name" : "ou",
       "sun-idrepo-ldapv3-config-user-attributes" : [
+        "ou",
         "fr-idm-uuid",
-        "iplanet-am-auth-configuration",
-        "iplanet-am-user-alias-list",
-        "iplanet-am-user-password-reset-question-answer",
-        "mail",
-        "assignedDashboard",
-        "authorityRevocationList",
-        "dn",
-        "iplanet-am-user-password-reset-options",
-        "employeeNumber",
-        "createTimestamp",
-        "kbaActiveIndex",
-        "caCertificate",
-        "iplanet-am-session-quota-limit",
-        "iplanet-am-user-auth-config",
-        "sun-fm-saml2-nameid-infokey",
-        "sunIdentityMSISDNNumber",
-        "iplanet-am-user-password-reset-force-reset",
-        "sunAMAuthInvalidAttemptsData",
-        "devicePrintProfiles",
-        "givenName",
-        "iplanet-am-session-get-valid-sessions",
-        "objectClass",
-        "adminRole",
-        "inetUserHttpURL",
-        "lastEmailSent",
-        "iplanet-am-user-account-life",
-        "postalAddress",
-        "userCertificate",
-        "preferredtimezone",
-        "iplanet-am-user-admin-start-dn",
-        "oath2faEnabled",
-        "preferredlanguage",
-        "etag",
-        "sun-fm-saml2-nameid-info",
-        "userPassword",
-        "iplanet-am-session-service-status",
-        "telephoneNumber",
-        "iplanet-am-session-max-idle-time",
-        "distinguishedName",
-        "iplanet-am-session-destroy-sessions",
-        "kbaInfoAttempts",
-        "modifyTimestamp",
-        "uid",
-        "iplanet-am-user-success-url",
-        "iplanet-am-user-auth-modules",
-        "kbaInfo",
-        "memberOf",
-        "sn",
-        "preferredLocale",
-        "manager",
-        "iplanet-am-session-max-session-time",
-        "deviceProfiles",
-        "cn",
-        "oathDeviceProfiles",
-        "webauthnDeviceProfiles",
-        "iplanet-am-user-login-status",
-        "pushDeviceProfiles",
-        "push2faEnabled",
         "inetUserStatus",
-        "retryLimitNodeCount",
-        "iplanet-am-user-failure-url",
-        "iplanet-am-session-max-caching-time",
-        "thingType",
-        "thingKeys",
-        "thingOAuth2ClientName",
-        "thingConfig",
-        "thingProperties"
+        "fr-oauth2-client"
       ],
       "sun-idrepo-ldapv3-config-auth-kba-attr" : [
         "kbaInfo"
       ],
       "sun-idrepo-ldapv3-config-createuser-attr-mapping" : [
-        "cn",
-        "sn"
       ],
       "sun-idrepo-ldapv3-config-isactive" : "inetUserStatus",
-      "sun-idrepo-ldapv3-config-users-search-attribute" : "fr-idm-uuid",
+      "sun-idrepo-ldapv3-config-users-search-attribute" : "ou",
       "sun-idrepo-ldapv3-config-auth-kba-index-attr" : "kbaActiveIndex",
-      "sun-idrepo-ldapv3-config-users-search-filter" : "(objectclass=inetorgperson)",
+      "sun-idrepo-ldapv3-config-users-search-filter" : "(objectclass=organizationalUnit)",
       "sun-idrepo-ldapv3-config-inactive" : "Inactive",
-      "sun-idrepo-ldapv3-config-people-container-value" : "people"
+      "sun-idrepo-ldapv3-config-people-container-value" : "clients"
     },
     "cachecontrol" : {
       "sun-idrepo-ldapv3-dncache-enabled" : true,
       "sun-idrepo-ldapv3-dncache-size" : 1500
     },
-    "_type" : {
-      "_id" : "sunIdentityRepositoryService",
-      "name" : "sunIdentityRepositoryService",
-      "collection" : false
-    },
     "errorhandling" : {
       "com.iplanet.am.ldap.connection.delay.between.retries" : 1000
     },
-    "_id" : "default/OpenDJ",
+    "_id" : "default/HybridAgent",
     "persistentsearch" : {
       "sun-idrepo-ldapv3-config-psearchbase": "ou=identities",
       "sun-idrepo-ldapv3-config-psearch-scope" : "SCOPE_SUB",
       "sun-idrepo-ldapv3-config-psearch-filter" : "(!(objectclass=frCoreToken))"
     },
     "authentication" : {
-      "sun-idrepo-ldapv3-config-auth-naming-attr" : "uid"
+      "sun-idrepo-ldapv3-config-auth-naming-attr" : "ou"
+    },
+    "_type": {
+      "_id": "HybridAgent",
+      "name": "HybridAgent",
+      "collection": true
     }
   }
 }

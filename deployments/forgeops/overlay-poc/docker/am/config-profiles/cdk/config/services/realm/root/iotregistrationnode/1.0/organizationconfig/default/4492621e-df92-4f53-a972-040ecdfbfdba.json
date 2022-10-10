@@ -26,10 +26,7 @@
       "thingProperties":  "thingProperties"
     },
     "defaultAttributeValues": {
-      "thingType": "device",
-      "oauthclientscopes": "[0]=write",
-      "oauthclientclientType": "Confidential",
-      "oauthclientgrantTypes": "[0]=client_credentials"
+      "thingType": "device"
     },
     "jwtRegistrationMethod": "POP_WITH_CERTIFICATE",
     "nameValidationRegex": ".*[\\*\\(\\)&!].*"

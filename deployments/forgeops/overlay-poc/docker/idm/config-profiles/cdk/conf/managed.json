@@ -1817,6 +1817,11 @@
     },
     {
       "name" : "thing",
+      "onCreate" : {
+        "type" : "groovy",
+        "globals" : { },
+        "source" : "if( object.get(\"cn\").isNull() ){\n  object.put(\"cn\", object.get(\"uid\"))\n}\nobject.put(\"sn\", object.get(\"cn\"))"
+      },
       "schema" : {
         "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:Thing",
         "$schema" : "http://forgerock.org/json-schema#",
@@ -1844,6 +1849,26 @@
                 }
               }
             ]
+          },
+          "cn" : {
+            "title" : "Alias",
+            "description" : "Alias",
+            "viewable" : true,
+            "type" : "string",
+            "searchable" : true,
+            "userEditable" : true,
+            "usageDescription" : null,
+            "isPersonal" : true
+          },
+          "sn" : {
+            "title" : "Last Name",
+            "description" : "Last Name",
+            "viewable" : false,
+            "type" : "string",
+            "searchable" : false,
+            "userEditable" : false,
+            "usageDescription" : null,
+            "isPersonal" : true
           },
           "uid" : {
             "title" : "ID",
@@ -1940,46 +1965,6 @@
             "usageDescription" : null,
             "isPersonal" : false
           },
-          "password": {
-            "description": "Password",
-            "isPersonal": false,
-            "isProtected": true,
-            "policies": [
-              {
-                "params": {
-                  "minLength": 8
-                },
-                "policyId": "minimum-length"
-              },
-              {
-                "params": {
-                  "numCaps": 1
-                },
-                "policyId": "at-least-X-capitals"
-              },
-              {
-                "params": {
-                  "numNums": 1
-                },
-                "policyId": "at-least-X-numbers"
-              },
-              {
-                "params": {
-                  "disallowedFields": [
-                    "uid"
-                  ]
-                },
-                "policyId": "cannot-contain-others"
-              }
-            ],
-            "scope": "private",
-            "searchable": false,
-            "title": "Password",
-            "type": "string",
-            "usageDescription": "",
-            "userEditable": false,
-            "viewable": false
-          },
           "thingType" : {
             "title" : "Type",
             "description" : "Thing Type",
@@ -2029,15 +2014,81 @@
             "usageDescription" : null,
             "isPersonal" : false
           },
-          "thingOAuth2ClientName" : {
-            "title" : "OAuth 2.0 Client Name",
-            "description" : "Override the default OAuth 2.0 Client used by this Thing",
+          "password" : {
+            "title" : "Password",
+            "description" : "Password",
+            "type" : "string",
+            "viewable" : false,
+            "searchable" : false,
+            "minLength" : 8,
+            "userEditable" : true,
+            "scope" : "private",
+            "isProtected" : true,
+            "usageDescription" : null,
+            "isPersonal" : false,
+            "policies" : [
+              {
+                "policyId" : "at-least-X-capitals",
+                "params" : {
+                  "numCaps" : 1
+                }
+              },
+              {
+                "policyId" : "at-least-X-numbers",
+                "params" : {
+                  "numNums" : 1
+                }
+              },
+              {
+                "policyId" : "cannot-contain-others",
+                "params" : {
+                  "disallowedFields" : [
+                    "uid",
+                    "cn",
+                    "sn"
+                  ]
+                }
+              }
+            ]
+          },
+          "description" : {
+            "title" : "Description",
+            "description" : "Description",
             "viewable" : true,
             "type" : "string",
             "searchable" : true,
-            "userEditable" : false,
+            "userEditable" : true,
             "usageDescription" : null,
             "isPersonal" : false
+          },
+          "lastSync" : {
+            "description" : "Last Sync timestamp",
+            "title" : "Last Sync timestamp",
+            "type" : "object",
+            "scope" : "private",
+            "viewable" : false,
+            "searchable" : false,
+            "usageDescription" : null,
+            "isPersonal" : false,
+            "properties" : {
+              "effectiveAssignments" : {
+                "description" : "Effective Assignments",
+                "title" : "Effective Assignments",
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "title" : "Effective Assignments Items"
+                }
+              },
+              "timestamp" : {
+                "description" : "Timestamp",
+                "type" : "string"
+              }
+            },
+            "order" : [
+              "effectiveAssignments",
+              "timestamp"
+            ]
           },
           "users" : {
             "title" : "Users",
@@ -2085,1196 +2136,182 @@
               "notifySelf" : false
             },
             "description" : null
-          },
-          "oauthclientlogoUri": {
-            "title": "oauthclientlogoUri",
-            "description": "oauthclientlogoUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenEndpointAuthSigningAlgorithm": {
-            "title": "oauthclienttokenEndpointAuthSigningAlgorithm",
-            "description": "oauthclienttokenEndpointAuthSigningAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientevaluateScopeClass": {
-            "title": "oauthclientevaluateScopeClass",
-            "description": "oauthclientevaluateScopeClass",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizationResponseEncryptionMethod": {
-            "title": "oauthclientauthorizationResponseEncryptionMethod",
-            "description": "oauthclientauthorizationResponseEncryptionMethod",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientidTokenEncryptionAlgorithm": {
-            "title": "oauthclientidTokenEncryptionAlgorithm",
-            "description": "oauthclientidTokenEncryptionAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrefreshTokenLifetime": {
-            "title": "oauthclientrefreshTokenLifetime",
-            "description": "oauthclientrefreshTokenLifetime",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientbackchannellogoutsessionrequired": {
-            "title": "oauthclientbackchannellogoutsessionrequired",
-            "description": "oauthclientbackchannellogoutsessionrequired",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientjwksCacheTimeout": {
-            "title": "oauthclientjwksCacheTimeout",
-            "description": "oauthclientjwksCacheTimeout",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientcustomProperties": {
-            "title": "oauthclientcustomProperties",
-            "description": "oauthclientcustomProperties",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientstatelessTokensEnabled": {
-            "title": "oauthclientstatelessTokensEnabled",
-            "description": "oauthclientstatelessTokensEnabled",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizeEndpointDataProviderPluginType": {
-            "title": "oauthclientauthorizeEndpointDataProviderPluginType",
-            "description": "oauthclientauthorizeEndpointDataProviderPluginType",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientsectorIdentifierUri": {
-            "title": "oauthclientsectorIdentifierUri",
-            "description": "oauthclientsectorIdentifierUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientidTokenEncryptionMethod": {
-            "title": "oauthclientidTokenEncryptionMethod",
-            "description": "oauthclientidTokenEncryptionMethod",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenExchangeAuthLevel": {
-            "title": "oauthclienttokenExchangeAuthLevel",
-            "description": "oauthclienttokenExchangeAuthLevel",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientaccessTokenModificationPluginType": {
-            "title": "oauthclientaccessTokenModificationPluginType",
-            "description": "oauthclientaccessTokenModificationPluginType",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientscopes": {
-            "title": "Scopes",
-            "description": "OAuth Client Scopes",
-            "default": "[0]=write",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientisConsentImplied": {
-            "title": "oauthclientisConsentImplied",
-            "description": "oauthclientisConsentImplied",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientscopesPolicySet": {
-            "title": "oauthclientscopesPolicySet",
-            "description": "oauthclientscopesPolicySet",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclaims": {
-            "title": "oauthclientclaims",
-            "description": "oauthclientclaims",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientname": {
-            "title": "oauthclientname",
-            "description": "oauthclientname",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientuserinfoEncryptedResponseEncryptionAlgorithm": {
-            "title": "oauthclientuserinfoEncryptedResponseEncryptionAlgorithm",
-            "description": "oauthclientuserinfoEncryptedResponseEncryptionAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenIntrospectionEncryptedResponseAlg": {
-            "title": "oauthclienttokenIntrospectionEncryptedResponseAlg",
-            "description": "oauthclienttokenIntrospectionEncryptedResponseAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientbackchannellogouturi": {
-            "title": "oauthclientbackchannellogouturi",
-            "description": "oauthclientbackchannellogouturi",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclientSessionUri": {
-            "title": "oauthclientclientSessionUri",
-            "description": "oauthclientclientSessionUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientuserinfoEncryptedResponseAlg": {
-            "title": "oauthclientuserinfoEncryptedResponseAlg",
-            "description": "oauthclientuserinfoEncryptedResponseAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientloopbackInterfaceRedirection": {
-            "title": "oauthclientloopbackInterfaceRedirection",
-            "description": "oauthclientloopbackInterfaceRedirection",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientidTokenSignedResponseAlg": {
-            "title": "oauthclientidTokenSignedResponseAlg",
-            "description": "oauthclientidTokenSignedResponseAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientpostLogoutRedirectUri": {
-            "title": "oauthclientpostLogoutRedirectUri",
-            "description": "oauthclientpostLogoutRedirectUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientupdateAccessToken": {
-            "title": "oauthclientupdateAccessToken",
-            "description": "oauthclientupdateAccessToken",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizationCodeLifetime": {
-            "title": "oauthclientauthorizationCodeLifetime",
-            "description": "oauthclientauthorizationCodeLifetime",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientjavascriptOrigins": {
-            "title": "oauthclientjavascriptOrigins",
-            "description": "oauthclientjavascriptOrigins",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientoidcClaimsScript": {
-            "title": "oauthclientoidcClaimsScript",
-            "description": "oauthclientoidcClaimsScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientsubjectType": {
-            "title": "oauthclientsubjectType",
-            "description": "oauthclientsubjectType",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizationResponseEncryptionAlgorithm": {
-            "title": "oauthclientauthorizationResponseEncryptionAlgorithm",
-            "description": "oauthclientauthorizationResponseEncryptionAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclientJwtPublicKey": {
-            "title": "oauthclientclientJwtPublicKey",
-            "description": "oauthclientclientJwtPublicKey",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrequestParameterSignedAlg": {
-            "title": "oauthclientrequestParameterSignedAlg",
-            "description": "oauthclientrequestParameterSignedAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientRedirectUriValidator": {
-            "title": "oauthclientRedirectUriValidator",
-            "description": "oauthclientRedirectUriValidator",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientvalidateScopeScript": {
-            "title": "oauthclientvalidateScopeScript",
-            "description": "oauthclientvalidateScopeScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientoverrideableOIDCClaims": {
-            "title": "oauthclientoverrideableOIDCClaims",
-            "description": "oauthclientoverrideableOIDCClaims",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientidTokenEncryptionEnabled": {
-            "title": "oauthclientidTokenEncryptionEnabled",
-            "description": "oauthclientidTokenEncryptionEnabled",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientdefaultMaxAgeEnabled": {
-            "title": "oauthclientdefaultMaxAgeEnabled",
-            "description": "oauthclientdefaultMaxAgeEnabled",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientmTLSTrustedCert": {
-            "title": "oauthclientmTLSTrustedCert",
-            "description": "oauthclientmTLSTrustedCert",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientjwtTokenLifetime": {
-            "title": "oauthclientjwtTokenLifetime",
-            "description": "oauthclientjwtTokenLifetime",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizeEndpointDataProviderScript": {
-            "title": "oauthclientauthorizeEndpointDataProviderScript",
-            "description": "oauthclientauthorizeEndpointDataProviderScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclientUri": {
-            "title": "oauthclientclientUri",
-            "description": "oauthclientclientUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientstatus": {
-            "title": "oauthclientstatus",
-            "description": "oauthclientstatus",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientaccessTokenModifierClass": {
-            "title": "oauthclientaccessTokenModifierClass",
-            "description": "oauthclientaccessTokenModifierClass",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientoidcMayActScript": {
-            "title": "oauthclientoidcMayActScript",
-            "description": "oauthclientoidcMayActScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientdescriptions": {
-            "title": "oauthclientdescriptions",
-            "description": "oauthclientdescriptions",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientpublicKeyLocation": {
-            "title": "oauthclientpublicKeyLocation",
-            "description": "oauthclientpublicKeyLocation",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientjwkSet": {
-            "title": "oauthclientjwkSet",
-            "description": "oauthclientjwkSet",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientuserinfoSignedResponseAlg": {
-            "title": "oauthclientuserinfoSignedResponseAlg",
-            "description": "oauthclientuserinfoSignedResponseAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizeEndpointDataProviderClass": {
-            "title": "oauthclientauthorizeEndpointDataProviderClass",
-            "description": "oauthclientauthorizeEndpointDataProviderClass",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientjwksUri": {
-            "title": "oauthclientjwksUri",
-            "description": "oauthclientjwksUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclientsCanSkipConsent": {
-            "title": "oauthclientclientsCanSkipConsent",
-            "description": "oauthclientclientsCanSkipConsent",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientremoteConsentServiceId": {
-            "title": "oauthclientremoteConsentServiceId",
-            "description": "oauthclientremoteConsentServiceId",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientredirectionUris": {
-            "title": "oauthclientredirectionUris",
-            "description": "oauthclientredirectionUris",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientURLValidator": {
-            "title": "oauthclientURLValidator",
-            "description": "oauthclientURLValidator",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrequirepushedauthorizationrequests": {
-            "title": "oauthclientrequirepushedauthorizationrequests",
-            "description": "oauthclientrequirepushedauthorizationrequests",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientissueRefreshTokenOnRefreshedToken": {
-            "title": "oauthclientissueRefreshTokenOnRefreshedToken",
-            "description": "oauthclientissueRefreshTokenOnRefreshedToken",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientevaluateScopePluginType": {
-            "title": "oauthclientevaluateScopePluginType",
-            "description": "oauthclientevaluateScopePluginType",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclientType": {
-            "title": "Client Type",
-            "description": "OAuth Client Type",
-            "default": "Confidential",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclientName": {
-            "title": "oauthclientclientName",
-            "description": "oauthclientclientName",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientresponseTypes": {
-            "title": "oauthclientresponseTypes",
-            "description": "oauthclientresponseTypes",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientgrantTypes": {
-            "title": "Grant Types",
-            "description": "OAuth Client Grant Types",
-            "default": "[0]=client_credentials",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientuserinfoResponseFormat": {
-            "title": "oauthclientuserinfoResponseFormat",
-            "description": "oauthclientuserinfoResponseFormat",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientmixUpMitigation": {
-            "title": "oauthclientmixUpMitigation",
-            "description": "oauthclientmixUpMitigation",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenIntrospectionResponseFormat": {
-            "title": "oauthclienttokenIntrospectionResponseFormat",
-            "description": "oauthclienttokenIntrospectionResponseFormat",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientmTLSCertificateBoundAccessTokens": {
-            "title": "oauthclientmTLSCertificateBoundAccessTokens",
-            "description": "oauthclientmTLSCertificateBoundAccessTokens",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientoidcClaimsPluginType": {
-            "title": "oauthclientoidcClaimsPluginType",
-            "description": "oauthclientoidcClaimsPluginType",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientevaluateScopeScript": {
-            "title": "oauthclientevaluateScopeScript",
-            "description": "oauthclientevaluateScopeScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientRequiredValueValidator": {
-            "title": "oauthclientRequiredValueValidator",
-            "description": "oauthclientRequiredValueValidator",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientenableRemoteConsent": {
-            "title": "oauthclientenableRemoteConsent",
-            "description": "oauthclientenableRemoteConsent",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientcontacts": {
-            "title": "oauthclientcontacts",
-            "description": "oauthclientcontacts",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientaccessTokenLifetime": {
-            "title": "oauthclientaccessTokenLifetime",
-            "description": "oauthclientaccessTokenLifetime",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientaccessTokenModificationScript": {
-            "title": "oauthclientaccessTokenModificationScript",
-            "description": "oauthclientaccessTokenModificationScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientauthorizationResponseSigningAlgorithm": {
-            "title": "oauthclientauthorizationResponseSigningAlgorithm",
-            "description": "oauthclientauthorizationResponseSigningAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientdefaultAcrValues": {
-            "title": "oauthclientdefaultAcrValues",
-            "description": "oauthclientdefaultAcrValues",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenIntrospectionEncryptedResponseEncryptionAlgorithm": {
-            "title": "oauthclienttokenIntrospectionEncryptedResponseEncryptionAlgorithm",
-            "description": "oauthclienttokenIntrospectionEncryptedResponseEncryptionAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientjwkStoreCacheMissCacheTime": {
-            "title": "oauthclientjwkStoreCacheMissCacheTime",
-            "description": "oauthclientjwkStoreCacheMissCacheTime",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrequestUris": {
-            "title": "oauthclientrequestUris",
-            "description": "oauthclientrequestUris",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientsoftwareIdentity": {
-            "title": "oauthclientsoftwareIdentity",
-            "description": "oauthclientsoftwareIdentity",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientagentgroup": {
-            "title": "oauthclientagentgroup",
-            "description": "oauthclientagentgroup",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientdefaultScopes": {
-            "title": "oauthclientdefaultScopes",
-            "description": "oauthclientdefaultScopes",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenIntrospectionSignedResponseAlg": {
-            "title": "oauthclienttokenIntrospectionSignedResponseAlg",
-            "description": "oauthclienttokenIntrospectionSignedResponseAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientissueRefreshToken": {
-            "title": "oauthclientissueRefreshToken",
-            "description": "oauthclientissueRefreshToken",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientcustomLoginUrlTemplate": {
-            "title": "oauthclientcustomLoginUrlTemplate",
-            "description": "oauthclientcustomLoginUrlTemplate",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientvalidateScopeClass": {
-            "title": "oauthclientvalidateScopeClass",
-            "description": "oauthclientvalidateScopeClass",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientidTokenPublicEncryptionKey": {
-            "title": "oauthclientidTokenPublicEncryptionKey",
-            "description": "oauthclientidTokenPublicEncryptionKey",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientsoftwareVersion": {
-            "title": "oauthclientsoftwareVersion",
-            "description": "oauthclientsoftwareVersion",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientGracePeriodValidator": {
-            "title": "oauthclientGracePeriodValidator",
-            "description": "oauthclientGracePeriodValidator",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrequestParameterEncryptedAlg": {
-            "title": "oauthclientrequestParameterEncryptedAlg",
-            "description": "oauthclientrequestParameterEncryptedAlg",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientproviderOverridesEnabled": {
-            "title": "oauthclientproviderOverridesEnabled",
-            "description": "oauthclientproviderOverridesEnabled",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientoidcClaimsClass": {
-            "title": "oauthclientoidcClaimsClass",
-            "description": "oauthclientoidcClaimsClass",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttosURI": {
-            "title": "oauthclienttosURI",
-            "description": "oauthclienttosURI",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientmTLSSubjectDN": {
-            "title": "oauthclientmTLSSubjectDN",
-            "description": "oauthclientmTLSSubjectDN",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientaccessTokenMayActScript": {
-            "title": "oauthclientaccessTokenMayActScript",
-            "description": "oauthclientaccessTokenMayActScript",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenEncryptionEnabled": {
-            "title": "oauthclienttokenEncryptionEnabled",
-            "description": "oauthclienttokenEncryptionEnabled",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientclaimsRedirectionUris": {
-            "title": "oauthclientclaimsRedirectionUris",
-            "description": "oauthclientclaimsRedirectionUris",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientpolicyUri": {
-            "title": "oauthclientpolicyUri",
-            "description": "oauthclientpolicyUri",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclienttokenEndpointAuthMethod": {
-            "title": "oauthclienttokenEndpointAuthMethod",
-            "description": "oauthclienttokenEndpointAuthMethod",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientdefaultMaxAge": {
-            "title": "oauthclientdefaultMaxAge",
-            "description": "oauthclientdefaultMaxAge",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrefreshTokenGracePeriod": {
-            "title": "oauthclientrefreshTokenGracePeriod",
-            "description": "oauthclientrefreshTokenGracePeriod",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientrequestParameterEncryptedEncryptionAlgorithm": {
-            "title": "oauthclientrequestParameterEncryptedEncryptionAlgorithm",
-            "description": "oauthclientrequestParameterEncryptedEncryptionAlgorithm",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientusePolicyEngineForScope": {
-            "title": "oauthclientusePolicyEngineForScope",
-            "description": "oauthclientusePolicyEngineForScope",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
-          },
-          "oauthclientvalidateScopePluginType": {
-            "title": "oauthclientvalidateScopePluginType",
-            "description": "oauthclientvalidateScopePluginType",
-            "viewable": true,
-            "type": "string",
-            "searchable": true,
-            "userEditable": false,
-            "usageDescription": null,
-            "isPersonal": false
           }
         },
         "order" : [
           "_id",
-          "password",
           "uid",
+          "cn",
           "accountStatus",
           "authzRoles",
           "thingType",
           "thingKeys",
           "thingConfig",
           "thingProperties",
-          "thingOAuth2ClientName",
-          "users",
-          "oauthclientauthorizeEndpointDataProviderPluginType",
-          "oauthclienttokenEndpointAuthSigningAlgorithm",
-          "oauthclientrefreshTokenLifetime",
-          "oauthclientstatelessTokensEnabled",
-          "oauthclientidTokenEncryptionAlgorithm",
-          "oauthclientmTLSSubjectDN",
-          "oauthclientoidcClaimsScript",
-          "oauthclientscopes",
-          "oauthclientauthorizationResponseEncryptionMethod",
-          "oauthclientissueRefreshTokenOnRefreshedToken",
-          "oauthclientsubjectType",
-          "oauthclientstatus",
-          "oauthclientrefreshTokenGracePeriod",
-          "oauthclientpostLogoutRedirectUri",
-          "oauthclientRedirectUriValidator",
-          "oauthclientusePolicyEngineForScope",
-          "oauthclientaccessTokenMayActScript",
-          "oauthclientauthorizationResponseSigningAlgorithm",
-          "oauthclientidTokenPublicEncryptionKey",
-          "oauthclientrequestParameterEncryptedAlg",
-          "oauthclientoidcClaimsClass",
-          "oauthclientuserinfoEncryptedResponseEncryptionAlgorithm",
-          "oauthclientrequestParameterEncryptedEncryptionAlgorithm",
-          "oauthclientdefaultMaxAgeEnabled",
-          "oauthclientclientSessionUri",
-          "oauthclientjwkSet",
-          "oauthclientisConsentImplied",
-          "oauthclientrequirepushedauthorizationrequests",
-          "oauthclientvalidateScopeScript",
-          "oauthclientclaims",
-          "oauthclientdefaultScopes",
-          "oauthclientupdateAccessToken",
-          "oauthclientname",
-          "oauthclientissueRefreshToken",
-          "oauthclientpublicKeyLocation",
-          "oauthclientmixUpMitigation",
-          "oauthclientevaluateScopeClass",
-          "oauthclientagentgroup",
-          "oauthclientclientType",
-          "oauthclientuserinfoSignedResponseAlg",
-          "oauthclientauthorizeEndpointDataProviderScript",
-          "oauthclientbackchannellogouturi",
-          "oauthclientredirectionUris",
-          "oauthclientdescriptions",
-          "oauthclientauthorizationResponseEncryptionAlgorithm",
-          "oauthclientGracePeriodValidator",
-          "oauthclientjavascriptOrigins",
-          "oauthclienttokenIntrospectionSignedResponseAlg",
-          "oauthclienttokenEndpointAuthMethod",
-          "oauthclientdefaultAcrValues",
-          "oauthclientmTLSTrustedCert",
-          "oauthclientauthorizationCodeLifetime",
-          "oauthclientaccessTokenModifierClass",
-          "oauthclientcontacts",
-          "oauthclientgrantTypes",
-          "oauthclientcustomProperties",
-          "oauthclientoidcClaimsPluginType",
-          "oauthclientremoteConsentServiceId",
-          "oauthclientclientName",
-          "oauthclientjwksCacheTimeout",
-          "oauthclientproviderOverridesEnabled",
-          "oauthclientlogoUri",
-          "oauthclientsoftwareIdentity",
-          "oauthclientsectorIdentifierUri",
-          "oauthclientuserinfoEncryptedResponseAlg",
-          "oauthclienttokenIntrospectionEncryptedResponseEncryptionAlgorithm",
-          "oauthclientoverrideableOIDCClaims",
-          "oauthclientclientJwtPublicKey",
-          "oauthclientmTLSCertificateBoundAccessTokens",
-          "oauthclienttokenIntrospectionEncryptedResponseAlg",
-          "oauthclientidTokenSignedResponseAlg",
-          "oauthclientoidcMayActScript",
-          "oauthclientloopbackInterfaceRedirection",
-          "oauthclientdefaultMaxAge",
-          "oauthclientrequestParameterSignedAlg",
-          "oauthclientURLValidator",
-          "oauthclienttokenEncryptionEnabled",
-          "oauthclientuserinfoResponseFormat",
-          "oauthclientsoftwareVersion",
-          "oauthclientidTokenEncryptionEnabled",
-          "oauthclientjwksUri",
-          "oauthclientevaluateScopeScript",
-          "oauthclientaccessTokenLifetime",
-          "oauthclientscopesPolicySet",
-          "oauthclientvalidateScopePluginType",
-          "oauthclientvalidateScopeClass",
-          "oauthclientenableRemoteConsent",
-          "oauthclientclientUri",
-          "oauthclientpolicyUri",
-          "oauthclientresponseTypes",
-          "oauthclientidTokenEncryptionMethod",
-          "oauthclientbackchannellogoutsessionrequired",
-          "oauthclientaccessTokenModificationScript",
-          "oauthclientrequestUris",
-          "oauthclientaccessTokenModificationPluginType",
-          "oauthclientjwtTokenLifetime",
-          "oauthclientclaimsRedirectionUris",
-          "oauthclientjwkStoreCacheMissCacheTime",
-          "oauthclientcustomLoginUrlTemplate",
-          "oauthclientclientsCanSkipConsent",
-          "oauthclientevaluateScopePluginType",
-          "oauthclientRequiredValueValidator",
-          "oauthclienttokenIntrospectionResponseFormat",
-          "oauthclienttosURI",
-          "oauthclienttokenExchangeAuthLevel",
-          "oauthclientauthorizeEndpointDataProviderClass"
+          "password",
+          "description",
+          "lastSync",
+          "users"
         ],
         "required" : [
           "uid",
-          "thingType",
-          "oauthclientscopes",
-          "oauthclientclientType",
-          "oauthclientgrantTypes"
+          "thingType"
+        ]
+      },
+      "meta" : {
+        "property" : "_meta",
+        "resourceCollection" : "internal/usermeta",
+        "trackedProperties" : [
+          "createDate",
+          "lastChanged"
+        ]
+      },
+      "notifications" : { }
+    },
+    {
+      "name" : "client",
+      "schema" : {
+        "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:Client",
+        "$schema" : "http://forgerock.org/json-schema#",
+        "type" : "object",
+        "title" : "Hybrid Client",
+        "description" : null,
+        "icon" : "fa-cog",
+        "properties" : {
+          "_id" : {
+            "title" : "UUID",
+            "description" : "Client UUID",
+            "type" : "string",
+            "viewable" : true,
+            "searchable" : true,
+            "userEditable" : false,
+            "usageDescription" : null,
+            "isPersonal" : false,
+            "policies" : [
+              {
+                "policyId" : "cannot-contain-characters",
+                "params" : {
+                  "forbiddenChars" : [
+                    "/"
+                  ]
+                }
+              }
+            ]
+          },
+          "uid" : {
+            "title" : "ID",
+            "description" : "Client ID",
+            "viewable" : true,
+            "type" : "string",
+            "searchable" : true,
+            "userEditable" : false,
+            "usageDescription" : null,
+            "isPersonal" : true,
+            "policies" : [
+              {
+                "policyId" : "valid-username"
+              },
+              {
+                "policyId" : "cannot-contain-characters",
+                "params" : {
+                  "forbiddenChars" : [
+                    "/"
+                  ]
+                }
+              },
+              {
+                "policyId" : "minimum-length",
+                "params" : {
+                  "minLength" : 1
+                }
+              },
+              {
+                "policyId" : "maximum-length",
+                "params" : {
+                  "maxLength" : 255
+                }
+              }
+            ]
+          },
+          "authzRoles" : {
+            "description" : "Authorization Roles",
+            "title" : "Authorization Roles",
+            "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:Client:authzRoles",
+            "viewable" : true,
+            "type" : "array",
+            "userEditable" : false,
+            "returnByDefault" : false,
+            "usageDescription" : "",
+            "isPersonal" : false,
+            "items" : {
+              "type" : "relationship",
+              "title" : "Authorization Roles Items",
+              "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:Client:authzRoles:items",
+              "reverseRelationship" : true,
+              "reversePropertyName" : "authzMembers",
+              "validate" : true,
+              "properties" : {
+                "_ref" : {
+                  "description" : "References a relationship from a managed object",
+                  "type" : "string"
+                },
+                "_refProperties" : {
+                  "description" : "Supports metadata within the relationship",
+                  "type" : "object",
+                  "title" : "Authorization Roles Items _refProperties",
+                  "properties" : {
+                    "_id" : {
+                      "description" : "_refProperties object ID",
+                      "type" : "string"
+                    }
+                  }
+                }
+              },
+              "resourceCollection" : [
+                {
+                  "path" : "internal/role",
+                  "label" : "Internal Role",
+                  "conditionalAssociationField" : "condition",
+                  "query" : {
+                    "queryFilter" : "true",
+                    "fields" : [
+                      "name"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "accountStatus" : {
+            "title" : "Status",
+            "default" : "active",
+            "description" : "Status",
+            "viewable" : true,
+            "type" : "string",
+            "searchable" : true,
+            "userEditable" : true,
+            "usageDescription" : null,
+            "isPersonal" : false
+          },
+          "oauth2Client" : {
+            "title" : "OAuth 2.0 Client Config",
+            "description" : "OAuth 2.0 Client Configuration",
+            "viewable" : true,
+            "type" : "object",
+            "searchable" : true,
+            "userEditable" : true,
+            "usageDescription" : null,
+            "isPersonal" : false
+          }
+        },
+        "order" : [
+          "_id",
+          "uid",
+          "accountStatus",
+          "oauth2Client"
+        ],
+        "required" : [
+          "uid"
         ]
       },
       "meta" : {

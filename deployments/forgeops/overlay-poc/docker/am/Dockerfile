@@ -1,4 +1,4 @@
-FROM gcr.io/iec-engineering/am-base/docker-build:7.2.0-df552d56bdb360d284be53bbf1ced5070cc483ee
+FROM gcr.io/forgerock-io/am-base/pull-requests:7.2.0-2022-6-PR-17522-20-7cbd56e56720e3f53d7d8a7c7a13306562e0141e
 USER root
 
 ENV DEBIAN_FRONTEND=noninteractive
