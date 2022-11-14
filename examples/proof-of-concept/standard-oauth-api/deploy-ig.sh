@@ -17,12 +17,16 @@ set -e
 # limitations under the License.
 #
 
-INITIAL_DIR=$(PWD)
-FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
-CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
+CONFIG_PROFILE=cdk
 
+if [ -n "$1" ]; then
+  FORGEOPS_DIR=$1
+  echo "ForgeOps bin directory: $FORGEOPS_DIR"
+fi
 cd $FORGEOPS_DIR
-./deploy.sh $CUSTOM_OVERLAY_DIR 6KZjOxJU1xHGWHI0hrQT24Fn
 
-cd $INITIAL_DIR
-./deploy-ig.sh $FORGEOPS_DIR/tmp/forgeops/bin
+echo "====================================================="
+echo "Installing IG"
+echo "====================================================="
+./forgeops build ig --config-profile $CONFIG_PROFILE --default-repo $CONTAINER_REGISTRY
+./forgeops install ig --cdk --fqdn $FQDN

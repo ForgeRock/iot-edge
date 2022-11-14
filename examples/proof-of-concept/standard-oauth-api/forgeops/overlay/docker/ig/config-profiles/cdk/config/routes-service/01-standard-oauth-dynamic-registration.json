@@ -1,0 +1,23 @@
+{
+  "name" : "01-standard-oauth-dynamic-registration",
+  "condition" : "${find(request.uri.path, '^/oauth2/register')}",
+  "handler" : {
+    "type" : "Chain",
+    "config" : {
+      "filters" : [ {
+        "name" : "ScriptableFilter-dynamic-reg",
+        "type" : "ScriptableFilter",
+        "config" : {
+          "type" : "application/x-groovy",
+          "file" : "dynamic-registration.groovy",
+          "args" : {
+            "am_protocol" : "http",
+            "am_host" : "am:80",
+            "am_realm" : "/"
+          }
+        }
+      } ],
+      "handler" : "ClientHandler"
+    }
+  }
+}

@@ -48,14 +48,14 @@ func jwtBearerToken(key crypto.Signer, issuer, subject, audience, kid string) (s
 
 func main() {
 	var (
-		amurl   = flag.String("amurl", "", "The AM URL of the ForgeOps deployment")
+		audience   = flag.String("aud", "", "The JWT audience.")
 		keyID = flag.String("keyID", "dYhQA7Fj9A8y1HuniPijRZ296DQIs5LngnqCrDP940k=", "The Key ID of the registered thing.")
 		clientID = flag.String("clientID", "", "The ID of the dynamically registered OAuth 2 client.")
 	)
 	flag.Parse()
 
-	if *amurl == "" {
-		log.Fatal("AM URL must be provided")
+	if *audience == "" {
+		log.Fatal("Audience must be provided")
 	}
 	if *clientID == "" {
 		log.Fatal("clientID must be provided")
@@ -63,7 +63,7 @@ func main() {
 
 	store := secrets.Store{Path: "secrets.jwks"}
 	signer, _ := store.Signer(*keyID)
-	signedJWT, err := jwtBearerToken(signer, *clientID, *clientID, *amurl+"/oauth2/access_token", *keyID)
+	signedJWT, err := jwtBearerToken(signer, *clientID, *clientID, *audience, *keyID)
 	if err != nil {
 		log.Fatal(err)
 	}

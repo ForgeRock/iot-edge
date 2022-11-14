@@ -83,8 +83,8 @@ echo "====================================================="
 echo "Building AM and IDM"
 echo "====================================================="
 cd $FORGEOPS_DIR/bin
-./forgeops build am --config-profile $CONFIG_PROFILE
-./forgeops build idm --config-profile $CONFIG_PROFILE
+./forgeops build am --config-profile $CONFIG_PROFILE --default-repo $CONTAINER_REGISTRY
+./forgeops build idm --config-profile $CONFIG_PROFILE --default-repo $CONTAINER_REGISTRY
 
 echo "====================================================="
 echo "Installing the Platform"
