@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* (3) OIDC get user info
+/* (3) OIDC get user info - Authorization header
  * 1. Rebase URI       -> $am_host
  * 2. Get realm        -> $am_realm
  * 3. Set path         -> /am/oauth2/$am_realm/userinfo
@@ -24,7 +24,7 @@
 
 request.uri.rebase(new URI("$am_protocol://$am_host" as String))
 String realm = ''
-if ("$am_realm" != '/') {
+if ("$am_realm" as String != '/') {
     realm = "/realms$am_realm/" as String
 }
 
@@ -36,5 +36,6 @@ logger.info(request.headers.toString())
 return next.handle(context, request)
     .then({ response ->
         logger.info(response.status.toString())
+
         return response
     })

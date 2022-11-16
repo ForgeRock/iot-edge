@@ -205,7 +205,7 @@ runOAuthClientExample
 #runThingIdentityExample
 
 # Fetch the identity's attributes in a standard OAuth way
-#requestAttributesWithOAuth
+requestAttributesWithOAuth
 
 # Fetch the identity's attributes in a from IDM
 #requestAttributesWithIDM

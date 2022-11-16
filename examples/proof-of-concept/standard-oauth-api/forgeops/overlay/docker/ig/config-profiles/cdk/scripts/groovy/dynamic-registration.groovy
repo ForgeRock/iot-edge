@@ -16,7 +16,7 @@
 
 /* (1) Dynamic Registration
  * /oauth2/register
- * Request 1: (POST) Authenticate using software statement
+ * Request 1: (POST) Authenticate using software statement - raw data (JSON)
  * 1.  Set URI         ->  $am_host
  * 2.  Set path        ->  /am/json/authenticate
  * 3.  Set headers     ->  Accept-API-Version      resource=2.0, protocol=1.0
@@ -57,7 +57,8 @@ params.add('authIndexType', 'service')
 params.add('authIndexValue', 'oauth-reg-tree')
 params.appendRequestQuery(authRequest)
 
-String software_statement = request.form.software_statement?.getAt(0)
+Map<String, Object> authRequestMap = request.entity.json as Map<String, Object>
+String software_statement = authRequestMap.get('software_statement')
 
 String data = """{
     \"callbacks\": [
@@ -80,36 +81,39 @@ String data = """{
 }""" as String
 authRequest.setEntity(data)
 
-Response authResponse = http.send(authRequest).get()
-Map<String, Object> authResponseMap = authResponse.entity.json as Map<String, Object>
-String ssoToken = authResponseMap.get('tokenId')
-logger.info('/authenticate response')
-logger.info(authResponse.status.toString())
-logger.info(ssoToken)
+http.send(authRequest)
+    .thenAsync({ authResponse ->
+        Map<String, Object> authResponseMap = authResponse.entity.json as Map<String, Object>
+        String ssoToken = authResponseMap.get('tokenId')
 
-// Part 2 - Get client ID using SSO token - _id
-request.setMethod('GET')
-request.uri.rebase(new URI("$am_protocol://$am_host" as String))
-request.uri.setPath("/am/json$realm/things/*" as String)
+        logger.info('/authenticate oauth-reg-tree response')
+        logger.info(authResponse.status.toString())
+        logger.info(ssoToken)
 
-request.headers.put('Accept-API-Version', 'protocol=2.0, resource=1.0')
-request.headers.put('Content-Type', 'application/json')
-request.headers.put('Cookie', "iPlanetDirectoryPro=$ssoToken" as String)
-request.headers.put('Host', "$am_host" as String)
+        // Part 2 - Get client ID using SSO token - _id
+        request.setMethod('GET')
+        request.uri.rebase(new URI("$am_protocol://$am_host" as String))
+        request.uri.setPath("/am/json$realm/things/*" as String)
 
-logger.info(request.uri.toString())
-logger.info(request.headers.toString())
-logger.info(request.entity.json as String)
+        request.headers.put('Accept-API-Version', 'protocol=2.0, resource=1.0')
+        request.headers.put('Content-Type', 'application/json')
+        request.headers.put('Cookie', "iPlanetDirectoryPro=$ssoToken" as String)
+        request.headers.put('Host', "$am_host" as String)
 
-return next.handle(context, request)
-    .then({ response ->
-        logger.info('/things response')
-        logger.info(response.status.toString())
+        logger.info(request.uri.toString())
+        logger.info(request.headers.toString())
+        logger.info(request.entity.json as String)
 
-        Map<String, Object> responseMap = response.entity.json as Map<String, Object>
-        responseMap.put('client_id', responseMap.get('_id'))
-        responseMap.remove('_id')
-        response.setEntity(responseMap)
+        return next.handle(context, request)
+            .then({ response ->
+                logger.info('/things/* response')
+                logger.info(response.status.toString())
 
-        return response
+                Map<String, Object> responseMap = response.entity.json as Map<String, Object>
+                responseMap.put('client_id', responseMap.get('_id'))
+                responseMap.remove('_id')
+                response.setEntity(responseMap)
+
+                return response
+            })
     })
