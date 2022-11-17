@@ -22,7 +22,7 @@ SCRIPTS_DIR=$(PWD)/scripts
 BASE_OVERLAY_DIR=$(PWD)/overlay
 CONFIG_PROFILE=cdk
 
-if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" ]]; then
+if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" || -z "$CONTAINER_REGISTRY" ]]; then
   echo "NAMESPACE, FQDN, CLUSTER, ZONE and PROJECT variables must be set"
 exit 1
 fi
@@ -45,6 +45,7 @@ echo "CLUSTER=$CLUSTER"
 echo "ZONE=$ZONE"
 echo "NAMESPACE=$NAMESPACE"
 echo "FQDN=$FQDN"
+echo "CONTAINER_REGISTRY=$CONTAINER_REGISTRY"
 
 echo "====================================================="
 echo "Configure GCP SDK"

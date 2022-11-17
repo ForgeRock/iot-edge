@@ -17,6 +17,7 @@ export CLUSTER=<The cluster name>
 export ZONE=<The Google Cloud zone in which the cluster resides>
 export NAMESPACE=<The namespace to use in your cluster>
 export FQDN=<The fully qualified domain name of your deployment>
+export CONTAINER_REGISTRY=<The default container registry>
 ```
 
 After installing the Google Cloud SDK, authenticate the SDK:
