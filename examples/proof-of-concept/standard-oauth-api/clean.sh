@@ -17,6 +17,5 @@ set -e
 # limitations under the License.
 #
 
-FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
-
-$FORGEOPS_DIR/clean.sh
+cd $(PWD)/../../../deployments/forgeops
+./clean.sh

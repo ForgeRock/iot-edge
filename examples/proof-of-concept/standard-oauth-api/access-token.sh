@@ -23,21 +23,27 @@ if [[ -z "$AM_URL" ]]; then
 fi
 echo "AM_URL: $AM_URL"
 
+if [[ -z "$IG_URL" ]]; then
+  echo "IG_URL must be set prior to running this script"
+  exit 1
+fi
+echo "IG_URL: $IG_URL"
+
 SCOPE_STRING="thingConfig fr:idm:*"
 SCOPE_LIST="[\"thingConfig\", \"fr:idm:*\"]"
 
 function oauthRegister() {
   # Standard OAuth 2.0 dynamic client registration request
-  echo $(curl --silent \
-  --request POST "$AM_URL/oauth2/realms/root/register" \
+  echo $(curl --insecure --silent \
+  --request POST "$IG_URL/oauth2/register" \
   --header "Content-Type: application/json" \
   --data "{ \"software_statement\": \"$1\"}")
 }
 
 function oauthToken() {
   # Standard OAuth 2.0 access token request
-  echo $(curl --silent \
-  --request POST "$AM_URL/oauth2/realms/root/access_token" \
+  echo $(curl --insecure --silent \
+  --request POST "$IG_URL/oauth2/access_token" \
   --data "grant_type=client_credentials" \
   --data "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer" \
   --data "client_assertion=$1" \
@@ -46,7 +52,7 @@ function oauthToken() {
 
 function thingsRegister() {
   # Request to register the thing by using a software statement
-  regResponse=$(curl --silent \
+  regResponse=$(curl --insecure --silent \
   --request POST "$AM_URL/json/authenticate?authIndexType=service&authIndexValue=oauth-reg-tree" \
   --header "Content-Type: application/json" \
   --header "Accept-API-Version: resource=2.0, protocol=1.0" \
@@ -71,7 +77,7 @@ function thingsRegister() {
   ssoToken=$(jq -r '.tokenId' <(echo $regResponse))
 
   # Request the things attributes using the SSO token
-  echo $(curl --silent \
+  echo $(curl --insecure --silent \
   --request GET "$AM_URL/json/things/*" \
   --header "Accept-API-Version: protocol=2.0,resource=1.0" \
   --header "Content-Type: application/json" \
@@ -80,7 +86,7 @@ function thingsRegister() {
 
 function thingsToken() {
   # Request to authenticate the thing by using a bearer JWT
-  authResponse=$(curl --silent \
+  authResponse=$(curl --insecure --silent \
   --request POST "$AM_URL/json/authenticate?authIndexType=service&authIndexValue=oauth-auth-tree" \
   --header "Content-Type: application/json" \
   --header "Accept-API-Version: resource=2.0, protocol=1.0" \
@@ -105,7 +111,7 @@ function thingsToken() {
   ssoToken=$(jq -r '.tokenId' <(echo $authResponse))
 
   # Request the access token via the things endpoint
-  echo $(curl --silent \
+  echo $(curl --insecure --silent \
   --request POST "$AM_URL/json/things/*?_action=get_access_token" \
   --header "Accept-API-Version: protocol=2.0,resource=1.0" \
   --header "Content-Type: application/json" \
@@ -128,7 +134,7 @@ function runOAuthClientExample() {
   echo $oauthRegisterResponse
   oauthClientID=$(jq -r '.client_id' <(echo $oauthRegisterResponse))
 
-  oauthClientAssertion=$(go run ./cmd/jwt-bearer-token -amurl $AM_URL -clientID $oauthClientID)
+  oauthClientAssertion=$(go run ./cmd/jwt-bearer-token -aud "standard_oauth_aud" -clientID $oauthClientID)
   echo "---"
   echo "OAuth 2.0 client assertion:"
   echo $oauthClientAssertion
@@ -154,7 +160,7 @@ function runThingIdentityExample() {
   echo $thingsRegisterResponse
   thingsClientID=$(jq -r '._id' <(echo $thingsRegisterResponse))
 
-  thingsClientAssertion=$(go run ./cmd/jwt-bearer-token -amurl $AM_URL -clientID $thingsClientID)
+  thingsClientAssertion=$(go run ./cmd/jwt-bearer-token -aud "standard_oauth_aud" -clientID $thingsClientID)
   echo "---"
   echo "Things client assertion:"
   echo $thingsClientAssertion
@@ -170,11 +176,11 @@ function runThingIdentityExample() {
 function requestAttributesWithIDM() {
   # NOTE: the following will only work if the things endpoint has been used
   # get information about the current session
-  loginInfo=$(curl --silent \
+  loginInfo=$(curl --insecure --silent \
     --request GET "https://$FQDN/openidm/info/login" \
     --header "authorization: Bearer $accessToken")
   frId=$(echo ${loginInfo}| jq -r '.authenticationId')
-  attributesResponse=$(curl --silent \
+  attributesResponse=$(curl --insecure --silent \
     --request GET "https://$FQDN/openidm/managed/thing/$frId?_fields=thingConfig" \
     --header "authorization: Bearer $accessToken")
   echo "---"
@@ -184,8 +190,8 @@ function requestAttributesWithIDM() {
 
 # This will only work if an identity is associated with the client
 function requestAttributesWithOAuth() {
-  attributesResponse=$(curl --silent \
-    --request GET "$AM_URL/oauth2/realms/root/userinfo" \
+  attributesResponse=$(curl --insecure --silent \
+    --request GET "$IG_URL/oauth2/userinfo" \
     --header "authorization: Bearer $accessToken")
   echo "---"
   echo "OAuth User Info response:"
@@ -193,10 +199,10 @@ function requestAttributesWithOAuth() {
 }
 
 # Run this to test if the software statement and client assertion works with OAuth 2.0 endpoints
-#runOAuthClientExample
+runOAuthClientExample
 
 # Run this to test is the software statement and client assertion works with IoT endpoints
-runThingIdentityExample
+#runThingIdentityExample
 
 # Fetch the identity's attributes in a standard OAuth way
 requestAttributesWithOAuth

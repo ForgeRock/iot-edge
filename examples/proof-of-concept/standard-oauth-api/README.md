@@ -65,7 +65,9 @@ export CLUSTER=<The cluster name>
 export ZONE=<The Google Cloud zone in which the cluster resides>
 export NAMESPACE=<The namespace to use in your cluster>
 export FQDN=<The fully qualified domain name of your deployment>
+export CONTAINER_REGISTRY=<The default container registry>
 export AM_URL=<The URL AM has been deployed to>
+export IG_URL=<The URL IG has been deployed to>
 ```
 
 After installing the Google Cloud SDK, authenticate the SDK:
@@ -81,4 +83,25 @@ Deploy the Things CDK to GKE:
 Request the Access Token:
 ```
 ./access-token.sh
+```
+
+Expected Outcome:
+```
+AM_URL: <AM_URL>
+IG_URL: <IG_URL>
+---
+Software statement:
+<software_statement>
+---
+OAuth 2.0 Dynamic Registration response:
+{"thingConfig":["{ \"connection-details\": { \"host\": \"https://example.com\", \"port\": 8080, \"auth\": \"bearer\" } }"],"client_id":"<client_id>"}
+---
+OAuth 2.0 client assertion:
+<client_assertion>
+---
+OAuth 2.0 Access Token response:
+{"access_token":"<access_token>","refresh_token":"<refresh_token>","scope":"thingConfig fr:idm:*","token_type":"Bearer","expires_in":3599}
+---
+OAuth User Info response:
+{"thingConfig":"{ \"connection-details\": { \"host\": \"https://example.com\", \"port\": 8080, \"auth\": \"bearer\" } }","sub":"<sub>","subname":"<subname>"}
 ```

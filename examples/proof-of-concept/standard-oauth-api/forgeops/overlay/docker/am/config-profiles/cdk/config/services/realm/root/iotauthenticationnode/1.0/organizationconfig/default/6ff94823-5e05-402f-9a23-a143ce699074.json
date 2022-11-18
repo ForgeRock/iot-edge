@@ -6,7 +6,9 @@
       "collection": false,
       "name": "IotAuthenticationNode"
     },
-    "additionalAudienceValues": [],
+    "additionalAudienceValues": [
+      "standard_oauth_aud"
+    ],
     "issueRestrictedToken": false,
     "jwtAuthenticationMethod": "CLIENT_ASSERTION"
   },
