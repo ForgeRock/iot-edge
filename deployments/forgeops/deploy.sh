@@ -23,7 +23,7 @@ BASE_OVERLAY_DIR=$(PWD)/overlay
 CONFIG_PROFILE=cdk
 
 if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" || -z "$CONTAINER_REGISTRY" ]]; then
-  echo "NAMESPACE, FQDN, CLUSTER, ZONE and PROJECT variables must be set"
+  echo "NAMESPACE, FQDN, CLUSTER, ZONE, PROJECT and CONTAINER_REGISTRY variables must be set"
 exit 1
 fi
 

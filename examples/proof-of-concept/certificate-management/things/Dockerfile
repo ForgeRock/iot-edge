@@ -2,10 +2,6 @@ FROM golang:1.15-buster
 
 WORKDIR /root/things
 
-# Install the cert
-ADD tmp/_wildcard.iam.example.com.pem /usr/local/share/ca-certificates/_wildcard.iam.example.com.crt
-RUN update-ca-certificates
-
 # Copy demo code
 COPY cmd cmd
 COPY go.mod .

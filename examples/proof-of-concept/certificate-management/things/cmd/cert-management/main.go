@@ -37,8 +37,6 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
-const AmUrl = "https://iot.iam.example.com/am"
-
 type attributeHandler struct {
 	name  string
 	value string
@@ -202,7 +200,7 @@ func requestCertificate(device thing.Thing) {
 func main() {
 	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
 	deviceID := "Device-8456232771"
-	amURL, _ := url.Parse(AmUrl)
+	amURL, _ := url.Parse(os.Getenv("AM_URL"))
 	var cnfKey jose.JSONWebKey
 	store := secrets.Store{}
 	signer, err := store.Signer(deviceID)
