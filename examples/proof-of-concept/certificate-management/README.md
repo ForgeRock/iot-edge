@@ -54,7 +54,7 @@ Run the following commands and follow the onscreen instruction.
 ```
 cd things
 docker build -t things .
-docker run -it --rm things
+docker run -e AM_URL=$AM_URL -it --rm things
 ```
 
 Expected Outcome:
