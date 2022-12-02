@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2022 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"gopkg.in/square/go-jose.v2"
 )
-
-type attributeHandler struct {
-	name  string
-	value string
-}
 
 type csrHandler struct {
 	thingID string
@@ -62,20 +56,6 @@ func handlerMatch(cb callback.Callback, outputName string) bool {
 		return false
 	}
 	return true
-}
-
-func (a attributeHandler) Handle(cb callback.Callback) (bool, error) {
-	if !handlerMatch(cb, a.name) {
-		return false, nil
-	}
-	for i, e := range cb.Input {
-		if ok, _ := regexp.MatchString(`IDToken\d+`, e.Name); ok {
-			cb.Input[i].Value = a.value
-			fmt.Println("--> Providing", a.name, "=", a.value)
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (a csrHandler) Handle(cb callback.Callback) (bool, error) {
@@ -121,25 +101,15 @@ func certificateSigningRequest(thingID string, signer crypto.PrivateKey) string 
 	return csrPem
 }
 
-func register(deviceID, deviceKeys string, amURL *url.URL, cnfKey jose.JSONWebKey, signer crypto.Signer) thing.Thing {
+func register(deviceID string, amURL *url.URL, keyID string, signer crypto.Signer) thing.Thing {
 	fmt.Println("--> Register & Authenticate", deviceID)
 	device, err := builder.Thing().
 		ConnectTo(amURL).
 		InRealm("/").
 		WithTree("RegisterThings").
-		AuthenticateThing(deviceID, "/", cnfKey.KeyID, signer, nil).
+		AuthenticateThing(deviceID, "/", keyID, signer, nil).
 		HandleCallbacksWith(
-			attributeHandler{
-				name:  "uid",
-				value: deviceID},
-			attributeHandler{
-				name:  "thingType",
-				value: string(callback.TypeDevice),
-			},
-			attributeHandler{
-				name:  "thingKeys",
-				value: deviceKeys,
-			},
+			callback.ProofOfPossessionHandler(deviceID, "/", keyID, signer),
 			csrHandler{deviceID, signer}).
 		Create()
 	if err != nil {
@@ -147,24 +117,6 @@ func register(deviceID, deviceKeys string, amURL *url.URL, cnfKey jose.JSONWebKe
 		os.Exit(1)
 	}
 	fmt.Println("--> Registered & Authenticated successfully")
-	return device
-}
-
-func authenticate(deviceID string, amURL *url.URL, cnfKey jose.JSONWebKey, signer crypto.Signer) thing.Thing {
-	fmt.Println("--> Authenticate", deviceID)
-	device, err := builder.Thing().
-		ConnectTo(amURL).
-		InRealm("/").
-		WithTree("RegisterThings").
-		AuthenticateThing(deviceID, "/", cnfKey.KeyID, signer, nil).
-		HandleCallbacksWith(
-			csrHandler{deviceID, signer}).
-		Create()
-	if err != nil {
-		fmt.Println("Authentication failed", "\nReason: ", err)
-		os.Exit(1)
-	}
-	fmt.Println("--> Authenticated successfully")
 	return device
 }
 
@@ -201,40 +153,19 @@ func main() {
 	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
 	deviceID := "Device-8456232771"
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
-	var cnfKey jose.JSONWebKey
 	store := secrets.Store{}
-	signer, err := store.Signer(deviceID)
+	thingKey, err := store.Signer(deviceID)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	cnfKey = jose.JSONWebKey{Key: signer.Public(), Algorithm: string(jose.ES256), Use: "sig"}
-	kid, err := cnfKey.Thumbprint(crypto.SHA256)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	cnfKey.KeyID = base64.URLEncoding.EncodeToString(kid)
-	keySet := jose.JSONWebKeySet{
-		Keys: []jose.JSONWebKey{
-			{
-				Key:   signer.Public(),
-				KeyID: cnfKey.KeyID,
-				Use:   "sig",
-			},
-		},
-	}
-	b, _ := json.Marshal(keySet)
+	thingKid, _ := thing.JWKThumbprint(thingKey)
 
 	fmt.Println("\nPress Enter to register and authenticate...")
 	fmt.Scanln()
-	device := register(deviceID, string(b), amURL, cnfKey, signer)
+	device := register(deviceID, amURL, thingKid, thingKey)
+
 	fmt.Println("\nPress Enter to request the certificate...")
 	fmt.Scanln()
-	requestCertificate(device)
-
-	fmt.Println("\nPress Enter to re-authenticate and request the certificate...")
-	fmt.Scanln()
-	device = authenticate(deviceID, amURL, cnfKey, signer)
 	requestCertificate(device)
 }

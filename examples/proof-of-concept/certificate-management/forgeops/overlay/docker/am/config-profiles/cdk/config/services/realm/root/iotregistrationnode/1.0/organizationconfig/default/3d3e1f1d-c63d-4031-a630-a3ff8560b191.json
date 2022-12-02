@@ -26,6 +26,7 @@
     "allowKeyRotation": false,
     "jwtRegistrationMethod": "POP_WITHOUT_TRUST",
     "defaultAttributeValues": {
+      "thingType": "device"
     }
   }
 }
