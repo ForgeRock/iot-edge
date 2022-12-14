@@ -18,6 +18,14 @@ need to be rotated when it has expired, revoked or manual rotation was requested
 rotation can be achieved. Certificate expiration and revocation should be managed as instructed by the issuing
 certificate authority.
 
+### Implementation Details
+This example uses the ForgeRock IoT Solution to register, authenticate, and request a certificate for a thing identity.
+The authentication tree is configured to be compatible with the OAuth 2.0 specification.
+
+RegisterThings Tree:
+
+![](docs/register-things-tree.png)
+
 ### Run the ForgeRock Platform
 
 *This example requires you to have a high level of familiarity with ForgeOps and the ForgeRock IoT Solution. Contact
