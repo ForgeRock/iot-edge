@@ -18,36 +18,42 @@ need to be rotated when it has expired, revoked or manual rotation was requested
 rotation can be achieved. Certificate expiration and revocation should be managed as instructed by the issuing
 certificate authority.
 
+### Implementation Details
+This example uses the ForgeRock IoT Solution to register, authenticate, and request a certificate for a thing identity.
+The authentication tree is configured to be compatible with the OAuth 2.0 specification.
+
+RegisterThings Tree:
+
+![](docs/register-things-tree.png)
+
 ### Run the ForgeRock Platform
 
-Install the third party software by following the instructions in the
-[ForgeOps docs](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/minikube/setup/sw.html).
-Additionally, install [mkcert](https://github.com/FiloSottile/mkcert) for making locally-trusted development certificates.
+*This example requires you to have a high level of familiarity with ForgeOps and the ForgeRock IoT Solution. Contact
+ForgeRock for a demonstration of the solution.*
 
-Clone this repo:
-```
-git clone https://github.com/ForgeRock/iot-edge.git
-cd iot-edge/examples/proof-of-concept/certificate-management
-```
+Follow the ForgeOps documentation to install the
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/clusterinfo.html).
 
-Start the platform:
+Set the following environment variables:
 ```
-./run.sh
-```
-
-In a new terminal, run `minikube ip` and map the output from the command to `iot.iam.example.com` in your hosts file:
-```
-echo "$(minikube ip) iot.iam.example.com" >> /etc/hosts
+export PROJECT=<The name of the Google Cloud project that contains the cluster>
+export CLUSTER=<The cluster name>
+export ZONE=<The Google Cloud zone in which the cluster resides>
+export NAMESPACE=<The namespace to use in your cluster>
+export FQDN=<The fully qualified domain name of your deployment>
+export CONTAINER_REGISTRY=<The default container registry>
+export AM_URL=<The URL AM has been deployed to>
 ```
 
-The connection details for the platform will be printed to the console:
+After installing the Google Cloud SDK, authenticate the SDK:
 ```
-=====================================================
-URL: https://iot.iam.example.com/platform
-Username: amadmin
-Password: 6KZjOxJU1xHGWHI0hrQT24Fn
-DS Password: zMO2W9IlOronDqrF2MtEha3Jiic3urZM
-=====================================================
+gcloud auth login
+```
+
+Deploy the Things CDK to GKE:
+```
+./deploy.sh
 ```
 
 ### Run example client
@@ -56,5 +62,37 @@ Run the following commands and follow the onscreen instruction.
 ```
 cd things
 docker build -t things .
-docker run -it --add-host iot.iam.example.com:$(minikube ip) --rm things
+docker run -e AM_URL=$AM_URL -it --rm things
+```
+
+Expected Outcome:
+```
+Press Enter to register and authenticate...
+
+--> Register & Authenticate Device-8456232771
+--> Registered & Authenticated successfully
+
+Press Enter to request the certificate...
+
+--> Requesting x.509 Certificate
+== x.509 Certificate ==
+Subject: CN=Device-8456232771
+Issuer: CN=estExampleCA
+Serial Number: 34836
+Validity:
+Not Before: <YYYY-MM-DD HH:mm:ss> +0000 UTC
+Not After:  <YYYY-MM-DD HH:mm:ss> +0000 UTC
+
+Press Enter to re-authenticate and request the certificate...
+
+--> Authenticate Device-8456232771
+--> Authenticated successfully
+--> Requesting x.509 Certificate
+== x.509 Certificate ==
+Subject: CN=Device-8456232771
+Issuer: CN=estExampleCA
+Serial Number: 34836
+Validity:
+Not Before: <YYYY-MM-DD HH:mm:ss> +0000 UTC
+Not After:  <YYYY-MM-DD HH:mm:ss> +0000 UTC
 ```
