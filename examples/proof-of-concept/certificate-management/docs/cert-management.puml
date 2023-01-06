@@ -21,13 +21,11 @@ participant "Identity Management" as idm
 participant "Certificate Authority\nhttp://testrfc7030.com" as ca
 
 == Register & Authenticate ==
-th -> am : authenticate using JWT PoP
-am -> am : identity exists=false
-am --> th : collect ID, public key, type
-th -> am : send ID, public key, type, signed JWT
-am -> idm : create identity
+th -> am : register using JWT PoP
 am -> am : verify JWT
-am --> th : return SSO token
+am -> am : identity exists=false
+am -> idm : create identity
+am --> th : collect CSR
 th -> th : create CSR
 th -> am : send CSR
 am -> ca : Enrollment over Secure Transport\nSend CSR to CA
@@ -43,9 +41,10 @@ th -> th : extract certificate
 == Rotate Certificate ==
 ad -> idm : set rotation=true
 th -> am : authenticate using JWT PoP
-am -> am : identity exists=true, rotate=true
 am -> am : verify JWT
+am -> am : identity exists=true, rotate=true
 am --> th : collect CSR
+th -> th : create CSR
 th -> am : send CSR
 am -> ca : Enrollment over Secure Transport\nSend CSR to CA
 ca --> am : return certificate

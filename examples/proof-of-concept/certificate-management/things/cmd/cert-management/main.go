@@ -120,6 +120,24 @@ func register(deviceID string, amURL *url.URL, keyID string, signer crypto.Signe
 	return device
 }
 
+func authenticate(deviceID string, amURL *url.URL, keyID string, signer crypto.Signer) thing.Thing {
+	fmt.Println("--> Authenticate", deviceID)
+	device, err := builder.Thing().
+		ConnectTo(amURL).
+		InRealm("/").
+		WithTree("RegisterThings").
+		AuthenticateThing(deviceID, "/", keyID, signer, nil).
+		HandleCallbacksWith(
+			csrHandler{deviceID, signer}).
+		Create()
+	if err != nil {
+		fmt.Println("Authentication failed", "\nReason: ", err)
+		os.Exit(1)
+	}
+	fmt.Println("--> Authenticated successfully")
+	return device
+}
+
 func requestCertificate(device thing.Thing) {
 	fmt.Println("--> Requesting x.509 Certificate")
 	configResponse, _ := device.RequestAttributes("thingConfig")
@@ -167,5 +185,10 @@ func main() {
 
 	fmt.Println("\nPress Enter to request the certificate...")
 	fmt.Scanln()
+	requestCertificate(device)
+
+	fmt.Println("\nPress Enter to re-authenticate and request the certificate...")
+	fmt.Scanln()
+	device = authenticate(deviceID, amURL, thingKid, thingKey)
 	requestCertificate(device)
 }
