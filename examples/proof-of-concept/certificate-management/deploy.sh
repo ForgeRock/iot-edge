@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022 ForgeRock AS
+# Copyright 2022-23 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,19 @@ set -e
 # limitations under the License.
 #
 
+CUSTOM_NODE_DIR=$(PWD)/auth-nodes
+PLUGIN_DIR=$(PWD)/forgeops/tmp
 FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
 
-cd $FORGEOPS_DIR
-./deploy.sh $CUSTOM_OVERLAY_DIR 6KZjOxJU1xHGWHI0hrQT24Fn
+echo "====================================================="
+echo "Build the custom node"
+echo "====================================================="
+cd "$CUSTOM_NODE_DIR"
+./build.sh "$PLUGIN_DIR"
+
+echo "====================================================="
+echo "Run ForgeOps CDK"
+echo "====================================================="
+cd "$FORGEOPS_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"

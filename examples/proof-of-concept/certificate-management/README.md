@@ -26,6 +26,9 @@ RegisterThings Tree:
 
 ![](docs/register-things-tree.png)
 
+RegisterThingsWithEstNode Tree:
+
+![](docs/register-things-with-est-node-tree.png)
 ### Run the ForgeRock Platform
 
 *This example requires you to have a high level of familiarity with ForgeOps and the ForgeRock IoT Solution. Contact
@@ -57,12 +60,14 @@ Deploy the Things CDK to GKE:
 ```
 
 ### Run example client
-The client example will demonstrate how to register and authenticate a thing before requesting and rotating its certificate.
+The client example will demonstrate how to register and authenticate a thing before requesting and rotating its certificate. 
+
+#### RegisterThings
 Run the following commands and follow the onscreen instruction.
 ```
 cd things
 docker build -t things .
-docker run -e AM_URL=$AM_URL -it --rm things
+docker run -e AM_URL=$AM_URL -e TREE="RegisterThings" -it --rm things
 ```
 
 Expected Outcome:
@@ -95,4 +100,13 @@ Serial Number: 34836
 Validity:
 Not Before: <YYYY-MM-DD HH:mm:ss> +0000 UTC
 Not After:  <YYYY-MM-DD HH:mm:ss> +0000 UTC
+```
+#### RegisterThingsWithEstNode
+Navigate to the *RegisterThingsWithEstNode* authentication tree and update the Password attribute in EST Node.
+
+If the device has been previously registered, delete the device's identity (*Device-8456232771*).
+
+Update the TREE environment variable as follows and follow the onscreen instruction.
+```
+docker run -e AM_URL=$AM_URL -e TREE="RegisterThingsWithEstNode" -it --rm things
 ```

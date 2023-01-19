@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2021-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+
+import java.security.cert.X509Certificate
+
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cms.CMSSignedData
@@ -24,33 +26,22 @@ import org.forgerock.http.header.AuthorizationHeader
 import org.forgerock.http.header.ContentTypeHeader
 import org.forgerock.http.header.GenericHeader
 import org.forgerock.http.protocol.Request
-import sun.security.util.Pem
+import org.forgerock.openam.auth.node.api.Action
 import org.forgerock.openam.auth.node.api.NodeState
-import java.security.cert.X509Certificate
+
+import com.sun.identity.authentication.callbacks.HiddenValueCallback
+import sun.security.util.Pem
 
 outcome = "Success"
 NodeState state = nodeState
 
-if (!state.isDefined("objectAttributes")) {
-    logger.message("No object attributes found in shared state.")
-    outcome = "Failure"
+// If no CSR, send request for CSR to client
+if (callbacks.isEmpty()) {
+    action = Action.send(new HiddenValueCallback("csr")).build()
     return
 }
-def attrs = state.get("objectAttributes")
-if (!attrs.isDefined("thingProperties")) {
-    logger.message("No properties included in the device authentication request.")
-    outcome = "Failure"
-    return
-}
-def thingProps = new String(Base64.getDecoder().decode(attrs.get("thingProperties").asString()))
-attrs.put("thingProperties", thingProps)
-def jsonSlurper = new JsonSlurper()
-def jsonProps = jsonSlurper.parseText(thingProps)
-if (!jsonProps.csr) {
-    logger.message("No Certificate Signing Request included in the device authentication request.")
-    outcome = "Failure"
-    return
-}
+def csr = callbacks.get(0).getValue()
+
 def encodedCredentials = Base64.getEncoder().encode("estuser:estpwd".getBytes())
 def request = new Request()
 request.setUri("https://testrfc7030.com:8443/.well-known/est/simpleenroll")
@@ -59,7 +50,8 @@ request.addHeaders(
         AuthorizationHeader.valueOf("Basic " + new String(encodedCredentials)),
         ContentTypeHeader.valueOf("application/pkcs10"),
         new GenericHeader("Content-Transfer-Encoding", "base64"))
-request.setEntity(jsonProps.csr)
+request.setEntity(csr)
+
 def response = httpClient.send(request).get()
 String certString = response.getEntity().getString().replaceAll("\n", "")
 logger.message("Certificate: " + certString)
@@ -70,6 +62,24 @@ X509Certificate certificate = new JcaX509CertificateConverter().getCertificate(c
 def pem = "-----BEGIN CERTIFICATE-----\n" +
         new String(Base64.getEncoder().encode(certificate.getEncoded())) +
         "\n-----END CERTIFICATE-----"
-def thingConfig = JsonOutput.toJson([cert: pem, rotate: false])
-attrs.add("thingConfig", thingConfig)
-sharedState.put("objectAttributes", attrs)
+
+def username = state.get("_id").asString()
+idRepository.setAttribute(username, "thingCertificatePem", [pem] as String[])
+idRepository.setAttribute(username, "thingCertificateRotate", ["false"] as String[])
+
+// Check if patch was successful
+def certificateAttr = idRepository.getAttribute(username, "thingCertificatePem")
+def rotateAttr = idRepository.getAttribute(username, "thingCertificateRotate")
+def pemMatches = true
+def rotateMatches = true
+
+if (!certificateAttr.isEmpty()) {
+    pemMatches = certificateAttr.iterator().next() == pem
+}
+if (!rotateAttr.isEmpty()) {
+    rotateMatches = rotateAttr.iterator().next() == "false"
+}
+if (!pemMatches || !rotateMatches) {
+    logger.error("Attribute update failed.")
+    outcome = "Failure"
+}

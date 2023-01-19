@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2021-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import groovy.json.JsonSlurper
-
 outcome = "False"
 
 // This script should decide if the authenticating thing's certificate should be rotated or not.
@@ -23,9 +21,17 @@ outcome = "False"
 // This example shows how manual rotation can be achieved. Certificate expiration and revocation should be
 // managed as instructed by the issuing certificate authority.
 
-def thingConfig = idRepository.getAttribute(nodeState.get("_id").asString(), "thingConfig").iterator().next()
-def jsonSlurper = new JsonSlurper()
-def jsonConfig = jsonSlurper.parseText(thingConfig)
-if (jsonConfig.rotate) {
+def certificateAttr = idRepository.getAttribute(nodeState.get("_id").asString(), "thingCertificatePem")
+def certificateExists = !certificateAttr.isEmpty()
+def rotateAttr = idRepository.getAttribute(nodeState.get("_id").asString(), "thingCertificateRotate")
+def rotateRequired = false
+
+// Read rotation attribute if it exists
+if (!rotateAttr.isEmpty()) {
+    def rotate = rotateAttr.iterator().next()
+    rotateRequired = Boolean.parseBoolean(rotate.toString())
+}
+
+if (!certificateExists || rotateRequired) {
     outcome = "True"
 }
