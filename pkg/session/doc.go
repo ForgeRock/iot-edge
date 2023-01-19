@@ -19,20 +19,19 @@
 //
 // This example shows how to use a username and password to authenticate and obtain an SSO token:
 //
-//    // Connect directly to AM
-//    amURL, _ := url.Parse("https://am.example.com:8443/am")
+//	// Connect directly to AM
+//	amURL, _ := url.Parse("https://am.example.com:8443/am")
 //
-//    // Create a session by authenticating with a username and password
-//    session, _ := builder.Session().
-//        ConnectTo(amURL).
-//        InRealm("/all-the-things").
-//        WithTree("auth-tree").
-//        AuthenticateWith(
-//            callback.NameHandler{Name: "my-device"},
-//            callback.PasswordHandler{Password: "password"}).
-//        Create()
+//	// Create a session by authenticating with a username and password
+//	session, _ := builder.Session().
+//	    ConnectTo(amURL).
+//	    InRealm("/all-the-things").
+//	    WithTree("auth-tree").
+//	    AuthenticateWith(
+//	        callback.NameHandler{Name: "my-device"},
+//	        callback.PasswordHandler{Password: "password"}).
+//	    Create()
 //
-//    // The SSO token can be used to authorize REST requests directly with AM
-//    ssoToken := session.Token()
-//
+//	// The SSO token can be used to authorize REST requests directly with AM
+//	ssoToken := session.Token()
 package session

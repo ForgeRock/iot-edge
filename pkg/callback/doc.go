@@ -18,23 +18,21 @@
 // process callbacks received from Access Management's authentication framework or use the Handler interface to
 // provide your own handler.
 //
-//
 // This is an example of how to create your own callback handler:
 //
-//    type ThingHandler struct {
-//        ThingInput string
-//    }
+//	type ThingHandler struct {
+//	    ThingInput string
+//	}
 //
-//    func (h ThingHandler) Handle(cb callback.Callback) (bool, error) {
-//        if cb.Type != "ThingCallback" {
-//            return false, nil
-//        }
-//        cb.Input[0].Value = h.ThingInput
-//        return true, nil
-//    }
+//	func (h ThingHandler) Handle(cb callback.Callback) (bool, error) {
+//	    if cb.Type != "ThingCallback" {
+//	        return false, nil
+//	    }
+//	    cb.Input[0].Value = h.ThingInput
+//	    return true, nil
+//	}
 //
 // The handler can then be used during the authentication process of a thing or session:
 //
-//    builder.Thing().HandleCallbacksWith(ThingHandler{ThingInput: "value"})
-//
+//	builder.Thing().HandleCallbacksWith(ThingHandler{ThingInput: "value"})
 package callback

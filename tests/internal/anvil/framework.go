@@ -331,7 +331,7 @@ func ModifyOAuth2Provider(realm string, tokenType AccessTokenType) (original []b
 		advancedKey = "advancedOAuth2Config"
 	)
 	clientBased := tokenType != CTS
-	original, err = am.GetService(realm, oauth2Service)
+	original, _ = am.GetService(realm, oauth2Service)
 	var config, coreConfig, advancedConfig map[string]json.RawMessage
 	err = json.Unmarshal(original, &config)
 	if err != nil {
