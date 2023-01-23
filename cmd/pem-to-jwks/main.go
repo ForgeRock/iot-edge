@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -42,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	b, err := ioutil.ReadFile(opts.In)
+	b, err := os.ReadFile(opts.In)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +69,7 @@ func main() {
 	if opts.Out == "" {
 		fmt.Println(string(jwks))
 	} else {
-		err = ioutil.WriteFile(opts.Out, jwks, os.ModePerm)
+		err = os.WriteFile(opts.Out, jwks, os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}

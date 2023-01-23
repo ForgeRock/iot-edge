@@ -1,4 +1,5 @@
 //nolint
+//go:build coap || (!coap && !http)
 // +build coap !coap,!http
 
 /*

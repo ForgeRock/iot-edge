@@ -25,7 +25,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/big"
 	"net/url"
@@ -56,7 +56,7 @@ const (
 	AMClientType      = "am"
 )
 
-var DebugLogger = log.New(ioutil.Discard, "", 0)
+var DebugLogger = log.New(io.Discard, "", 0)
 var ProgressLogger = log.New(os.Stdout, "", 0)
 
 // CreateRealmHierarchy creates the supplied realms in a linear hierarchy
@@ -115,7 +115,7 @@ func forAllJSONFilesInDirectory(dirname string, f func(path string) error) error
 	if _, err := os.Stat(dirname); err != nil {
 		return nil
 	}
-	info, err := ioutil.ReadDir(dirname)
+	info, err := os.ReadDir(dirname)
 	if err != nil {
 		return err
 	}

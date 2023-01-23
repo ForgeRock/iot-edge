@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -73,7 +72,7 @@ func main() {
 		log.Fatalf("%v `%s`", err, opts.Custom)
 	}
 
-	b, err := ioutil.ReadFile(opts.Keyfile)
+	b, err := os.ReadFile(opts.Keyfile)
 	if err != nil {
 		log.Fatal(err)
 	}

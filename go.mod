@@ -1,6 +1,6 @@
 module github.com/ForgeRock/iot-edge/v7
 
-go 1.15
+go 1.19
 
 require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
@@ -8,8 +8,15 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/dtls/v2 v2.1.5
-	github.com/pion/udp v0.1.2 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	gopkg.in/square/go-jose.v2 v2.4.1
+)
+
+require (
+	github.com/pion/logging v0.2.2 // indirect
+	github.com/pion/transport v0.14.1 // indirect
+	github.com/pion/udp v0.1.2 // indirect
+	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 )
