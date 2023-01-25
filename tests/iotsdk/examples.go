@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,7 +77,7 @@ func encodeKeyToPEM(signer crypto.Signer) ([]byte, error) {
 }
 
 func saveToTempFile(pattern string, content []byte) (*os.File, error) {
-	file, err := ioutil.TempFile("", pattern)
+	file, err := os.CreateTemp("", pattern)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func saveToSecrets(signer crypto.Signer, name string) (string, error) {
 		return "", err
 	}
 	fileName := filepath.Join(filepath.Dir(secretsPath), name+".jwks")
-	err = ioutil.WriteFile(fileName, b, os.ModePerm)
+	err = os.WriteFile(fileName, b, os.ModePerm)
 	if err != nil {
 		return "", err
 	}

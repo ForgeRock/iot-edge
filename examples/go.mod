@@ -9,7 +9,7 @@ require (
 )
 
 require (
-	github.com/go-ocf/go-coap v0.0.0-20200511140640-db6048acfdd3 // indirect
+	github.com/go-ocf/go-coap v0.0.0-20200325133359-298a26e4e9c8 // indirect
 	github.com/pion/dtls/v2 v2.1.5 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/transport v0.14.1 // indirect
