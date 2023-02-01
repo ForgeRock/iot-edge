@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/big"
 	"net/url"
@@ -56,7 +56,7 @@ const (
 	AMClientType      = "am"
 )
 
-var DebugLogger = log.New(ioutil.Discard, "", 0)
+var DebugLogger = log.New(io.Discard, "", 0)
 var ProgressLogger = log.New(os.Stdout, "", 0)
 
 // CreateRealmHierarchy creates the supplied realms in a linear hierarchy
@@ -115,7 +115,7 @@ func forAllJSONFilesInDirectory(dirname string, f func(path string) error) error
 	if _, err := os.Stat(dirname); err != nil {
 		return nil
 	}
-	info, err := ioutil.ReadDir(dirname)
+	info, err := os.ReadDir(dirname)
 	if err != nil {
 		return err
 	}
@@ -332,6 +332,9 @@ func ModifyOAuth2Provider(realm string, tokenType AccessTokenType) (original []b
 	)
 	clientBased := tokenType != CTS
 	original, err = am.GetService(realm, oauth2Service)
+	if err != nil {
+		return original, err
+	}
 	var config, coreConfig, advancedConfig map[string]json.RawMessage
 	err = json.Unmarshal(original, &config)
 	if err != nil {

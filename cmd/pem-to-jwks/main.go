@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2021-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -42,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	b, err := ioutil.ReadFile(opts.In)
+	b, err := os.ReadFile(opts.In)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +69,7 @@ func main() {
 	if opts.Out == "" {
 		fmt.Println(string(jwks))
 	} else {
-		err = ioutil.WriteFile(opts.Out, jwks, os.ModePerm)
+		err = os.WriteFile(opts.Out, jwks, os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}

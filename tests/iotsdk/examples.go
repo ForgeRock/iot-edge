@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,7 +77,7 @@ func encodeKeyToPEM(signer crypto.Signer) ([]byte, error) {
 }
 
 func saveToTempFile(pattern string, content []byte) (*os.File, error) {
-	file, err := ioutil.TempFile("", pattern)
+	file, err := os.CreateTemp("", pattern)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func saveToSecrets(signer crypto.Signer, name string) (string, error) {
 		return "", err
 	}
 	fileName := filepath.Join(filepath.Dir(secretsPath), name+".jwks")
-	err = ioutil.WriteFile(fileName, b, os.ModePerm)
+	err = os.WriteFile(fileName, b, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
