@@ -1,8 +1,8 @@
 //nolint
-// +build !coap,!http http
+//go:build (!coap && !http) || http
 
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -111,7 +110,7 @@ func (c *amConnection) ValidateSession(tokenID string, content ContentType, payl
 		return false, fmt.Errorf("session validation failed")
 	}
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return false, err
@@ -171,7 +170,7 @@ func (c *amConnection) Authenticate(payload AuthenticatePayload) (reply Authenti
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, ResponseError{ResponseCode: CodeUnauthorized}
 	}
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return reply, err
@@ -208,7 +207,7 @@ func (c *amConnection) getServerInfo() (info serverInfo, err error) {
 		return info, err
 	}
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return info, err
@@ -243,7 +242,7 @@ func (c *amConnection) getJWKSURI() (uri string, err error) {
 		return uri, err
 	}
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return uri, err
@@ -281,7 +280,7 @@ func (c *amConnection) updateJSONWebKeySet() (err error) {
 		return err
 	}
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return err
@@ -501,7 +500,7 @@ func (c *amConnection) makeRequest(tokenID string, content ContentType, request 
 		return nil, err
 	}
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		debug.Logger.Println(debug.DumpHTTPRoundTrip(request, response))
 		return nil, err

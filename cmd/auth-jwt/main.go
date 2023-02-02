@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ForgeRock AS
+ * Copyright 2021-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -82,7 +81,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	b, err := ioutil.ReadFile(opts.Keyfile)
+	b, err := os.ReadFile(opts.Keyfile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,7 +98,7 @@ func main() {
 
 	claims := customClaims{Nonce: opts.Challenge}
 	if opts.Certificate != "" {
-		b, err := ioutil.ReadFile(opts.Certificate)
+		b, err := os.ReadFile(opts.Certificate)
 		if err != nil {
 			log.Fatal(err)
 		}

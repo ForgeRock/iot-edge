@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -55,7 +55,7 @@ const (
 	userEndpointVersion        = "resource=3.0, protocol=1.0"
 )
 
-var DebugLogger = log.New(ioutil.Discard, "", 0)
+var DebugLogger = log.New(io.Discard, "", 0)
 
 var httpClient = http.Client{
 	Timeout: 30 * time.Second,
@@ -95,7 +95,7 @@ func crestAction(endpoint, action, version string, payload io.Reader, expectedCo
 		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
-	reply, err = ioutil.ReadAll(res.Body)
+	reply, err = io.ReadAll(res.Body)
 	if err != nil {
 		return reply, err
 	}
@@ -134,7 +134,7 @@ func crestUpdate(endpoint string, version string, payload io.Reader) (reply []by
 		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
-	reply, err = ioutil.ReadAll(res.Body)
+	reply, err = io.ReadAll(res.Body)
 	if err != nil {
 		return reply, err
 	}
@@ -168,7 +168,7 @@ func crestDelete(endpoint string, version string) (reply []byte, err error) {
 		dumpHTTPRoundTrip(req, res)
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
-	reply, err = ioutil.ReadAll(res.Body)
+	reply, err = io.ReadAll(res.Body)
 	if err != nil {
 		return reply, err
 	}
@@ -203,7 +203,7 @@ func putCreate(endpoint string, version string, payload io.Reader) (reply []byte
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 
-	reply, err = ioutil.ReadAll(res.Body)
+	reply, err = io.ReadAll(res.Body)
 	if err != nil {
 		return reply, err
 	}
@@ -235,7 +235,7 @@ func get(endpoint string, version string) (reply []byte, err error) {
 		return reply, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
 
-	reply, err = ioutil.ReadAll(res.Body)
+	reply, err = io.ReadAll(res.Body)
 	if err != nil {
 		return reply, err
 	}
@@ -272,7 +272,7 @@ func getSSOTokenForIdentity(realm string, attributes IdAttributes) (token string
 		dumpHTTPRoundTrip(req, res)
 		return token, fmt.Errorf("unexpected status code: %v", res.StatusCode)
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return token, err
 	}
@@ -479,7 +479,7 @@ func DeleteService(realm string, serviceName string) (err error) {
 
 // CreateAgent creates an agent (OAuth 2.0 Client, JWT Issuer etc) in the realm
 func CreateAgent(realm, agentName, payloadPath string) (err error) {
-	b, err := ioutil.ReadFile(payloadPath)
+	b, err := os.ReadFile(payloadPath)
 	if err != nil {
 		return err
 	}
@@ -517,7 +517,7 @@ func DeleteScript(realm string, id string) (err error) {
 
 // UpdateAgent updates an agent's (OAuth 2.0 Client, JWT Issuer etc) configuration in AM
 func UpdateAgent(realm, agentName, payloadPath string) (err error) {
-	b, err := ioutil.ReadFile(payloadPath)
+	b, err := os.ReadFile(payloadPath)
 	if err != nil {
 		return err
 	}
@@ -656,7 +656,7 @@ func SendUserConsent(realm string, user IdAttributes, userCode thing.DeviceAutho
 		return err
 	}
 	defer response.Body.Close()
-	responseBodyBytes, err := ioutil.ReadAll(response.Body)
+	responseBodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}

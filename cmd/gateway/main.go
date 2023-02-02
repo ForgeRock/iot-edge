@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -38,7 +37,7 @@ import (
 )
 
 func loadKey(filename string) (crypto.Signer, error) {
-	keyBytes, err := ioutil.ReadFile(filename)
+	keyBytes, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +54,7 @@ func loadKey(filename string) (crypto.Signer, error) {
 }
 
 func loadCertificates(filename string) ([]*x509.Certificate, error) {
-	certBytes, err := ioutil.ReadFile(filename)
+	certBytes, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
