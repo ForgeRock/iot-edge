@@ -100,11 +100,6 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-iot</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.forgerock.am</groupId>
             <artifactId>service-config-api</artifactId>
             <scope>provided</scope>
         </dependency>
