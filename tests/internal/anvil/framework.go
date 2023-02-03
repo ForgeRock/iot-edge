@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -331,7 +331,10 @@ func ModifyOAuth2Provider(realm string, tokenType AccessTokenType) (original []b
 		advancedKey = "advancedOAuth2Config"
 	)
 	clientBased := tokenType != CTS
-	original, _ = am.GetService(realm, oauth2Service)
+	original, err = am.GetService(realm, oauth2Service)
+	if err != nil {
+		return original, err
+	}
 	var config, coreConfig, advancedConfig map[string]json.RawMessage
 	err = json.Unmarshal(original, &config)
 	if err != nil {
