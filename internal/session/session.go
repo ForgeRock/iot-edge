@@ -20,7 +20,6 @@ import (
 	"crypto"
 	"errors"
 	"net/url"
-	"reflect"
 	"time"
 
 	"github.com/ForgeRock/iot-edge/v7/internal/client"
@@ -143,7 +142,7 @@ func (b *Builder) TimeoutRequestAfter(d time.Duration) session.Builder {
 
 func (b *Builder) Create() (session.Session, error) {
 	var err error
-	if !reflect.ValueOf(b.connection).IsValid() {
+	if b.connection == nil {
 		if b.url == nil {
 			return nil, errors.New("url must be provided")
 		}

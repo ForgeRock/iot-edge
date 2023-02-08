@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"reflect"
 	"strings"
 	"time"
 
@@ -396,7 +395,7 @@ func (b *BaseBuilder) WithConnection(connection client.Connection) thing.Builder
 }
 
 func (b *BaseBuilder) Create() (thing.Thing, error) {
-	if !reflect.ValueOf(b.connection).IsValid() {
+	if b.connection == nil {
 		if b.u == nil {
 			return nil, errors.New("URL must be provided via ConnectTo")
 		}
