@@ -97,11 +97,11 @@ func (a AccessTokenResponse) Scope() ([]string, error) {
 // The name of the attribute is the same as the LDAP identity attribute name. The response will contain the thing ID
 // and may have multiple values for a single attribute, for example:
 //
-//	{
-//	    "_id": "my-device",
-//	    "foo": ["a", "b", "c"]
-//	    "bar": ["1"]
-//	}
+//    {
+//        "_id": "my-device",
+//        "foo": ["a", "b", "c"]
+//        "bar": ["1"]
+//    }
 type AttributesResponse struct {
 	Content JSONContent
 }

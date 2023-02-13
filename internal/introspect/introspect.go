@@ -69,11 +69,10 @@ type timeClaims struct {
 
 // ValidNow returns true if the expired and not before claims indicate that the token is valid for the current local
 // time. From RFC7519:
-//
-//	processing of the "exp" claim requires that the current date/time
-//	MUST be before the expiration date/time listed in the "exp" claim
-//	processing of the "nbf" claim requires that the current date/time
-//	MUST be after or equal to listed in the "nbf" claim
+//   processing of the "exp" claim requires that the current date/time
+//   MUST be before the expiration date/time listed in the "exp" claim
+//   processing of the "nbf" claim requires that the current date/time
+//   MUST be after or equal to listed in the "nbf" claim
 func ValidNow(b []byte) bool {
 	var claims timeClaims
 	if err := json.Unmarshal(b, &claims); err != nil {

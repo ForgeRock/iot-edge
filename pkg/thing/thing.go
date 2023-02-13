@@ -33,7 +33,7 @@ import (
 // DebugLogger is the destination of all SDK debug information. The logger is muted by default. Redirect the debug
 // output by assigning your own logger to this variable or setting the output writer, for example:
 //
-//	thing.DebugLogger().SetOutput(os.Stdout)
+//    thing.DebugLogger().SetOutput(os.Stdout)
 func DebugLogger() *log.Logger {
 	return debug.Logger
 }
