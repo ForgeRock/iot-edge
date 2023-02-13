@@ -54,7 +54,6 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -180,16 +179,14 @@ public class EstNode implements Node {
         }
 
         // Get CSR otherwise
-        String csr;
-        try {
-            csr = getCSR(context).orElseThrow(() -> new NodeProcessException("No CSR found."));
-        } catch (NodeProcessException e) {
-            logger.error("Failed to get CSR: {}", e.getMessage());
+        Optional<String> csr = getCSR(context);
+        if (csr.isEmpty()) {
+            logger.error("Failed to get CSR from callback.");
             return Action.goTo(FAILURE_OUTCOME).build();
         }
 
         // Use CSR to request new certificate from CA
-        if (!requestCertificate(csr)) {
+        if (!requestCertificate(csr.get())) {
             return Action.goTo(FAILURE_OUTCOME).build();
         }
 
@@ -254,29 +251,46 @@ public class EstNode implements Node {
         }
     }
 
+    private Set<String> getAttribute(String attrName) {
+        Set<String> attribute;
+        try {
+            attribute = identity.getAttribute(attrName);
+        } catch (IdRepoException | SSOException e) {
+            logger.error("Failed to read attribute '{}' for identity '{}'",
+                    attrName, getName());
+            return null;
+        }
+
+        return attribute;
+    }
+
     private boolean isRotateRequired(Set<String> keys) {
         boolean certificateExists = keys.contains(config.certificateName());
         boolean rotateExists = keys.contains(config.certificateRotationName());
-        boolean rotateRequired = false;
 
-        // Read rotate attribute from identity if certificate exists
-        if (certificateExists) {
-            if (rotateExists) {
-                Set<String> rotateAttr;
-                try {
-                    rotateAttr = identity.getAttribute(config.certificateRotationName());
-                } catch (IdRepoException | SSOException e) {
-                    logger.error("Failed to read rotate attribute '{}' for identity '{}'",
-                            config.certificateRotationName(), getName());
-                    return false;
-                }
-                if (rotateAttr != null) {
-                    rotateRequired = Boolean.parseBoolean(rotateAttr.iterator().next());
-                }
-            }
+        // If certificate attribute is not found, rotation is required
+        if (!certificateExists) {
+            return true;
         }
 
-        return !certificateExists || (rotateExists && rotateRequired);
+        // Read certificate attribute from identity otherwise
+        Set<String> certificateAttr = getAttribute(config.certificateName());
+        if (certificateAttr == null || certificateAttr.isEmpty()) {
+            return true;
+        }
+
+        // If rotate attribute is not found, rotation defaults to false
+        if (!rotateExists) {
+            return false;
+        }
+
+        // Read rotate attribute from identity otherwise
+        Set<String> rotateAttr = getAttribute(config.certificateRotationName());
+        if (rotateAttr != null && !rotateAttr.isEmpty()) {
+            return Boolean.parseBoolean(rotateAttr.iterator().next());
+        }
+
+        return false;
     }
 
     private boolean requestCertificate(String csr) {
