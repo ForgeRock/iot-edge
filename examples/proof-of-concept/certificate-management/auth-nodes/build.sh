@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-set -e
 
 #
-# Copyright 2022-2023 ForgeRock AS
+# Copyright 2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +16,16 @@ set -e
 # limitations under the License.
 #
 
-rm -rf "$(PWD)/forgeops/plugins"
-cd "$(PWD)/../../../deployments/forgeops"
-./clean.sh
+if [ -n "$1" ]; then
+  PLUGIN_DIR=$1
+  echo "Plugin directory: $PLUGIN_DIR"
+fi
+
+if [ -z "$PLUGIN_DIR" ]; then
+  echo "Plugin directory must not be empty"
+exit 1
+fi
+
+mvn clean install
+rm -rf "$PLUGIN_DIR" && mkdir -p "$PLUGIN_DIR"
+cp target/est-node-1.0.0-SNAPSHOT.jar "$PLUGIN_DIR"

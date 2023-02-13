@@ -1,0 +1,28 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "EstNode",
+    "entityId" : "default/4d803673-f320-42b1-bad2-5501d57dbd5d",
+    "uid" : "ou=4d803673-f320-42b1-bad2-5501d57dbd5d,ou=default,ou=OrganizationConfig,ou=1.0,ou=EstNode,ou=services,ou=am-config",
+    "sunServiceID" : "instance",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_id" : "default/4d803673-f320-42b1-bad2-5501d57dbd5d",
+    "_type" : {
+      "_id" : "EstNode",
+      "name" : "EstNode",
+      "collection" : false
+    },
+    "estUrl": "https://testrfc7030.com:8443/.well-known/est/simpleenroll",
+    "estUsername": "estuser",
+    "estPassword": "estpwd",
+    "certificateName": "thingCertificatePem",
+    "certificateRotationName": "thingCertificateRotate"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "metadata": {
+    "realm": "/",
+    "entityType": "authenticationTreesService",
+    "entityId": "default/RegisterThingsWithEstNode",
+    "uid": "ou=RegisterThingsWithEstNode,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID": "tree",
+    "objectClass": [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams": {},
+    "ou": [
+      "RegisterThingsWithEstNode"
+    ]
+  },
+  "data": {
+    "_id": "default/RegisterThingsWithEstNode",
+    "type": {
+      "_id": "authenticationTreesService",
+      "name": "authenticationTreesService",
+      "collection": false
+    },
+    "entryNodeId": "315369ac-5a54-4e52-87da-ca81bcad095f",
+    "staticNodes": {
+      "startNode": {
+        "x": 70,
+        "y": 155
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 903,
+        "y": 80
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 903,
+        "y": 230
+      }
+    },
+    "uiConfig": {},
+    "identityResource": "managed/thing",
+    "nodes": {
+      "315369ac-5a54-4e52-87da-ca81bcad095f": {
+        "displayName": "Authenticate Thing",
+        "nodeType": "IotAuthenticationNode",
+        "x": 210,
+        "y": 125,
+        "connections": {
+          "success": "4d803673-f320-42b1-bad2-5501d57dbd5d",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register": "e1fda518-82ac-4736-a572-1e3cb7bf2528"
+        }
+      },
+      "e1fda518-82ac-4736-a572-1e3cb7bf2528": {
+        "displayName": "Register Thing",
+        "nodeType": "IotRegistrationNode",
+        "x": 443,
+        "y": 137.5,
+        "connections": {
+          "success": "4d803673-f320-42b1-bad2-5501d57dbd5d",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "4d803673-f320-42b1-bad2-5501d57dbd5d": {
+        "displayName": "EST Node",
+        "nodeType": "EstNode",
+        "x": 673,
+        "y": 137.5,
+        "connections": {
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    }
+  }
+}

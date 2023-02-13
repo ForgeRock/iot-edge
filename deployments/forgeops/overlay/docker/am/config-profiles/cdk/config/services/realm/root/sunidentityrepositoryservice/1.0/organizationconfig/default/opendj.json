@@ -161,7 +161,9 @@
         "thingKeys",
         "thingOAuth2ClientName",
         "thingConfig",
-        "thingProperties"
+        "thingProperties",
+        "thingCertificatePem",
+        "thingCertificateRotate"
       ],
       "sun-idrepo-ldapv3-config-auth-kba-attr" : [
         "kbaInfo"

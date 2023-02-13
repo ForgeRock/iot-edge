@@ -27,7 +27,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"time"
@@ -64,7 +63,7 @@ func (s *Store) filepath() string {
 
 // read the key set from disc.
 func (s *Store) read() (keySet jose.JSONWebKeySet, err error) {
-	keySetBytes, err := ioutil.ReadFile(s.filepath())
+	keySetBytes, err := os.ReadFile(s.filepath())
 	switch {
 	case err == nil:
 		err = json.Unmarshal(keySetBytes, &keySet)
@@ -82,7 +81,7 @@ func (s *Store) write(keySet jose.JSONWebKeySet) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(s.filepath(), b, 0644)
+	return os.WriteFile(s.filepath(), b, 0644)
 }
 
 // certificateAuthority returns the CA JWK.

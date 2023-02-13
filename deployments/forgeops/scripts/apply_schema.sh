@@ -1,5 +1,5 @@
 #
-# Copyright 2022 ForgeRock AS
+# Copyright 2022-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,9 +29,11 @@ attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.21 NAME 'thingKeys' DESC 'JWKS contain
 attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.22 NAME 'thingOAuth2ClientName' DESC 'OAuth 2.0 client associated with the thing' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-ORIGIN 'OpenAM' )
 attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.23 NAME 'thingConfig' DESC 'Configuration for things' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-ORIGIN 'OpenAM' )
 attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.24 NAME 'thingProperties' DESC 'Properties of things' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-ORIGIN 'OpenAM' )
-attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.25 NAME 'fr-idm-managed-thing-custom-attrs' EQUALITY caseIgnoreJsonQueryMatch SYNTAX 1.3.6.1.4.1.36733.2.1.3.1 SINGLE-VALUE X-STABILITY 'Internal' X-ORIGIN 'OpenAM' )
+attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.25 NAME 'thingCertificatePem' DESC 'Certificate for things' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-ORIGIN 'OpenAM' )
+attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.26 NAME 'thingCertificateRotate' DESC 'Certificate rotation required for things' SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 X-ORIGIN 'OpenAM' )
+attributeTypes: ( 1.3.6.1.4.1.36733.2.2.1.27 NAME 'fr-idm-managed-thing-custom-attrs' EQUALITY caseIgnoreJsonQueryMatch SYNTAX 1.3.6.1.4.1.36733.2.1.3.1 SINGLE-VALUE X-STABILITY 'Internal' X-ORIGIN 'OpenAM' )
 -
 add: objectClasses
 objectClasses: ( 1.3.6.1.4.1.36733.2.2.2.20 NAME 'fr-iot' DESC 'Auxiliary class for ForgeRock IoT Identity attributes'
- SUP top AUXILIARY MAY ( thingType $ thingKeys $ thingOAuth2ClientName $ thingConfig $ thingProperties $ fr-idm-managed-thing-custom-attrs ) X-ORIGIN 'OpenAM' )
+ SUP top AUXILIARY MAY ( thingType $ thingKeys $ thingOAuth2ClientName $ thingConfig $ thingProperties $ thingCertificatePem $ thingCertificateRotate $ fr-idm-managed-thing-custom-attrs ) X-ORIGIN 'OpenAM' )
 EOF

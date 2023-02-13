@@ -1,9 +1,9 @@
 {
   "metadata" : {
     "realm" : "/",
-    "entityType" : "PatchObjectNode",
+    "entityType" : "EstNode",
     "entityId" : "OrganizationConfig",
-    "uid" : "ou=OrganizationConfig,ou=1.0,ou=PatchObjectNode,ou=services,ou=am-config",
+    "uid" : "ou=OrganizationConfig,ou=1.0,ou=EstNode,ou=services,ou=am-config",
     "sunServiceID" : null,
     "objectClass" : [
       "organizationalunit",
@@ -16,8 +16,8 @@
   "data" : {
     "_id" : "OrganizationConfig",
     "_type" : {
-      "_id" : "PatchObjectNode",
-      "name" : "PatchObjectNode",
+      "_id" : "EstNode",
+      "name" : "EstNode",
       "collection" : false
     }
   }

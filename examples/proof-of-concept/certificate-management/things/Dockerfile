@@ -1,4 +1,4 @@
-FROM golang:1.15-buster
+FROM golang:1.19-buster
 
 WORKDIR /root/things
 

@@ -25,7 +25,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -36,11 +35,11 @@ import (
 )
 
 func copyFile(dest, src string) error {
-	b, err := ioutil.ReadFile(src)
+	b, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(dest, b, 0666)
+	return os.WriteFile(dest, b, 0666)
 }
 
 func TestStore_DefaultPath(t *testing.T) {
@@ -166,12 +165,12 @@ func createDummyCA(currentTime time.Time) (*jose.JSONWebKey, error) {
 	}
 	templateCert :=
 		&x509.Certificate{
-			SerialNumber: serialNumber,
-			Subject:      pkix.Name{CommonName: "ca"},
-			NotBefore:    currentTime.Add(-24 * time.Hour),
-			NotAfter:     currentTime.Add(24 * time.Hour),
-			IsCA: true,
-			KeyUsage: x509.KeyUsageCertSign,
+			SerialNumber:          serialNumber,
+			Subject:               pkix.Name{CommonName: "ca"},
+			NotBefore:             currentTime.Add(-24 * time.Hour),
+			NotAfter:              currentTime.Add(24 * time.Hour),
+			IsCA:                  true,
+			KeyUsage:              x509.KeyUsageCertSign,
 			BasicConstraintsValid: true,
 		}
 	caBytes, err := x509.CreateCertificate(rand.Reader,

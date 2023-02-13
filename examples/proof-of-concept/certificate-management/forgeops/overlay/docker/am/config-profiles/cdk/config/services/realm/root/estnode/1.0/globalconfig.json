@@ -1,0 +1,23 @@
+{
+  "metadata" : {
+    "realm" : null,
+    "entityType" : "EstNode",
+    "entityId" : "GlobalConfig",
+    "uid" : "ou=GlobalConfig,ou=1.0,ou=EstNode,ou=services,ou=am-config",
+    "sunServiceID" : null,
+    "objectClass" : [
+      "top",
+      "organizationalunit"
+    ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_id" : "GlobalConfig",
+    "_type" : {
+      "_id" : "EstNode",
+      "name" : "EstNode",
+      "collection" : false
+    }
+  }
+}

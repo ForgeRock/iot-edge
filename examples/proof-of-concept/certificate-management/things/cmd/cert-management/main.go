@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 ForgeRock AS
+ * Copyright 2022-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,14 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"os"
-	"regexp"
-
 	"encoding/pem"
-	"net/url"
-
+	"fmt"
 	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
+	"net/url"
+	"os"
 )
 
 type csrHandler struct {
@@ -41,44 +36,13 @@ type csrHandler struct {
 	signer  crypto.PrivateKey
 }
 
-func handlerMatch(cb callback.Callback, outputName string) bool {
-	if cb.Type != "StringAttributeInputCallback" {
-		return false
-	}
-	name := ""
-	for _, e := range cb.Output {
-		if e.Name == "name" {
-			name = e.Value.(string)
-			break
-		}
-	}
-	if name != outputName {
-		return false
-	}
-	return true
-}
-
 func (a csrHandler) Handle(cb callback.Callback) (bool, error) {
-	if !handlerMatch(cb, "thingProperties") {
+	if cb.Type == callback.TypeHiddenValueCallback && cb.ID() != "csr" {
 		return false, nil
 	}
-	for i, e := range cb.Input {
-		if ok, _ := regexp.MatchString(`IDToken\d+`, e.Name); ok {
-			csrPem := certificateSigningRequest(a.thingID, a.signer)
-			thingProperties, err := json.Marshal(struct {
-				CSR string `json:"csr"`
-			}{
-				CSR: csrPem,
-			})
-			if err != nil {
-				return false, err
-			}
-			cb.Input[i].Value = base64.StdEncoding.EncodeToString(thingProperties)
-			fmt.Println("--> Providing CSR =", cb.Input[i].Value)
-			return true, nil
-		}
-	}
-	return false, nil
+	csrPem := certificateSigningRequest(a.thingID, a.signer)
+	cb.Input[0].Value = csrPem
+	return true, nil
 }
 
 func certificateSigningRequest(thingID string, signer crypto.PrivateKey) string {
@@ -101,12 +65,12 @@ func certificateSigningRequest(thingID string, signer crypto.PrivateKey) string 
 	return csrPem
 }
 
-func register(deviceID string, amURL *url.URL, keyID string, signer crypto.Signer) thing.Thing {
+func register(tree string, deviceID string, amURL *url.URL, keyID string, signer crypto.Signer) thing.Thing {
 	fmt.Println("--> Register & Authenticate", deviceID)
 	device, err := builder.Thing().
 		ConnectTo(amURL).
 		InRealm("/").
-		WithTree("RegisterThings").
+		WithTree(tree).
 		AuthenticateThing(deviceID, "/", keyID, signer, nil).
 		HandleCallbacksWith(
 			callback.ProofOfPossessionHandler(deviceID, "/", keyID, signer),
@@ -120,12 +84,12 @@ func register(deviceID string, amURL *url.URL, keyID string, signer crypto.Signe
 	return device
 }
 
-func authenticate(deviceID string, amURL *url.URL, keyID string, signer crypto.Signer) thing.Thing {
+func authenticate(tree string, deviceID string, amURL *url.URL, keyID string, signer crypto.Signer) thing.Thing {
 	fmt.Println("--> Authenticate", deviceID)
 	device, err := builder.Thing().
 		ConnectTo(amURL).
 		InRealm("/").
-		WithTree("RegisterThings").
+		WithTree(tree).
 		AuthenticateThing(deviceID, "/", keyID, signer, nil).
 		HandleCallbacksWith(
 			csrHandler{deviceID, signer}).
@@ -140,24 +104,22 @@ func authenticate(deviceID string, amURL *url.URL, keyID string, signer crypto.S
 
 func requestCertificate(device thing.Thing) {
 	fmt.Println("--> Requesting x.509 Certificate")
-	configResponse, _ := device.RequestAttributes("thingConfig")
-	configString, _ := configResponse.GetFirst("thingConfig")
-	configJson := struct {
-		Cert string `json:"cert"`
-	}{}
-	err := json.Unmarshal([]byte(configString), &configJson)
+	certResponse, err := device.RequestAttributes("thingCertificatePem")
+	certString, err := certResponse.GetFirst("thingCertificatePem")
 	if err != nil {
-		fmt.Println("failed to parse config")
+		fmt.Println(certResponse.Content)
+		fmt.Println("request attributes failed", err)
 		os.Exit(1)
 	}
-	block, _ := pem.Decode([]byte(configJson.Cert))
+
+	block, _ := pem.Decode([]byte(certString))
 	if block == nil {
-		fmt.Println("failed to parse PEM")
+		fmt.Println("Failed to parse PEM")
 		os.Exit(1)
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		fmt.Println("failed to parse certificate", err)
+		fmt.Println("Failed to parse certificate", err)
 		os.Exit(1)
 	}
 	fmt.Println("== x.509 Certificate ==",
@@ -167,8 +129,7 @@ func requestCertificate(device thing.Thing) {
 		"\nValidity:", "\n\tNot Before:", cert.NotBefore, "\n\tNot After: ", cert.NotAfter)
 }
 
-func main() {
-	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
+func registerThings(tree string) {
 	deviceID := "Device-8456232771"
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
 	store := secrets.Store{}
@@ -181,7 +142,7 @@ func main() {
 
 	fmt.Println("\nPress Enter to register and authenticate...")
 	fmt.Scanln()
-	device := register(deviceID, amURL, thingKid, thingKey)
+	device := register(tree, deviceID, amURL, thingKid, thingKey)
 
 	fmt.Println("\nPress Enter to request the certificate...")
 	fmt.Scanln()
@@ -189,6 +150,13 @@ func main() {
 
 	fmt.Println("\nPress Enter to re-authenticate and request the certificate...")
 	fmt.Scanln()
-	device = authenticate(deviceID, amURL, thingKid, thingKey)
+	device = authenticate(tree, deviceID, amURL, thingKid, thingKey)
 	requestCertificate(device)
+}
+
+func main() {
+	//thing.SetDebugLogger(log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile))
+
+	tree := os.Getenv("TREE")
+	registerThings(tree)
 }

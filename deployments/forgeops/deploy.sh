@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022 ForgeRock AS
+# Copyright 2022-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,6 +37,11 @@ if [ -n "$2" ]; then
   echo "Overriding platform password: $PLATFORM_PASSWORD"
 fi
 
+if [ -n "$3" ]; then
+  PLUGIN_DIR=$3
+  echo "Plugin directory: $PLUGIN_DIR"
+fi
+
 echo "====================================================="
 echo "Environment variables"
 echo "====================================================="
@@ -50,7 +55,7 @@ echo "CONTAINER_REGISTRY=$CONTAINER_REGISTRY"
 echo "====================================================="
 echo "Configure GCP SDK"
 echo "====================================================="
-gcloud container clusters get-credentials $CLUSTER --zone $ZONE --project $PROJECT
+gcloud container clusters get-credentials "$CLUSTER" --zone "$ZONE" --project "$PROJECT"
 
 echo "====================================================="
 echo "Clone ForgeOps"
@@ -66,34 +71,37 @@ cp -rf "$BASE_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
   cp -rf  "$CUSTOM_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 fi
+if [ -n "$PLUGIN_DIR" ]; then
+  cp -rf "$PLUGIN_DIR"/* "$FORGEOPS_DIR/docker/am"
+fi
 
 echo "====================================================="
 echo "Create '$NAMESPACE' namespace"
 echo "====================================================="
-kubectl create namespace $NAMESPACE || true
-kubens $NAMESPACE
+kubectl create namespace "$NAMESPACE" || true
+kubens "$NAMESPACE"
 
 echo "====================================================="
 echo "Apply IoT secrets"
 echo "====================================================="
 if [ -n "$PLATFORM_PASSWORD" ]; then
-  kubectl create secret generic am-env-secrets --from-literal=AM_PASSWORDS_AMADMIN_CLEAR=$PLATFORM_PASSWORD || true
+  kubectl create secret generic am-env-secrets --from-literal=AM_PASSWORDS_AMADMIN_CLEAR="$PLATFORM_PASSWORD" || true
 fi
 
 echo "====================================================="
 echo "Building AM and IDM"
 echo "====================================================="
-cd $FORGEOPS_DIR/bin
-./forgeops build am --config-profile $CONFIG_PROFILE --default-repo $CONTAINER_REGISTRY
-./forgeops build idm --config-profile $CONFIG_PROFILE --default-repo $CONTAINER_REGISTRY
+cd "$FORGEOPS_DIR/bin"
+./forgeops build am --config-profile $CONFIG_PROFILE --default-repo "$CONTAINER_REGISTRY"
+./forgeops build idm --config-profile $CONFIG_PROFILE --default-repo "$CONTAINER_REGISTRY"
 
 echo "====================================================="
 echo "Installing the Platform"
 echo "====================================================="
-./forgeops install --cdk --fqdn $FQDN
+./forgeops install --cdk --fqdn "$FQDN"
 
 echo "====================================================="
 echo "Applying custom DS schema"
 echo "====================================================="
-kubectl cp $SCRIPTS_DIR/apply_schema.sh ds-idrepo-0:/tmp
+kubectl cp "$SCRIPTS_DIR/apply_schema.sh" ds-idrepo-0:/tmp
 kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"

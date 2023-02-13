@@ -34,6 +34,8 @@ COPY  --chown=forgerock:root config-profiles/${CONFIG_PROFILE}/ /home/forgerock/
 # Use a custom logback. Comment out if you want to use the default json logger.
 COPY --chown=forgerock:root logback.xml /usr/local/tomcat/webapps/am/WEB-INF/classes
 
+COPY --chown=forgerock:root est-node-1.0.0-SNAPSHOT.jar /usr/local/tomcat/webapps/am/WEB-INF/lib
+
 COPY --chown=forgerock:root *.sh /home/forgerock/
 
 WORKDIR /home/forgerock/openam
