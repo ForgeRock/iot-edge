@@ -72,7 +72,7 @@ if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
   cp -rf  "$CUSTOM_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 fi
 if [ -n "$PLUGIN_DIR" ]; then
-  cp -rf "$PLUGIN_DIR"/* "$FORGEOPS_DIR/docker/am"
+  cp -rf "$PLUGIN_DIR" "$FORGEOPS_DIR/docker"
 fi
 
 echo "====================================================="

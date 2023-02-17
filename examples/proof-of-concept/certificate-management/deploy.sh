@@ -18,7 +18,7 @@ set -e
 #
 
 CUSTOM_NODE_DIR=$(PWD)/auth-nodes
-PLUGIN_DIR=$(PWD)/forgeops/tmp
+PLUGIN_DIR=$(PWD)/forgeops/tmp/am
 FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
 
