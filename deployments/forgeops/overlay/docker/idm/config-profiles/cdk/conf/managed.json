@@ -55,7 +55,8 @@
           "memberOfOrg",
           "memberOfOrgIDs",
           "activeDate",
-          "inactiveDate"
+          "inactiveDate",
+          "things"
         ],
         "properties": {
           "_id": {
@@ -929,6 +930,54 @@
             "usageDescription": "",
             "userEditable": true,
             "viewable": true
+          },
+          "things" : {
+            "description" : "",
+            "title" : "Things",
+            "viewable" : true,
+            "searchable" : false,
+            "userEditable" : false,
+            "policies" : [ ],
+            "returnByDefault" : false,
+            "minLength" : null,
+            "pattern" : "",
+            "notifySelf" : false,
+            "type" : "array",
+            "items" : {
+              "type" : "relationship",
+              "reverseRelationship" : true,
+              "reversePropertyName" : "users",
+              "validate" : false,
+              "properties" : {
+                "_ref" : {
+                  "type" : "string"
+                },
+                "_refProperties" : {
+                  "type" : "object",
+                  "properties" : {
+                    "_id" : {
+                      "type" : "string",
+                      "required" : false,
+                      "propName" : "_id"
+                    }
+                  }
+                }
+              },
+              "resourceCollection" : [
+                {
+                  "path" : "managed/thing",
+                  "label" : "Thing",
+                  "query" : {
+                    "queryFilter" : "true",
+                    "fields" : [
+                      "_id"
+                    ],
+                    "sortKeys" : [ ]
+                  },
+                  "notify" : false
+                }
+              ]
+            }
           },
           "userName": {
             "description": "Username",

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+set -e
 
 #
-# Copyright 2020 ForgeRock AS
+# Copyright 2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,24 +17,20 @@
 # limitations under the License.
 #
 
-PLATFORM_PASSWORD=
-if [ -n "$1" ]; then
-  PLATFORM_PASSWORD=$1
-fi
-
-OVERLAY_DIR=$(PWD)/forgeops
+CONNECTOR_DIR=$(PWD)/iot-hub-connector
+PLUGIN_DIR=$(PWD)/forgeops/tmp/idm
 DEPLOYMENT_DIR=$(PWD)/../../../deployments/forgeops
+OVERLAY_DIR=$(PWD)/forgeops/overlay
 
 echo "====================================================="
 echo "Build the connector"
 echo "====================================================="
-cd iot-hub-connector
-mvn clean install
-rm -rf ../forgeops/docker/7.0/idm/connectors && mkdir -p ../forgeops/docker/7.0/idm/connectors
-cp target/azure-iot-hub-connector-0.1-SNAPSHOT.jar ../forgeops/docker/7.0/idm/connectors/azure-iot-hub-connector-0.1-SNAPSHOT.jar
+cd "$CONNECTOR_DIR"
+./build.sh "$PLUGIN_DIR"
 
 echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$DEPLOYMENT_DIR"
-./run.sh "$OVERLAY_DIR" "$PLATFORM_PASSWORD"
+./deploy.sh "$OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
+

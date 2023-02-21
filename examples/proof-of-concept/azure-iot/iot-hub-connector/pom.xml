@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  Copyright 2016-2020 ForgeRock AS. All Rights Reserved
+  Copyright 2016-2023 ForgeRock AS. All Rights Reserved
 
   Use of this code requires a commercial software license with ForgeRock AS.
   or with one of its affiliates. All use shall be exclusively subject
@@ -28,6 +28,7 @@
         <connectorClass>AzureIotHubConnector</connectorClass>
         <framework.compatibilityVersion>1.4</framework.compatibilityVersion>
         <framework.releaseVersion>1.0</framework.releaseVersion>
+        <openicf.version>1.5.2.0</openicf.version>
     </properties>
     <repositories>
         <repository>
@@ -46,11 +47,48 @@
                 <enabled>false</enabled>
             </releases>
         </repository>
+        <repository>
+            <id>forgerock-internal-releases</id>
+            <name>ForgeRock Internal Releases Repository</name>
+            <url>http://maven.forgerock.org/repo/internal-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>forgerock-internal-snapshots</id>
+            <name>ForgeRock Internal Snapshots Repository</name>
+            <url>http://maven.forgerock.org/repo/internal-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
             <groupId>org.forgerock.openicf.framework</groupId>
             <artifactId>connector-framework</artifactId>
+            <version>${openicf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.openicf.framework</groupId>
+            <artifactId>connector-framework-internal</artifactId>
+            <version>${openicf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.openicf.framework</groupId>
+            <artifactId>connector-framework-rpc</artifactId>
+            <version>${openicf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.openicf.framework</groupId>
+            <artifactId>connector-framework-protobuf</artifactId>
+            <version>${openicf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.openicf.framework</groupId>
+            <artifactId>connector-framework-server</artifactId>
+            <version>${openicf.version}</version>
         </dependency>
 
         <dependency>
@@ -71,11 +109,6 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.forgerock.openicf.framework</groupId>
-            <artifactId>connector-framework-internal</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

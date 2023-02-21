@@ -1,2 +1,3 @@
+# tmp directories
 /iot-hub-connector/target/
-/forgeops/docker/7.0/idm/connectors
+tmp/
