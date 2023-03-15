@@ -6,14 +6,14 @@ and authorized before being allowed to publish or subscribe to messages.
  
 This integration example demonstrates how the ForgeRock Platform with ForgeRock IoT can be used to facilitate custom
 authentication with AWS IoT. It is built on top of
-[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7/index-forgeops.html) with added
-configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/things/7). It includes a collection of
+[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.2/index-forgeops.html) with added
+configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.2). It includes a collection of
 scripts for configuring AWS IoT, deploying the ForgeRock Platform to the Google Kubernetes Engine and running the
 device client.
 
 In addition to custom authentication the example also demonstrates how existing AWS IoT thing identities can be
 synchronized to the ForgeRock Platform using an ICF Connector, integrated into
-[ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7).
+[ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7.2).
 
 #### Integration Components
 ![Components](docs/aws-iot-integration.png)

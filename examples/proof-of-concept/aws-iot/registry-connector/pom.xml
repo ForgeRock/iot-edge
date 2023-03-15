@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  Copyright 2016-2020 ForgeRock AS. All Rights Reserved
+  Copyright 2016-2023 ForgeRock AS. All Rights Reserved
 
   Use of this code requires a commercial software license with ForgeRock AS.
   or with one of its affiliates. All use shall be exclusively subject
@@ -28,6 +28,7 @@
         <connectorClass>AwsRegistryHubConnector</connectorClass>
         <framework.compatibilityVersion>1.4</framework.compatibilityVersion>
         <framework.releaseVersion>1.0</framework.releaseVersion>
+        <openicf.version>1.5.2.0</openicf.version>
     </properties>
     <repositories>
         <repository>
@@ -46,6 +47,14 @@
                 <enabled>false</enabled>
             </releases>
         </repository>
+        <repository>
+            <id>forgerock-internal-releases</id>
+            <name>ForgeRock Internal Releases Repository</name>
+            <url>http://maven.forgerock.org/repo/internal-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
     <dependencyManagement>
         <dependencies>
@@ -62,7 +71,7 @@
         <dependency>
             <groupId>org.forgerock.openicf.framework</groupId>
             <artifactId>connector-framework</artifactId>
-            <scope>provided</scope>
+            <version>${openicf.version}</version>
         </dependency>
 
         <dependency>

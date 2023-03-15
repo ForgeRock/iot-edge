@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2020-2023 ForgeRock AS
+# Copyright 2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,18 @@ set -e
 # limitations under the License.
 #
 
-AM_URL=https://$FQDN/am
+if [ -n "$1" ]; then
+  PLUGIN_DIR=$1
+  echo "Plugin directory: $PLUGIN_DIR"
+fi
 
-go mod download
-go run client -am-base-url "${AM_URL}" -aws-iot-endpoint "${AWS_IOT_ENDPOINT}"
+if [ -z "$PLUGIN_DIR" ]; then
+  echo "Plugin directory must not be empty"
+exit 1
+fi
+
+CONNECTOR_DIR=$PLUGIN_DIR/connectors
+
+mvn clean install
+rm -rf "$CONNECTOR_DIR" && mkdir -p "$CONNECTOR_DIR"
+cp target/aws-registry-connector-0.1-SNAPSHOT.jar "$CONNECTOR_DIR"
