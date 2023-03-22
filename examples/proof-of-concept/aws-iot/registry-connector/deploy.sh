@@ -29,12 +29,15 @@ users=$(aws iam list-users --query "Users[?UserName == '${AWS_REGISTRY_MANAGEMEN
 if [ "${users}" == "[]" ]; then
   echo "Creating IoT management user [$AWS_REGISTRY_MANAGEMENT_USER]"
   aws iam create-user \
-    --user-name ${AWS_REGISTRY_MANAGEMENT_USER}
+    --user-name ${AWS_REGISTRY_MANAGEMENT_USER} \
+    --no-cli-pager
   aws iam create-access-key \
-    --user-name ${AWS_REGISTRY_MANAGEMENT_USER} > iot-access-key.secret
+    --user-name ${AWS_REGISTRY_MANAGEMENT_USER} > iot-access-key.secret \
+    --no-cli-pager
   aws iam attach-user-policy \
     --user-name ${AWS_REGISTRY_MANAGEMENT_USER} \
-    --policy-arn arn:aws:iam::aws:policy/AWSIoTFullAccess
+    --policy-arn arn:aws:iam::aws:policy/AWSIoTFullAccess \
+    --no-cli-pager
 fi
 
 # Create a thing with a UUID as the name if it does not exist yet
@@ -43,5 +46,6 @@ if [ "${things}" == "[]" ]; then
   echo "Creating IoT thing [$AWS_THING_NAME]"
   aws iot create-thing \
     --thing-name ${AWS_THING_NAME} \
-    --attribute-payload "attributes={host=localhost,port=5154},merge=true"
+    --attribute-payload "attributes={host=localhost,port=5154},merge=true" \
+    --no-cli-pager
 fi

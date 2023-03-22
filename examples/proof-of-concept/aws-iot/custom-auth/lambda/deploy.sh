@@ -32,12 +32,13 @@ if [ "${roles}" == "[]" ]; then
   echo "Creating execution role..."
   aws iam create-role \
     --role-name ${AWS_ROLE_NAME} \
-    --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
-
+    --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}' \
+    --no-cli-pager
 fi
 aws iam attach-role-policy \
   --role-name ${AWS_ROLE_NAME} \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole \
+  --no-cli-pager
 
 # Give the role some time to settle
 sleep 5
@@ -58,7 +59,8 @@ else
     --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/${AWS_ROLE_NAME} \
     --runtime go1.x \
     --zip-file fileb://handler.zip \
-    --handler authhandler
+    --handler authhandler \
+    --no-cli-pager
 
   # Add the environment variables required by the Lambda
   aws lambda update-function-configuration \
@@ -71,7 +73,8 @@ else
       --principal iot.amazonaws.com \
       --source-arn arn:aws:iot:${AWS_REGION}:${AWS_ACCOUNT_ID}:authorizer/${AWS_AUTHORIZER_NAME} \
       --statement-id autherizer-statement \
-      --action "lambda:InvokeFunction"
+      --action "lambda:InvokeFunction" \
+      --no-cli-pager
 fi
 cd - &>/dev/null
 
@@ -85,7 +88,8 @@ if [[ ${authorizers} =~ ${AWS_AUTHORIZER_NAME} ]]; then
       --authorizer-function-arn arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${AWS_FUNCTION_NAME} \
       --token-key-name ${AWS_TOKEN_HEADER_NAME} \
       --token-signing-public-keys FIRST_KEY="${device_public_key}" \
-      --status ACTIVE
+      --status ACTIVE \
+      --no-cli-pager
 else
   echo "Creating authorizer..."
   aws iot create-authorizer \
@@ -93,5 +97,6 @@ else
       --authorizer-function-arn arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${AWS_FUNCTION_NAME} \
       --token-key-name ${AWS_TOKEN_HEADER_NAME} \
       --token-signing-public-keys FIRST_KEY="${device_public_key}" \
-      --status ACTIVE
+      --status ACTIVE \
+      --no-cli-pager
 fi

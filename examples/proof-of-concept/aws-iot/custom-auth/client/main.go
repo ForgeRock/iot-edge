@@ -32,7 +32,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/golang-jwt/jwt/v4"

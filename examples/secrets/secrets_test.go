@@ -54,6 +54,18 @@ func TestStore_DefaultPath(t *testing.T) {
 	os.Remove(".secrets")
 }
 
+func TestStore_InMemory(t *testing.T) {
+	store := &Store{InMemory: true}
+	_, err := store.Signer(uuid.New().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(".secrets"); err == nil {
+		os.Remove(".secrets")
+		t.Fatal("Not expecting secrets file on disk")
+	}
+}
+
 func TestStore_Signer(t *testing.T) {
 	// copy reference secrets
 	preexisting := "dopey.secrets"

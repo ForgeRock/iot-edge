@@ -54,7 +54,62 @@ This diagram illustrates identity synchronization and device management.
   device configuration, and it will automatically be synchronized between ForgeRock and AWS.
  - A user may request access to a device or to a device's resources.
  - Access is authorized by the ForgeRock Platform based on the relationship that exists between the user and the device.
- 
+
+#### Run the ForgeRock Platform
+*This example requires you to have a high level of familiarity with ForgeOps and the ForgeRock IoT Solution. Contact
+ForgeRock for a demonstration of the solution.*
+
+##### Prerequisites
+* You have installed or upgraded AWS CLI to version 2.
+
+##### To Deploy
+Follow the ForgeOps documentation to install the
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/clusterinfo.html).
+
+Set the following environment variables:
+```
+export PROJECT=<The name of the Google Cloud project that contains the cluster>
+export CLUSTER=<The cluster name>
+export ZONE=<The Google Cloud zone in which the cluster resides>
+export NAMESPACE=<The namespace to use in your cluster>
+export FQDN=<The fully qualified domain name of your deployment>
+export CONTAINER_REGISTRY=<The default container registry>
+export AWS_ACCOUNT_ID=<The account ID of the AWS account>
+export AWS_REGION=<The region of the AWS account>
+export AWS_IOT_ENDPOINT=<The AWS endpoint used to publish messages>
+```
+
+After installing the Google Cloud SDK, authenticate the SDK:
+```
+gcloud auth login
+```
+
+Deploy the Things CDK to GKE:
+```
+./deploy.sh
+```
+
+#### Run example client
+The client example will demonstrate how to register and authenticate a thing before publishing the message "Hello from client!" to the topic */customauthtesting*.
+
+Run the client.
+```
+./run.sh
+```
+
+Expected Outcome:
+```
+=====================================================
+Running the client
+=====================================================
+<YYYY-MM-DD HH:mm:ss> Register device with id:  47cf707c-80c1-4816-b067-99db2a443113
+<YYYY-MM-DD HH:mm:ss> Requesting OAuth 2.0 access token:
+<YYYY-MM-DD HH:mm:ss> eyJ0eXA...
+<YYYY-MM-DD HH:mm:ss> Publish message for device:
+ {"msg":"Hello from client!"}
+```
+
 #### References
 - [AWS IoT](https://docs.aws.amazon.com/iot/latest/developerguide/what-is-aws-iot.html)
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html)

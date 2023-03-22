@@ -24,18 +24,22 @@ AWS_AUTHORIZER_NAME="iot-custom-authorizer"
 # Delete the execution role
 aws iam detach-role-policy \
   --role-name ${AWS_ROLE_NAME} \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole \
+  --no-cli-pager
 aws iam delete-role \
   --role-name ${AWS_ROLE_NAME}
 
 # Delete the lambda
 aws lambda delete-function \
-  --function-name ${AWS_FUNCTION_NAME}
+  --function-name ${AWS_FUNCTION_NAME} \
+  --no-cli-pager
 
 # Delete the custom authorizer
 aws iot update-authorizer \
   --authorizer-name ${AWS_AUTHORIZER_NAME} \
-  --status INACTIVE
+  --status INACTIVE \
+  --no-cli-pager
 
 aws iot delete-authorizer \
-  --authorizer-name ${AWS_AUTHORIZER_NAME}
+  --authorizer-name ${AWS_AUTHORIZER_NAME} \
+  --no-cli-pager
