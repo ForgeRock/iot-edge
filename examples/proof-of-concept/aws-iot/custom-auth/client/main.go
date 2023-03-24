@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 ForgeRock AS
+ * Copyright 2019-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/ForgeRock/iot-edge/examples/secrets"
@@ -165,7 +165,7 @@ func tokenSignature(token string) string {
 }
 
 func privateKey() *rsa.PrivateKey {
-	keyData, err := ioutil.ReadFile(devicePrivateKeyLocation)
+	keyData, err := os.ReadFile(devicePrivateKeyLocation)
 	if err != nil {
 		log.Fatal("Failed to read private key: " + err.Error())
 	}

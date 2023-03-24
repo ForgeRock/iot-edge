@@ -28,7 +28,10 @@ exit 1
 fi
 
 CONNECTOR_DIR=$PLUGIN_DIR/connectors
+LIB_DIR=$PLUGIN_DIR/lib
 
 mvn clean install
 rm -rf "$CONNECTOR_DIR" && mkdir -p "$CONNECTOR_DIR"
+rm -rf "$LIB_DIR" && mkdir -p "$LIB_DIR"
 cp target/aws-registry-connector-0.1-SNAPSHOT.jar "$CONNECTOR_DIR"
+cp target/lib/* "$LIB_DIR"

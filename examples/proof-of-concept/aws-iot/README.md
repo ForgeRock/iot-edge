@@ -78,6 +78,7 @@ export CONTAINER_REGISTRY=<The default container registry>
 export AWS_ACCOUNT_ID=<The account ID of the AWS account>
 export AWS_REGION=<The region of the AWS account>
 export AWS_IOT_ENDPOINT=<The AWS endpoint used to publish messages>
+export AWS_PAGER=""
 ```
 
 After installing the Google Cloud SDK, authenticate the SDK:
@@ -90,7 +91,7 @@ Deploy the Things CDK to GKE:
 ./deploy.sh
 ```
 
-#### Run example client
+#### Run Example Client
 The client example will demonstrate how to register and authenticate a thing before publishing the message "Hello from client!" to the topic */customauthtesting*.
 
 Run the client.
@@ -109,6 +110,14 @@ Running the client
 <YYYY-MM-DD HH:mm:ss> Publish message for device:
  {"msg":"Hello from client!"}
 ```
+
+#### Using the Connector in IDM
+To configure the connector, you will need an AWS access key ID and secret access key for your AWS account.
+
+The **Connector Name** field *must* be set to *AWSIoTRegistry*, as this is case-sensitive.
+
+The current configuration only accepts 36-byte UUIDs for identities, therefore any device ID stored in
+the AWS IoT Registry must follow this format.
 
 #### References
 - [AWS IoT](https://docs.aws.amazon.com/iot/latest/developerguide/what-is-aws-iot.html)
