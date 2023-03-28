@@ -75,9 +75,10 @@ export ZONE=<The Google Cloud zone in which the cluster resides>
 export NAMESPACE=<The namespace to use in your cluster>
 export FQDN=<The fully qualified domain name of your deployment>
 export CONTAINER_REGISTRY=<The default container registry>
-export AWS_ACCOUNT_ID=<The account ID of the AWS account>
-export AWS_REGION=<The region of the AWS account>
-export AWS_IOT_ENDPOINT=<The AWS endpoint used to publish messages>
+export AWS_ACCOUNT_ID=1234567890
+export AWS_REGION=us-west-2
+# The AWS IoT endpoint can be retrieve with the CLI command: `aws iot describe-endpoint`
+export AWS_IOT_ENDPOINT=abc123defghijk.iot.us-west-2.amazonaws.com
 export AWS_PAGER=""
 ```
 
