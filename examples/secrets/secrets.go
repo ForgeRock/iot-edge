@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,11 @@ var maxSerialNumber = new(big.Int).Exp(big.NewInt(2), big.NewInt(159), nil)
 
 // Store for keys and certificates for Things
 type Store struct {
-	Path        string // location of key store on disk
-	caJWK       *jose.JSONWebKey
-	currentTime time.Time
+	Path           string // location of key store on disk
+	InMemory       bool
+	inMemoryKeySet jose.JSONWebKeySet
+	caJWK          *jose.JSONWebKey
+	currentTime    time.Time
 }
 
 // filepath returns the location of key store on disk. Defaults to ".secrets".
@@ -61,8 +63,13 @@ func (s *Store) filepath() string {
 	return ".secrets"
 }
 
-// read the key set from disc.
+// read the key set from disk or memory.
 func (s *Store) read() (keySet jose.JSONWebKeySet, err error) {
+	if s.InMemory {
+		return s.inMemoryKeySet, err
+	}
+
+	// Otherwise read from disk
 	keySetBytes, err := os.ReadFile(s.filepath())
 	switch {
 	case err == nil:
@@ -74,9 +81,16 @@ func (s *Store) read() (keySet jose.JSONWebKeySet, err error) {
 	return keySet, err
 }
 
-// write the key set to disk.
-// If the key set file does not exist, a new file is created. Otherwise, the existing file contents is replaced.
+// write the key set to disk or memory.
+// If writing to disk and the key set file does not exist, a new file is created. Otherwise, the existing file content
+// is replaced.
 func (s *Store) write(keySet jose.JSONWebKeySet) error {
+	if s.InMemory {
+		s.inMemoryKeySet = keySet
+		return nil
+	}
+
+	// Otherwise write file to disk
 	b, err := json.MarshalIndent(keySet, "", "  ")
 	if err != nil {
 		return err

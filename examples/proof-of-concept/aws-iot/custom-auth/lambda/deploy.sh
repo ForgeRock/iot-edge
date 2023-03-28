@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2019-2020 ForgeRock AS
+# Copyright 2019-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@ set -e
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-source ../../.env
 
 POC_DIR=$(PWD)/../../
 AWS_FUNCTION_NAME="iot-custom-authorize-handler"
@@ -35,7 +33,6 @@ if [ "${roles}" == "[]" ]; then
   aws iam create-role \
     --role-name ${AWS_ROLE_NAME} \
     --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
-
 fi
 aws iam attach-role-policy \
   --role-name ${AWS_ROLE_NAME} \

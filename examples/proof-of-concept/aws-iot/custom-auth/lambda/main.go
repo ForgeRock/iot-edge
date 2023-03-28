@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 ForgeRock AS
+ * Copyright 2019-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -82,7 +82,8 @@ func (c *policyClient) handleRequest(ctx context.Context, event IoTCustomAuthori
 		log.Printf("Introspection error: %v\n", err)
 		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
 	}
-	if !tokenInfo.Active() {
+	active, err := tokenInfo.Active()
+	if !active || err != nil {
 		log.Printf("Access token is not active")
 		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
 	}
@@ -95,11 +96,12 @@ func (c *policyClient) handleRequest(ctx context.Context, event IoTCustomAuthori
 	}
 	principleID := strings.ReplaceAll(sub, "-", "")
 
-	scope, err := tokenInfo.Content.GetStringArray("scope")
+	scopeString, err := tokenInfo.Content.GetString("scope")
 	if err != nil {
 		log.Printf("Token info error: %v: %v\n", err, tokenInfo)
 		return IoTCustomAuthorizerResponse{}, errors.New("unauthorized")
 	}
+	scope := strings.Split(scopeString, " ")
 
 	policyDocument, err := policyDocument(scope)
 	if err != nil {
@@ -132,7 +134,7 @@ func introspect(authorizationTokenJson string) (introspection thing.Introspectio
 		return
 	}
 	thingID := "572ddcde-1532-4175-861b-0622ac2f3bf3"
-	store := secrets.Store{}
+	store := secrets.Store{InMemory: true}
 	signer, err := store.Signer(thingID)
 	if err != nil {
 		log.Fatal(err)

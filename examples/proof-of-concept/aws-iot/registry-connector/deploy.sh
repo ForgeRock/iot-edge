@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2020 ForgeRock AS
+# Copyright 2020-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,16 +17,12 @@ set -e
 # limitations under the License.
 #
 
-POC_DIR=$(PWD)/../
+PLUGIN_DIR=$(PWD)/../forgeops/tmp/idm
 AWS_REGISTRY_MANAGEMENT_USER="iot-registry-management-user"
 AWS_THING_NAME="f971a95b-2fc6-4ce2-aed6-84f8c6cf6b05"
 
 # Build the connector
-mvn clean install
-rm -rf $POC_DIR/forgeops/docker/7.0/idm/connectors && mkdir -p $POC_DIR/forgeops/docker/7.0/idm/connectors
-rm -rf $POC_DIR/forgeops/docker/7.0/idm/lib && mkdir -p $POC_DIR/forgeops/docker/7.0/idm/lib
-cp target/aws-registry-connector-0.1-SNAPSHOT.jar $POC_DIR/forgeops/docker/7.0/idm/connectors/aws-registry-connector-0.1-SNAPSHOT.jar
-cp target/lib/* $POC_DIR/forgeops/docker/7.0/idm/lib
+./build.sh "$PLUGIN_DIR"
 
 # Create the AWS IoT registry management user if it does not exist yet
 users=$(aws iam list-users --query "Users[?UserName == '${AWS_REGISTRY_MANAGEMENT_USER}']")
