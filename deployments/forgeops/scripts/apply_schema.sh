@@ -21,6 +21,10 @@ ldapmodify \
         --bindDN uid=admin \
         --bindPassword $(cat $DS_UID_ADMIN_PASSWORD_FILE) \
         --trustAll <<EOF
+dn: ou=things,ou=identities
+objectClass: top
+objectClass: organizationalUnit
+
 dn: cn=schema
 changetype: modify
 add: attributeTypes

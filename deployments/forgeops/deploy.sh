@@ -62,7 +62,7 @@ echo "Clone ForgeOps"
 echo "====================================================="
 rm -rf "$FORGEOPS_DIR" && mkdir -p "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
-git checkout release/7.2.0
+git checkout release/7.3-20230404
 
 echo "====================================================="
 echo "Overlay base and custom files"
@@ -92,8 +92,12 @@ echo "====================================================="
 echo "Building AM and IDM"
 echo "====================================================="
 cd "$FORGEOPS_DIR/bin"
-./forgeops build am --config-profile $CONFIG_PROFILE --default-repo "$CONTAINER_REGISTRY"
-./forgeops build idm --config-profile $CONFIG_PROFILE --default-repo "$CONTAINER_REGISTRY"
+./forgeops build am --config-profile $CONFIG_PROFILE --push-to "$CONTAINER_REGISTRY"
+#./forgeops build idm --config-profile $CONFIG_PROFILE --push-to "$CONTAINER_REGISTRY"
+
+#cd "$FORGEOPS_DIR"
+#docker buildx build --platform linux/amd64 docker/idm --tag "$CONTAINER_REGISTRY/idm:latest"
+#docker push "$CONTAINER_REGISTRY/idm:latest"
 
 echo "====================================================="
 echo "Installing the Platform"
@@ -105,3 +109,6 @@ echo "Applying custom DS schema"
 echo "====================================================="
 kubectl cp "$SCRIPTS_DIR/apply_schema.sh" ds-idrepo-0:/tmp
 kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"
+
+rm -rf "$FORGEOPS_DIR/docker/idm/config-profiles/cdk"
+./config export idm cdk --sort

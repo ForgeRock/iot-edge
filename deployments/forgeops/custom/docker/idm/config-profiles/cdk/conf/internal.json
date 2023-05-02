@@ -1,0 +1,53 @@
+{
+  "objects": [
+    {
+      "name": "role",
+      "properties": {
+        "authzMembers": {
+          "items": {
+            "resourceCollection": [
+              {
+                "conditionalAssociation": true,
+                "label": "User",
+                "notify": true,
+                "path": "managed/user",
+                "query": {
+                  "fields": [
+                    "userName",
+                    "givenName",
+                    "sn"
+                  ],
+                  "queryFilter": "true"
+                }
+              },
+              {
+                "path" : "managed/thing",
+                "conditionalAssociation" : true,
+                "notify" : true,
+                "label" : "Thing",
+                "query" : {
+                  "queryFilter" : "true",
+                  "fields" : [
+                    "cn"
+                  ]
+                }
+              },
+              {
+                "path" : "managed/oauthThing",
+                "conditionalAssociation" : true,
+                "notify" : true,
+                "label" : "OAuth 2.0 Thing",
+                "query" : {
+                  "queryFilter" : "true",
+                  "fields" : [
+                    "_id"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
