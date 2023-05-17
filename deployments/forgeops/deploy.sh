@@ -20,6 +20,7 @@ set -e
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 SCRIPTS_DIR=$(PWD)/scripts
 BASE_OVERLAY_DIR=$(PWD)/overlay
+CUSTOM_DIR=$(PWD)/custom
 CONFIG_PROFILE=cdk
 
 if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" || -z "$CONTAINER_REGISTRY" ]]; then
@@ -89,19 +90,16 @@ if [ -n "$PLATFORM_PASSWORD" ]; then
 fi
 
 echo "====================================================="
-echo "Building AM and IDM"
+echo "Build and deploy AM"
 echo "====================================================="
 cd "$FORGEOPS_DIR/bin"
 ./forgeops build am --config-profile $CONFIG_PROFILE --push-to "$CONTAINER_REGISTRY"
-#./forgeops build idm --config-profile $CONFIG_PROFILE --push-to "$CONTAINER_REGISTRY"
-
-#cd "$FORGEOPS_DIR"
-#docker buildx build --platform linux/amd64 docker/idm --tag "$CONTAINER_REGISTRY/idm:latest"
-#docker push "$CONTAINER_REGISTRY/idm:latest"
+./forgeops build am --config-profile $CONFIG_PROFILE --push-to "$CONTAINER_REGISTRY"
 
 echo "====================================================="
 echo "Installing the Platform"
 echo "====================================================="
+cd "$FORGEOPS_DIR/bin"
 ./forgeops install --cdk --fqdn "$FQDN"
 
 echo "====================================================="
@@ -110,5 +108,19 @@ echo "====================================================="
 kubectl cp "$SCRIPTS_DIR/apply_schema.sh" ds-idrepo-0:/tmp
 kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"
 
+echo "====================================================="
+echo "Build and deploy IDM"
+echo "====================================================="
 rm -rf "$FORGEOPS_DIR/docker/idm/config-profiles/cdk"
 ./config export idm cdk --sort
+
+cp -rf "$CUSTOM_DIR/docker/idm/config-profiles/cdk" "$FORGEOPS_DIR/docker/idm/config-profiles"
+cp -rf "$CUSTOM_DIR/kustomize/deploy/image-defaulter/kustomization.yaml" "$FORGEOPS_DIR/kustomize/deploy/image-defaulter/kustomization.yaml"
+
+cd "$FORGEOPS_DIR"
+docker buildx build --platform linux/amd64 docker/idm --tag "$CONTAINER_REGISTRY/idm:latest"
+docker push "$CONTAINER_REGISTRY/idm:latest"
+
+cd "$FORGEOPS_DIR/bin"
+./forgeops delete idm -y
+./forgeops install idm --cdk

@@ -1,4 +1,4 @@
-FROM gcr.io/forgerock-io/am-cdk/pull-requests:7.4.0-PR-18491-3-eae227028df891f353202eda35a691a04b1b4197
+FROM gcr.io/forgerock-io/am-cdk/pull-requests:7.4.0-PR-18491-4-bfc4ced970beccc083ed4ec9ed5f896ccd1242d6
 
 ARG CONFIG_PROFILE=cdk
 RUN echo "\033[0;36m*** Building '${CONFIG_PROFILE}' profile ***\033[0m"

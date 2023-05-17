@@ -17,8 +17,6 @@ set -e
 # limitations under the License.
 #
 
-NAMESPACE=iot-test
-CONTAINER_REGISTRY=gcr.io/engineering-devops/$NAMESPACE
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 CUSTOM_DIR=$(PWD)/custom
 
