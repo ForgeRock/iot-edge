@@ -17,26 +17,50 @@ set -e
 # limitations under the License.
 #
 
-CONNECTOR_DIR=$(PWD)/registry-connector
 LAMBDA_DIR=$(PWD)/custom-auth/lambda
 DEPLOYMENT_DIR=$(PWD)/../../../deployments/forgeops
-OVERLAY_DIR=$(PWD)/forgeops/overlay
-PLUGIN_DIR=$(PWD)/forgeops/tmp/idm
+FORGEOPS_DIR=$DEPLOYMENT_DIR/tmp/forgeops
+
+if [ -n "$1" ]; then
+  CONNECTOR_TYPE=$1
+  echo "Connector specified: $CONNECTOR_TYPE"
+else
+  echo "No connector specified, defaulting to Java connector..."
+fi
 
 echo "====================================================="
 echo "Build and deploy the connector"
 echo "====================================================="
+if [ "$CONNECTOR_TYPE" = "scriptedrest" ]; then
+  CONNECTOR_DIR=$(PWD)/scriptedrest-connector
+else
+  CONNECTOR_DIR=$(PWD)/registry-connector
+fi
+
+OVERLAY_DIR=$CONNECTOR_DIR/forgeops/overlay
+PLUGIN_DIR=$CONNECTOR_DIR/../forgeops/tmp/idm
+
 cd "$CONNECTOR_DIR"
 ./deploy.sh
 
-echo "====================================================="
-echo "Deploy and configure AWS custom authorizer function"
-echo "====================================================="
-cd "$LAMBDA_DIR"
-./deploy.sh
+if [ "$CONNECTOR_TYPE" != "scriptedrest" ]; then
+  echo "====================================================="
+  echo "Deploy and configure AWS custom authorizer function"
+  echo "====================================================="
+  cd "$LAMBDA_DIR"
+  ./deploy.sh
+fi
 
 echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$DEPLOYMENT_DIR"
 ./deploy.sh "$OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
+
+echo "====================================================="
+echo "Build new IDM image and redeploy"
+echo "====================================================="
+cd "$FORGEOPS_DIR"
+./bin/forgeops build idm --config-profile cdk --default-repo "$CONTAINER_REGISTRY"
+./bin/forgeops delete idm
+./bin/forgeops install idm --cdk

@@ -62,6 +62,25 @@ ForgeRock for a demonstration of the solution.*
 ##### Prerequisites
 * You have installed or upgraded AWS CLI to version 2.
 
+#### Configuration
+To configure these connectors, you will need an AWS access key ID and secret access key for your AWS account.
+
+The current configuration only accepts 36-byte UUIDs for identities, therefore any device ID stored in
+the AWS IoT Registry must follow this format.
+
+###### Java Connector
+The **Connector Name** field *must* be set to ```AWSIoTRegistry```, as this is case-sensitive.
+
+###### Scripted REST Connector
+This example has been built using the Scripted REST Connector *(v1.5.20.11)* obtainable from [ForgeRock Backstage](https://backstage.forgerock.com/downloads/browse/idm/featured/connectors).
+
+Ensure the JAR is stored in the ```scriptedrest-connector/target``` directory.
+
+Update the following variables within the Search (```SearchScript.groovy```) and Sync Groovy scripts (```SyncScript.groovy```) to match your credentials
+* Access key ID (```ACCESS_KEY```)
+* Secret access key (```SECRET_KEY```)
+* (IoT) Region (```AWS_REGION```)
+
 ##### To Deploy
 Follow the ForgeOps documentation to install the
 [third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
@@ -76,7 +95,7 @@ export NAMESPACE=<The namespace to use in your cluster>
 export FQDN=<The fully qualified domain name of your deployment>
 export CONTAINER_REGISTRY=<The default container registry>
 export AWS_ACCOUNT_ID=1234567890
-export AWS_REGION=us-west-2
+export AWS_REGION=us-east-1
 # The AWS IoT endpoint can be retrieve with the CLI command: `aws iot describe-endpoint`
 export AWS_IOT_ENDPOINT=abc123defghijk.iot.us-west-2.amazonaws.com
 export AWS_PAGER=""
@@ -87,9 +106,25 @@ After installing the Google Cloud SDK, authenticate the SDK:
 gcloud auth login
 ```
 
-Deploy the Things CDK to GKE:
+Deploy the Things CDK to GKE using one of the connectors:
 ```
+# AWS Java connector (default)
 ./deploy.sh
+
+# Scripted REST connector
+./deploy.sh scriptedrest
+```
+NOTE: If you leave the parameter empty, or enter a value other than ```scriptedrest```, it will result in the deployment of the Java connector.
+
+When you deploy the environment, it will delete and rebuild IDM with the custom connector. Make sure to respond to the prompts as shown below:
+```
+Uninstalling component(s): ['idm']
+OK to delete these components? [Y/N] Y
+This will erase all your PVCs(including backup PVCs), VolumeSnapshots and Secrets. This cannot be undone.
+Press "CTRL+C" now if you want to cancel
+OK to delete PVCs, VolumeSnapshots and Secrets? [Y/N] N
+service "idm" deleted
+deployment.apps "idm" deleted
 ```
 
 #### Run Example Client
@@ -112,16 +147,19 @@ Running the client
  {"msg":"Hello from client!"}
 ```
 
-#### Using the Connector in IDM
-To configure the connector, you will need an AWS access key ID and secret access key for your AWS account.
+#### Clean Resources
+To clean up the resources, ensure you run the clean script with the parameter used to deploy the environment.
+```
+# AWS Java connector
+./clean.sh
 
-The **Connector Name** field *must* be set to *AWSIoTRegistry*, as this is case-sensitive.
-
-The current configuration only accepts 36-byte UUIDs for identities, therefore any device ID stored in
-the AWS IoT Registry must follow this format.
+# Scripted REST connector
+./clean.sh scriptedrest
+```
 
 #### References
 - [AWS IoT](https://docs.aws.amazon.com/iot/latest/developerguide/what-is-aws-iot.html)
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html)
 - [AWS IoT custom authentication](https://docs.aws.amazon.com/iot/latest/developerguide/iot-custom-authentication.html)
 - [AWS SDKs](https://docs.aws.amazon.com/iot/latest/developerguide/iot-connect-service.html#iot-service-sdks)
+- [AWS Signed API Request](https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html)

@@ -17,19 +17,31 @@
 #
 
 POC_DIR=$(PWD)
+FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops
+
+if [ -n "$1" ]; then
+  CONNECTOR_TYPE=$1
+  echo "Connector specified: $CONNECTOR_TYPE"
+else
+  echo "No connector specified, defaulting to Java connector..."
+fi
 
 echo "====================================================="
 echo "Delete all the AWS deployed components"
 echo "====================================================="
-cd "$POC_DIR/custom-auth/lambda"
-./clean.sh
-cd "$POC_DIR/registry-connector"
-./clean.sh
+if [ "$CONNECTOR_TYPE" != "scriptedrest" ]; then
+  cd "$POC_DIR/custom-auth/lambda"
+  ./clean.sh
+  cd "$POC_DIR/registry-connector"
+  ./clean.sh
+else
+  cd "$POC_DIR/scriptedrest-connector"
+  ./clean.sh
+fi
 
 echo "====================================================="
 echo "Delete all the GKE deployed components"
 echo "====================================================="
-
 rm -rf "$POC_DIR/forgeops/tmp"
-cd "$POC_DIR/../../../deployments/forgeops"
+cd "$FORGEOPS_DIR"
 ./clean.sh
