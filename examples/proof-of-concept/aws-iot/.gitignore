@@ -2,5 +2,4 @@
 tmp/
 /registry-connector/target/
 /registry-connector/iot-access-key.secret
-/forgeops/docker/7.0/idm/connectors/
-/forgeops/docker/7.0/idm/lib/
+/scriptedrest-connector/target/

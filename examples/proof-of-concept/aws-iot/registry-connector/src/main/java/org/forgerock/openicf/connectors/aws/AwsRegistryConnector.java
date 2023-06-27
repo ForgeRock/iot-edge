@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2023 ForgeRock AS. All Rights Reserved
  *
  * Use of this code requires a commercial software license with ForgeRock AS.
  * or with one of its affiliates. All use shall be exclusively subject
@@ -127,16 +127,17 @@ public class AwsRegistryConnector implements Connector, TestOp, SchemaOp, Search
         try {
             IotClient client = getIoTClient();
             ListThingsResponse response = client.listThings();
+            SyncToken newToken = new SyncToken(simpleDateFormat.format(new Date()));
             for (ThingAttribute thingAttribute : response.things()) {
                 SyncDeltaBuilder deltaBuilder = new SyncDeltaBuilder();
                 deltaBuilder.setObject(buildThing(thingAttribute));
                 deltaBuilder.setDeltaType(SyncDeltaType.CREATE_OR_UPDATE);
-                deltaBuilder.setToken(syncToken);
+                deltaBuilder.setToken(newToken);
                 if (!handler.handle(deltaBuilder.build())) {
                     break;
                 }
             }
-            ((SyncTokenResultsHandler) handler).handleResult(syncToken);
+            ((SyncTokenResultsHandler) handler).handleResult(newToken);
         } catch (Exception e) {
             logger.error("Device query failed", e);
             throw new ConnectorIOException("Device query failed", e);
