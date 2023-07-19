@@ -712,7 +712,7 @@ func RunTest(state TestState, t SDKTest) (pass bool) {
 	if data, pass = t.Setup(state); !pass {
 		return false
 	}
-	DebugLogger.Printf("*** STARTING TEST RUN: %v", state)
+	DebugLogger.Printf("*** STARTING TEST RUN: %s", state.String())
 	pass = t.Run(state, data)
 	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
 	if err := t.Cleanup(state, data); err != nil {

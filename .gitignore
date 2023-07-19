@@ -16,6 +16,7 @@ vendor/
 
 # Binary directory
 bin/
+cache/
 
 # example secret stores
 .secrets

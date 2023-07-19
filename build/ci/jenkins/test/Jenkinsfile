@@ -1,0 +1,9 @@
+node ('gce-vm-pipeline-dev-n1-standard-16') {
+    stage ('test') {
+        sh "rm -rf iot-edge-ft && mkdir iot-edge-ft && cd iot-edge-ft && \
+        git clone git@github.com:ForgeRock/iot-edge.git && cd iot-edge && \
+        git checkout ${env.CHANGE_BRANCH} && cd build/package/functional-test && \
+        ./run-am.sh && ./run-ft.sh && ./shutdown.sh && \
+        sudo chmod 777 -R ../../../../../iot-edge-ft"
+    }
+}

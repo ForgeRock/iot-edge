@@ -1,0 +1,11 @@
+amUrl = System.getProperty("AM_URL")
+adminPwd = System.getProperty("AM_PASSWORD")
+configPath = System.getProperty("AM_HOME")
+
+install-openam --serverUrl amUrl \
+    --adminPwd adminPwd \
+    --cfgDir configPath \
+    --pwdEncKey axqMCcTJDMHeHQnBKG9lx2FhQXdZLvjO \
+    --acceptLicense
+
+:exit

@@ -1,0 +1,7 @@
+amUrl = System.getProperty("AM_URL")
+amsterKey = System.getProperty("AMSTER_KEY")
+importPath = System.getProperty("AM_CONFIG_PATH")
+
+connect amUrl -k amsterKey
+import-config --path importPath --failOnError
+:exit

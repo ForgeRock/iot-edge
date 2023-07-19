@@ -26,7 +26,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -175,15 +174,15 @@ func logFailure(path string, start time.Time, anvilDebug []byte, sdkDebug []byte
 	_, _ = f.WriteString("\n")
 
 	// add AM logs to logfile
-	cmd := exec.Command("docker", "logs", *container, "--since", time.Since(start).String())
-	output, err := cmd.Output()
-	if err == nil {
-		_, _ = f.WriteString("\n>>>> AM Logs <<<<\n")
-		_, _ = f.Write(output)
-		_, _ = f.WriteString("\n")
-	} else {
-		anvil.ProgressLogger.Println(err)
-	}
+	//cmd := exec.Command("docker", "logs", *container, "--since", time.Since(start).String())
+	//output, err := cmd.Output()
+	//if err == nil {
+	//	_, _ = f.WriteString("\n>>>> AM Logs <<<<\n")
+	//	_, _ = f.Write(output)
+	//	_, _ = f.WriteString("\n")
+	//} else {
+	//	anvil.ProgressLogger.Println(err)
+	//}
 }
 
 // run the full test set for a single client
