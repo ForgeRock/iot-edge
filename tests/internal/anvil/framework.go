@@ -135,6 +135,21 @@ func forAllJSONFilesInDirectory(dirname string, f func(path string) error) error
 
 // ConfigureTestRealm configures the realm by loading all the data in the testDataDir
 func ConfigureTestRealm(realm string, testDataDir string) (err error) {
+	// create services
+	err = forAllJSONFilesInDirectory(
+		filepath.Join(testDataDir, "services"),
+		func(path string) error {
+			config, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer config.Close()
+			return am.CreateService(realm, parentName(path), config)
+		})
+	if err != nil {
+		return err
+	}
+
 	// add scripts
 	err = forAllJSONFilesInDirectory(
 		filepath.Join(testDataDir, "scripts"),
@@ -175,21 +190,6 @@ func ConfigureTestRealm(realm string, testDataDir string) (err error) {
 			}
 			defer config.Close()
 			return am.CreateTree(realm, nameWithoutExtension(path), config)
-		})
-	if err != nil {
-		return err
-	}
-
-	// create services
-	err = forAllJSONFilesInDirectory(
-		filepath.Join(testDataDir, "services"),
-		func(path string) error {
-			config, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer config.Close()
-			return am.CreateService(realm, parentName(path), config)
 		})
 	if err != nil {
 		return err
@@ -713,6 +713,9 @@ func RunTest(state TestState, t SDKTest) (pass bool) {
 		return false
 	}
 	DebugLogger.Printf("*** STARTING TEST RUN: %s", state.String())
+	dataString := fmt.Sprintf("%+v", data)
+	DebugLogger.Printf("*** DATA: %s", dataString)
+
 	pass = t.Run(state, data)
 	DebugLogger.Printf("*** RUN RESULT: %v\n\n\n", pass)
 	if err := t.Cleanup(state, data); err != nil {
