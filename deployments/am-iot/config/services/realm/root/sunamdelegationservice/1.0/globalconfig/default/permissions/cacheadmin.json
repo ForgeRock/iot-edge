@@ -1,0 +1,31 @@
+{
+  "metadata" : {
+    "realm" : null,
+    "entityType" : "sunAMDelegationService",
+    "entityId" : "default/Permissions/CacheAdmin",
+    "uid" : "ou=CacheAdmin,ou=Permissions,ou=default,ou=GlobalConfig,ou=1.0,ou=sunAMDelegationService,ou=services,dc=openam,dc=forgerock,dc=org",
+    "sunServiceID" : "Permission",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_type" : {
+      "_id" : "sunAMDelegationService",
+      "name" : "sunAMDelegationService",
+      "collection" : false
+    },
+    "_id" : "default/Permissions/CacheAdmin",
+    "actions" : [
+      "READ",
+      "MODIFY",
+      "DELEGATE"
+    ],
+    "resource" : [
+      "REALM/rest/1.0/cache/*"
+    ]
+  }
+}

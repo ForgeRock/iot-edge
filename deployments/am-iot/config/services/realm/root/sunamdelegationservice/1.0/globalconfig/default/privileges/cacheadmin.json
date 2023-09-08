@@ -1,0 +1,26 @@
+{
+  "metadata" : {
+    "realm" : null,
+    "entityType" : "sunAMDelegationService",
+    "entityId" : "default/Privileges/CacheAdmin",
+    "uid" : "ou=CacheAdmin,ou=Privileges,ou=default,ou=GlobalConfig,ou=1.0,ou=sunAMDelegationService,ou=services,dc=openam,dc=forgerock,dc=org",
+    "sunServiceID" : "Privilege",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_type" : {
+      "_id" : "sunAMDelegationService",
+      "name" : "sunAMDelegationService",
+      "collection" : false
+    },
+    "_id" : "default/Privileges/CacheAdmin",
+    "listOfPermissions" : [
+      "CacheAdmin"
+    ]
+  }
+}
