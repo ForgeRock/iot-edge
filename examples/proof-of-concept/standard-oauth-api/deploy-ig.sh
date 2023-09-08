@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022 ForgeRock AS
+# Copyright 2022-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ if [ -n "$1" ]; then
   FORGEOPS_DIR=$1
   echo "ForgeOps bin directory: $FORGEOPS_DIR"
 fi
-cd $FORGEOPS_DIR
 
 echo "====================================================="
-echo "Installing IG"
+echo "Build and Deploy IG"
 echo "====================================================="
-./forgeops build ig --config-profile $CONFIG_PROFILE --default-repo $CONTAINER_REGISTRY
-./forgeops install ig --cdk --fqdn $FQDN
+cd "$FORGEOPS_DIR"
+./forgeops build ig --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
+./forgeops delete ig -y
+./forgeops install ig --cdk
