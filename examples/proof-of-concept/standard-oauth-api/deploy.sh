@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022 ForgeRock AS
+# Copyright 2022-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ INITIAL_DIR=$(PWD)
 FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
 
-cd $FORGEOPS_DIR
-./deploy.sh $CUSTOM_OVERLAY_DIR 6KZjOxJU1xHGWHI0hrQT24Fn
+cd "$FORGEOPS_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn
 
-cd $INITIAL_DIR
-./deploy-ig.sh $FORGEOPS_DIR/tmp/forgeops/bin
+cd "$INITIAL_DIR"
+./deploy-ig.sh "$FORGEOPS_DIR/tmp/forgeops/bin"
