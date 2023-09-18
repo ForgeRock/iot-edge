@@ -251,7 +251,7 @@ func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
 		return false, err
 	}
 	gatewayKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	err = gateway.StartCOAPServer(":0", gatewayKey)
+	err = gateway.StartCOAPServer("127.0.0.1:0", gatewayKey)
 	if err != nil {
 		return false, err
 	}
