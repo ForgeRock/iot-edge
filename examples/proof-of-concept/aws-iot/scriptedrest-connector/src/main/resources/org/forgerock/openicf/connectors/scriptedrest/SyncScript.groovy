@@ -50,7 +50,7 @@ class ThingAttribute {
 // AWS credentials and configuration
 ACCESS_KEY = 'AKIAIOSFODNN7EXAMPLE'
 SECRET_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-AWS_REGION = 'us-west-2'
+AWS_REGION = 'us-east-1'
 
 THINGS = new ObjectClass("__THING__")
 AWS_IOT_URL = 'iot.' + AWS_REGION + '.amazonaws.com'

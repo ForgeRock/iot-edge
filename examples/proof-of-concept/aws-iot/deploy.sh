@@ -19,7 +19,6 @@ set -e
 
 LAMBDA_DIR=$(PWD)/custom-auth/lambda
 DEPLOYMENT_DIR=$(PWD)/../../../deployments/forgeops
-FORGEOPS_DIR=$DEPLOYMENT_DIR/tmp/forgeops
 
 if [ -n "$1" ]; then
   CONNECTOR_TYPE=$1
@@ -43,24 +42,14 @@ PLUGIN_DIR=$CONNECTOR_DIR/../forgeops/tmp/idm
 cd "$CONNECTOR_DIR"
 ./deploy.sh
 
-if [ "$CONNECTOR_TYPE" != "scriptedrest" ]; then
-  echo "====================================================="
-  echo "Deploy and configure AWS custom authorizer function"
-  echo "====================================================="
-  cd "$LAMBDA_DIR"
-  ./deploy.sh
-fi
+echo "====================================================="
+echo "Deploy and configure AWS custom authorizer function"
+echo "====================================================="
+cd "$LAMBDA_DIR"
+./deploy.sh
 
 echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$DEPLOYMENT_DIR"
 ./deploy.sh "$OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
-
-echo "====================================================="
-echo "Build new IDM image and redeploy"
-echo "====================================================="
-cd "$FORGEOPS_DIR"
-./bin/forgeops build idm --config-profile cdk --default-repo "$CONTAINER_REGISTRY"
-./bin/forgeops delete idm
-./bin/forgeops install idm --cdk
