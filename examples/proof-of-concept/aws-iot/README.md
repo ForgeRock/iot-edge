@@ -6,14 +6,14 @@ and authorized before being allowed to publish or subscribe to messages.
  
 This integration example demonstrates how the ForgeRock Platform with ForgeRock IoT can be used to facilitate custom
 authentication with AWS IoT. It is built on top of
-[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.2/index-forgeops.html) with added
+[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.3/index-forgeops.html) with added
 configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.2). It includes a collection of
 scripts for configuring AWS IoT, deploying the ForgeRock Platform to the Google Kubernetes Engine and running the
 device client.
 
 In addition to custom authentication the example also demonstrates how existing AWS IoT thing identities can be
 synchronized to the ForgeRock Platform using an ICF Connector, integrated into
-[ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7.2).
+[ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7.3).
 
 #### Integration Components
 ![Components](docs/aws-iot-integration.png)
@@ -72,19 +72,19 @@ the AWS IoT Registry must follow this format.
 The **Connector Name** field *must* be set to ```AWSIoTRegistry```, as this is case-sensitive.
 
 ###### Scripted REST Connector
-This example has been built using the Scripted REST Connector *(v1.5.20.11)* obtainable from [ForgeRock Backstage](https://backstage.forgerock.com/downloads/browse/idm/featured/connectors).
+This example has been built using the Scripted REST Connector *(v1.5.20.16)* obtainable from [ForgeRock Backstage](https://backstage.forgerock.com/downloads/browse/idm/featured/connectors).
 
 Ensure the JAR is stored in the ```scriptedrest-connector/target``` directory.
 
-Update the following variables within the Search (```SearchScript.groovy```) and Sync Groovy scripts (```SyncScript.groovy```) to match your credentials
+Update the following variables within the Search (```SearchScript.groovy```) and Sync Groovy scripts (```SyncScript.groovy```) to match your credentials:
 * Access key ID (```ACCESS_KEY```)
 * Secret access key (```SECRET_KEY```)
 * (IoT) Region (```AWS_REGION```)
 
 ##### To Deploy
 Follow the ForgeOps documentation to install the
-[third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
-[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/clusterinfo.html).
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.3/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.3/cdk/cloud/setup/gke/clusterinfo.html).
 
 Set the following environment variables:
 ```
@@ -115,17 +115,6 @@ Deploy the Things CDK to GKE using one of the connectors:
 ./deploy.sh scriptedrest
 ```
 NOTE: If you leave the parameter empty, or enter a value other than ```scriptedrest```, it will result in the deployment of the Java connector.
-
-When you deploy the environment, it will delete and rebuild IDM with the custom connector. Make sure to respond to the prompts as shown below:
-```
-Uninstalling component(s): ['idm']
-OK to delete these components? [Y/N] Y
-This will erase all your PVCs(including backup PVCs), VolumeSnapshots and Secrets. This cannot be undone.
-Press "CTRL+C" now if you want to cancel
-OK to delete PVCs, VolumeSnapshots and Secrets? [Y/N] N
-service "idm" deleted
-deployment.apps "idm" deleted
-```
 
 #### Run Example Client
 The client example will demonstrate how to register and authenticate a thing before publishing the message "Hello from client!" to the topic */customauthtesting*.
