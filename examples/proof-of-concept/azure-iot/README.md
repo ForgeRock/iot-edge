@@ -6,11 +6,11 @@ Azure IoT can be used alongside the ForgeRock Identity Platform if you want to a
 to your IoT solution.
 
 The goal of this integration is to prove the aforementioned concept. It uses an
-[ICF Connector](https://backstage.forgerock.com/docs/idm/7.2/connector-reference/) to query device identities in
+[ICF Connector](https://backstage.forgerock.com/docs/idm/7.3/connector-reference/) to query device identities in
 Azure IoT Hub and synchronize and map them to things in the ForgeRock Platform. The integration is built on top of
-[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.2/index.html) with added
+[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.3/index.html) with added
 configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.2) and the ICF Connector, integrated
-into [ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7.2).
+into [ForgeRock Identity Management](https://backstage.forgerock.com/docs/idm/7.3).
 
 #### Integration Components
 ![Components](docs/forgerock-azure-integration.png)
@@ -40,8 +40,8 @@ This diagram illustrates identity synchronization and device management.
 ForgeRock for a demonstration of the solution.*
 
 Follow the ForgeOps documentation to install the
-[third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
-[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/clusterinfo.html).
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.3/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.3/cdk/cloud/setup/gke/clusterinfo.html).
 
 Set the following environment variables:
 ```
@@ -72,7 +72,7 @@ The current configuration only accepts 36-byte UUIDs for identities, therefore a
 the Azure IoT Hub Identity Registry must follow this format.
 
 #### References
-- [ICF Connector Developer's Guide](https://backstage.forgerock.com/docs/idm/7.2/connector-dev-guide/)
+- [ICF Connector Developer's Guide](https://backstage.forgerock.com/docs/openicf/latest/connector-dev-guide)
 - [Get started with device twins](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-java-java-twin-getstarted)
 - [IoT Hub Query Language](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-query-language)
 - [IoT Hub Identity Registry](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-identity-registry)
