@@ -83,6 +83,9 @@ if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
   for dir in "$CUSTOM_OVERLAY_DIR"/docker/*; do
       if [ "$(basename "$dir")" == "am" ]; then
         cp -rf  "$CUSTOM_OVERLAY_DIR/docker/am/config-profiles/$CONFIG_PROFILE/config" "$AM_DIR"
+        if [ -f "$CUSTOM_OVERLAY_DIR/docker/am/Dockerfile" ]; then
+          cp "$CUSTOM_OVERLAY_DIR/docker/am/Dockerfile" "$FORGEOPS_DIR/docker/am"
+        fi
       else
         cp -rf  "$dir" "$FORGEOPS_DIR/docker"
       fi

@@ -227,7 +227,7 @@ public class EstNode implements Node {
         }
 
         String usernameString = username.asString();
-        AMIdentity identity = IdUtils.getIdentity(usernameString, realm);
+        AMIdentity identity = IdUtils.getIdentity(usernameString, realm.asPath(), Collections.singleton("uid"));
         if (identity == null) {
             logger.error("Failed to find identity with username '{}'.", usernameString);
             return null;
