@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2021 ForgeRock AS
+# Copyright 2021-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,15 @@ set -e
 # limitations under the License.
 #
 
-FORGEOPS_DIR=$(PWD)/tmp/forgeops
+HIVE_DIR=$(PWD)/tmp
+POC_DIR=$(PWD)
+FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops
 
+rm -rf "$HIVE_DIR"
+
+echo "====================================================="
+echo "Delete all the GKE deployed components"
+echo "====================================================="
+rm -rf "$POC_DIR/forgeops/tmp"
 cd "$FORGEOPS_DIR"
-skaffold delete
-kubectl delete pvc --all
+./clean.sh
