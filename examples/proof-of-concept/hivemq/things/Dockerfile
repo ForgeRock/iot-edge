@@ -1,5 +1,5 @@
 #
-# Copyright 2020 ForgeRock AS
+# Copyright 2020-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
 # limitations under the License.
 #
 
-FROM golang:1.14-buster
+FROM golang:1.19-buster
 
-# Install the cert
-ADD tmp/_wildcard.iam.example.com.pem /usr/local/share/ca-certificates/_wildcard.iam.example.com.crt
-RUN update-ca-certificates
+WORKDIR /root/things
 
-# Get dependencies
-WORKDIR /root/mqtt-client
-COPY main.go .
+# Copy demo code
+COPY cmd cmd
 COPY go.mod .
 COPY go.sum .
 
-# Build the client
-RUN go install
+# Build the executable
+RUN cd /root/things/cmd/mqtt-client && go install
 
 WORKDIR /go/bin
+COPY .secrets .
+
+CMD ["mqtt-client"]
