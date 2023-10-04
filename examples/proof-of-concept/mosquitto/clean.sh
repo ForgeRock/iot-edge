@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+set -e
 
 #
-# Copyright 2020 ForgeRock AS
+# Copyright 2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,29 +17,16 @@
 # limitations under the License.
 #
 
-PLATFORM_PASSWORD=
-if [ -n "$1" ]; then
-  PLATFORM_PASSWORD=$1
-fi
-
 POC_DIR=$(PWD)
-OVERLAY_DIR=$POC_DIR/forgeops
-DEPLOYMENT_DIR=$POC_DIR/../../../deployments/forgeops
+FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops
 
 echo "====================================================="
-echo "Run ForgeOps CDK"
+echo "Shut down Mosquitto"
 echo "====================================================="
-cd "$DEPLOYMENT_DIR"
-./run.sh "$OVERLAY_DIR" "$PLATFORM_PASSWORD"
+docker compose down
 
 echo "====================================================="
-echo "Build and run the things image"
+echo "Delete all the GKE deployed components"
 echo "====================================================="
-rm -rf "$POC_DIR"/mosquitto/tmp && mkdir "$POC_DIR"/mosquitto/tmp
-cp "$DEPLOYMENT_DIR"/tmp/_wildcard.iam.example.com* "$POC_DIR"/mosquitto/tmp/
-rm -rf "$POC_DIR"/things/tmp && mkdir "$POC_DIR"/things/tmp
-cp "$DEPLOYMENT_DIR"/tmp/_wildcard.iam.example.com* "$POC_DIR"/things/tmp/
-cd "$POC_DIR"
-# Switch back to local docker to use with docker compose
-eval $(minikube docker-env --unset)
-AM_IP_ADDRESS=$(minikube ip) docker-compose -f docker-compose.yml up -d --build
+cd "$FORGEOPS_DIR"
+./clean.sh

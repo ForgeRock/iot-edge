@@ -27,7 +27,7 @@ typedef const char const_char;
 import "C"
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -37,7 +37,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 )
@@ -60,8 +60,8 @@ var (
 	logger *log.Logger
 	file   *os.File = nil
 
-	readRE  = regexp.MustCompile(`mqtt.read:([\\p{L}/#\+]+)`)
-	writeRE = regexp.MustCompile(`mqtt.write:([\\p{L}/#\+]+)`)
+	readRE  = regexp.MustCompile(`mqtt.read:([\\p{L}/#+]+)`)
+	writeRE = regexp.MustCompile(`mqtt.write:([\\p{L}/#+]+)`)
 )
 
 // access describes the type of access to a topic that the client is requesting
@@ -161,7 +161,7 @@ func mosquitto_auth_plugin_init(cUserData *unsafe.Pointer, cOpts *C.struct_mosqu
 /*
  * Cleans up the plugin before the server shuts down.
  */
-func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, _ *C.struct_mosquitto_opt, _ C.int) C.int {
+func mosquitto_auth_plugin_cleanup(cUserData unsafe.Pointer, cOpts *C.struct_mosquitto_opt, _ C.int) C.int {
 	logger.Println("enter - plugin cleanup")
 	// close logfile
 	if file != nil {
@@ -207,8 +207,9 @@ func mosquitto_auth_unpwd_check(cUserData unsafe.Pointer, cClient *C.const_mosqu
 		return C.MOSQ_ERR_AUTH
 	}
 
-	logger.Printf("leave - unpwd check successful, user authorised? %v", introspection.Active())
-	if !introspection.Active() {
+	active, _ := introspection.Active()
+	logger.Printf("leave - unpwd check successful, user authorised? %v", active)
+	if !active {
 		return C.MOSQ_ERR_PLUGIN_DEFER
 	}
 	data.mutex.Lock()
@@ -253,7 +254,8 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 		logger.Printf("leave - unpwd check error, %s", err)
 		return C.MOSQ_ERR_AUTH
 	}
-	if !introspection.Active() {
+	active, _ := introspection.Active()
+	if !active {
 		logger.Printf("leave - acl check %s token inactive", access)
 		data.mutex.Lock()
 		delete(data.tokenCache, username)
@@ -263,7 +265,7 @@ func mosquitto_auth_acl_check(cUserData unsafe.Pointer, cAccess C.int, cClient *
 		return C.MOSQ_ERR_AUTH
 	}
 
-	scopes, err := introspection.Content.GetStringArray("scope")
+	scopes, err := introspection.Scope()
 	if err != nil {
 		logger.Printf("leave - unpwd check error, %s", err)
 		return C.MOSQ_ERR_AUTH
@@ -320,7 +322,7 @@ func main() {
 // Returns an error if logging to a file is requested but fails.
 func initialiseLogger(s string) (l *log.Logger, f *os.File, err error) {
 	settings := strings.Fields(s)
-	var w = ioutil.Discard
+	var w = io.Discard
 	if len(settings) > 0 {
 		switch settings[0] {
 		case destFile:
