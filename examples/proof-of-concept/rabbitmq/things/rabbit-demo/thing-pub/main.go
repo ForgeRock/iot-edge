@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -52,6 +52,8 @@ func main() {
 	}
 	keyID, _ := thing.JWKThumbprint(signer)
 	amURL, _ := url.Parse(os.Getenv("AM_URL"))
+	amRealm := os.Getenv("AM_REALM")
+	amTree := os.Getenv("AM_TREE")
 
 	// MQTT connection information
 	// Can be retrieved from configuration
@@ -61,9 +63,9 @@ func main() {
 
 	dynamicThing, err := builder.Thing().
 		ConnectTo(amURL).
-		InRealm("/").
-		WithTree("RegisterThings").
-		AuthenticateThing(*thingID, "/", keyID, signer, nil).
+		InRealm(amRealm).
+		WithTree(amTree).
+		AuthenticateThing(*thingID, amRealm, keyID, signer, nil).
 		RegisterThing(certificates, nil).
 		Create()
 

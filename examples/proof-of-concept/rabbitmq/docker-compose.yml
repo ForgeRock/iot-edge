@@ -13,11 +13,11 @@ services:
         ipv4_address: 172.16.0.13
     hostname: iot-things
     extra_hosts:
-      - "iot.iam.example.com:$AM_IP_ADDRESS"
       - "rabbit.example.com:172.16.0.14"
     environment:
       - AM_URL=https://iot.iam.example.com/am
       - AM_REALM=/
+      - AM_TREE=RegisterThings
       - MQTT_SERVER_URL=tcp://rabbit.example.com:1883
     volumes:
       - ./things/rabbit-demo:/usr/local/go/src/rabbit-demo
