@@ -113,7 +113,7 @@ echo "====================================================="
 echo "Installing the Platform"
 echo "====================================================="
 cd "$FORGEOPS_DIR/bin"
-./forgeops install --cdk --fqdn "$FQDN"
+./forgeops install --cdk --fqdn "$FQDN" -n "$NAMESPACE"
 
 echo "====================================================="
 echo "Applying custom DS schema"

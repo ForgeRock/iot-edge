@@ -7,8 +7,8 @@ This directory contains resources for deploying Things with the ForgeRock Identi
 #### Deploy using Google Kubernetes Engine
 
 Follow the ForgeOps documentation to install the
-[third party software](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/cloud/setup/gke/sw.html) and
-[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.1/cdk/cloud/setup/gke/clusterinfo.html).
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.3/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.3/cdk/cloud/setup/gke/clusterinfo.html).
 
 Set the following environment variables:
 ```
