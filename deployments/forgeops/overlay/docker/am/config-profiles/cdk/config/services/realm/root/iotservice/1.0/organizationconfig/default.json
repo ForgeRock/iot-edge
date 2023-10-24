@@ -1,0 +1,35 @@
+{
+  "data": {
+    "_id": "default",
+    "_type": {
+      "_id": "IotService",
+      "collection": false,
+      "name": "IotService"
+    },
+    "attributeAllowlist": [
+      "thingConfig",
+      "thingType",
+      "thingProperties"
+    ],
+    "createOAuthClient": false,
+    "createOAuthJwtIssuer": false,
+    "oauthClientName": "forgerock-iot-oauth2-client",
+    "oauthJwtIssuerName": "forgerock-iot-jwt-issuer",
+    "oauthSubjectAttribute": null
+  },
+  "metadata": {
+    "entityId": "default",
+    "entityType": "IotService",
+    "objectClass": [
+      "sunServiceComponent",
+      "top"
+    ],
+    "ou": [
+      "default"
+    ],
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": null,
+    "uid": "ou=default,ou=OrganizationConfig,ou=1.0,ou=IotService,ou=services,ou=am-config"
+  }
+}

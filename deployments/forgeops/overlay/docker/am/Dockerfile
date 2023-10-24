@@ -1,16 +1,10 @@
-ARG CONTAINER_REGISTRY
-
-FROM ${CONTAINER_REGISTRY}/am-iot:latest
+FROM --platform=linux/amd64 gcr.io/forgerock-io/am-cdk:7.4.0
 
 ARG CONFIG_PROFILE=cdk
 RUN echo "\033[0;36m*** Building '${CONFIG_PROFILE}' profile ***\033[0m"
 COPY  --chown=forgerock:root config-profiles/${CONFIG_PROFILE}/ /home/forgerock/openam/
 
 COPY --chown=forgerock:root *.sh /home/forgerock/
-
-RUN mkdir -p /home/forgerock/logging/
-
-ENV CATALINA_OPTS="${CATALINA_OPTS} -Dlogback.configurationFile=/home/forgerock/logging/logback.xml"
 
 WORKDIR /home/forgerock
 
