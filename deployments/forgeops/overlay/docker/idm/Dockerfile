@@ -1,5 +1,5 @@
 # Note: M5 integration with AM currently not working
-FROM --platform=linux/amd64 gcr.io/forgerock-io/idm-cdk:7.3.0
+FROM --platform=linux/amd64 gcr.io/forgerock-io/idm-cdk:7.4.0
 
 COPY debian-buster-sources.list /etc/apt/sources.list
 
@@ -15,4 +15,5 @@ ENV JAVA_OPTS -XX:MaxRAMPercentage=65 -XX:InitialRAMPercentage=65 -XX:MaxTenurin
 ARG CONFIG_PROFILE=cdk
 RUN echo "\033[0;36m*** Building '${CONFIG_PROFILE}' profile ***\033[0m"
 COPY --chown=forgerock:root config-profiles/${CONFIG_PROFILE}/ /opt/openidm
+COPY --chown=forgerock:root bin/import-pem-certs.sh /opt/openidm/bin
 COPY --chown=forgerock:root . /opt/openidm

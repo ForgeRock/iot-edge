@@ -18,8 +18,6 @@ set -e
 #
 
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
-AM_BASE_DIR=$(PWD)/../am-iot
-AM_DIR=$AM_BASE_DIR/tmp
 SCRIPTS_DIR=$(PWD)/scripts
 BASE_OVERLAY_DIR=$(PWD)/overlay
 CONFIG_PROFILE=cdk
@@ -64,36 +62,14 @@ echo "Clone ForgeOps"
 echo "====================================================="
 rm -rf "$FORGEOPS_DIR" && mkdir -p "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
-git checkout release/7.3-20230609
+git checkout release/7.4-20231003
 
 echo "====================================================="
 echo "Overlay base and custom files"
 echo "====================================================="
-# Make copy of original kustomization.yaml file
-cp -rf "$FORGEOPS_DIR/kustomize/deploy" "$FORGEOPS_DIR/.."
-
 cp -rf "$BASE_OVERLAY_DIR"/* "$FORGEOPS_DIR"
-mkdir -p "$AM_DIR"
-cp -rf "$AM_BASE_DIR/config" "$AM_DIR"
-
-# Copy over original kustomization.yaml file
-cp -rf "$FORGEOPS_DIR/../deploy" "$FORGEOPS_DIR/kustomize"
-
 if [ -n "$CUSTOM_OVERLAY_DIR" ]; then
-  for dir in "$CUSTOM_OVERLAY_DIR"/docker/*; do
-      if [ "$(basename "$dir")" == "am" ]; then
-        cp -rf  "$CUSTOM_OVERLAY_DIR/docker/am/config-profiles/$CONFIG_PROFILE/config" "$AM_DIR"
-        if [ -f "$CUSTOM_OVERLAY_DIR/docker/am/Dockerfile" ]; then
-          cp "$CUSTOM_OVERLAY_DIR/docker/am/Dockerfile" "$FORGEOPS_DIR/docker/am"
-        fi
-      else
-        cp -rf  "$dir" "$FORGEOPS_DIR/docker"
-      fi
-  done
-fi
-
-if [ -n "$PLUGIN_DIR" ]; then
-  cp -rf "$PLUGIN_DIR" "$FORGEOPS_DIR/docker"
+  cp -rf  "$CUSTOM_OVERLAY_DIR"/* "$FORGEOPS_DIR"
 fi
 
 echo "====================================================="
@@ -122,26 +98,9 @@ kubectl cp "$SCRIPTS_DIR/apply_schema.sh" ds-idrepo-0:/tmp
 kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"
 
 echo "====================================================="
-echo "Build AM"
-echo "====================================================="
-cd "$AM_BASE_DIR"
-./build.sh
-rm -rf "$FORGEOPS_DIR/docker/am/config-profiles/cdk"
-cp -rf "$AM_DIR/config" "$FORGEOPS_DIR/docker/am/config-profiles/cdk"
-
-cd "$FORGEOPS_DIR"
-docker build --platform linux/amd64 docker/am --tag "$CONTAINER_REGISTRY/am:latest" --build-arg CONTAINER_REGISTRY="$CONTAINER_REGISTRY"
-docker push "$CONTAINER_REGISTRY/am:latest"
-
-echo "====================================================="
 echo "Deploy AM"
 echo "====================================================="
-# Update kustomization.yaml to use container registry for AM custom image
-cp -rf "$BASE_OVERLAY_DIR/kustomize/deploy" "$FORGEOPS_DIR/kustomize"
-ENCODED_CONTAINER_REGISTRY=${CONTAINER_REGISTRY//\//\\/}
-sed -i '' "s/&{CONTAINER_REGISTRY}/$ENCODED_CONTAINER_REGISTRY/g" "$FORGEOPS_DIR/kustomize/deploy/image-defaulter/kustomization.yaml"
-
-cd "$FORGEOPS_DIR/bin"
+./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
 ./forgeops delete am -y
 ./forgeops install am --cdk
 
