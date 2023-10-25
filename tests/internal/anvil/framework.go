@@ -253,16 +253,6 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 		return err
 	}
 
-	// delete the tree nodes
-	err = forAllJSONFilesInDirectory(
-		filepath.Join(testDataDir, "nodes"),
-		func(path string) error {
-			return am.DeleteTreeNode(realm, parentName(path), nameWithoutExtension(path))
-		})
-	if err != nil {
-		return err
-	}
-
 	// delete the scripts
 	err = forAllJSONFilesInDirectory(
 		filepath.Join(testDataDir, "scripts"),
