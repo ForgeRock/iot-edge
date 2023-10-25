@@ -34,7 +34,7 @@ if [[ $ready != "true" ]]; then
   exit 1
 fi
 
-docker build iot-edge -t iot-edge-ft:latest
+docker build iot-edge --progress plain -t iot-edge-ft:latest
 
 cd ../../../
 IOT_EDGE_DIR=$PWD

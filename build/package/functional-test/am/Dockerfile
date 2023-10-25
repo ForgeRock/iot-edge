@@ -33,7 +33,7 @@ RUN apt-get update --yes && \
 # Add AM and Amster
 ADD cache/AM-"$AM_VERSION".war "$CATALINA_HOME"/webapps/am.war
 ADD cache/Amster-"$AM_VERSION".zip /tmp/amster.zip
-RUN mkdir -p /opt/forgerock/amster && unzip -q /tmp/amster.zip -d /opt/forgerock/amster && rm /tmp/amster.zip
+RUN mkdir -p /opt/forgerock && unzip -q /tmp/amster.zip -d /opt/forgerock && rm /tmp/amster.zip
 
 # Add installation scripts
 ADD resources/install-am.amster /opt/forgerock/amster/install-am.amster

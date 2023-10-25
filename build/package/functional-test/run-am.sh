@@ -27,7 +27,7 @@ if [[ ! -f am/cache/Amster-${AM_VERSION}.zip ]]; then
   wget https://storage.googleapis.com/forgerock-build-assets-live/pkg/servers/forgerock/OpenAM/staging/${AM_VERSION}/Amster-${AM_VERSION}.zip -O am/cache/Amster-${AM_VERSION}.zip
 fi
 
-docker build am -t am-embedded:latest \
+docker build am --progress plain --no-cache -t am-embedded:latest \
   --build-arg AM_URL=${AM_URL} \
   --build-arg AM_HOME=${AM_HOME} \
   --build-arg AM_CONFIG=${AM_CONFIG} \
