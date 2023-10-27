@@ -24,8 +24,8 @@ import (
 	"os"
 
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
+	"github.com/go-jose/go-jose/v3"
 	"github.com/jessevdk/go-flags"
-	"gopkg.in/square/go-jose.v2"
 )
 
 type commandlineOpts struct {

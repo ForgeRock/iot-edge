@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,13 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/internal/debug"
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 // DebugLogger is the destination of all SDK debug information. The logger is muted by default. Redirect the debug
 // output by assigning your own logger to this variable or setting the output writer, for example:
 //
-//    thing.DebugLogger().SetOutput(os.Stdout)
+//	thing.DebugLogger().SetOutput(os.Stdout)
 func DebugLogger() *log.Logger {
 	return debug.Logger
 }

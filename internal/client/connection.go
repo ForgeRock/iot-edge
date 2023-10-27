@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/go-jose/go-jose/v3"
 	"github.com/go-ocf/go-coap"
 	"github.com/go-ocf/go-coap/codes"
-	"gopkg.in/square/go-jose.v2"
 )
 
 type ContentType string

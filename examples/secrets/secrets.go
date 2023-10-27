@@ -31,7 +31,7 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 const ec256Test = `{"kty": "EC",
