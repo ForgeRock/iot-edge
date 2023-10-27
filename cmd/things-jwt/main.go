@@ -27,9 +27,9 @@ import (
 
 	frcrypto "github.com/ForgeRock/iot-edge/v7/internal/crypto"
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
+	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/jessevdk/go-flags"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 func createThingJWT(key crypto.Signer, url string, version string, n int64, custom map[string]interface{}) (string, error) {

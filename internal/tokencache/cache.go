@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package tokencache
 import (
 	"time"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/patrickmn/go-cache"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 // Cache for signed JSON Web Tokens

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,11 +97,11 @@ func (a AccessTokenResponse) Scope() ([]string, error) {
 // The name of the attribute is the same as the LDAP identity attribute name. The response will contain the thing ID
 // and may have multiple values for a single attribute, for example:
 //
-//    {
-//        "_id": "my-device",
-//        "foo": ["a", "b", "c"]
-//        "bar": ["1"]
-//    }
+//	{
+//	    "_id": "my-device",
+//	    "foo": ["a", "b", "c"]
+//	    "bar": ["1"]
+//	}
 type AttributesResponse struct {
 	Content JSONContent
 }

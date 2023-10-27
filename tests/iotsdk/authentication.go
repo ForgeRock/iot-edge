@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 func thingJWTAuth(state anvil.TestState, data anvil.ThingData) thing.Builder {
@@ -347,10 +347,10 @@ func (t *AuthenticateWithCustomClaimsJWTBearer) Run(state anvil.TestState, data 
 		WithTree(jwtAuthWithAssertionAndCustomClaimsTree).
 		AuthenticateThing(data.Id.Name, am.OAuthBaseURL(state.AMURL(), state.RealmPath(), state.DNSConfigured()),
 			data.Signer.KID, data.Signer.Signer, func() interface{} {
-			return struct {
-				LifeUniverseEverything string `json:"life_universe_everything"`
-			}{"42"}
-		})
+				return struct {
+					LifeUniverseEverything string `json:"life_universe_everything"`
+				}{"42"}
+			})
 
 	_, err := thingBuilder.Create()
 	return err == nil

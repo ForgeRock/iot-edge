@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 ForgeRock AS
+ * Copyright 2020-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
+	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/jwt"
 )
 
 // AccessTokenWithExactScopes requests an access token for a thing with specified scopes. The scopes matches the
@@ -216,7 +216,7 @@ func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject strin
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	compoundSub := "(usr!"+subject+")"
+	compoundSub := "(usr!" + subject + ")"
 	if claims.Subject != subject && claims.Subject != compoundSub {
 		anvil.DebugLogger.Printf("access token sub, %s, not equal to thing ID, %s, or compound ID, %s\n",
 			claims.Subject, subject, compoundSub)

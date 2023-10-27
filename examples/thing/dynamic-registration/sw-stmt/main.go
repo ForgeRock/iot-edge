@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 ForgeRock AS
+ * Copyright 2022-2023 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,17 +29,17 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/callback"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 var (
-	urlString   = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
-	realm       = flag.String("realm", "/", "AM Realm")
-	audience    = flag.String("audience", "/", "JWT audience")
-	regTree     = flag.String("reg-tree", "oauth-reg-tree", "Registration tree")
-	authTree    = flag.String("auth-tree", "oauth-auth-tree", "Authentication tree")
-	iss         = flag.String("iss", "https://soft-pub.example.com", "The software publisher issuer.")
-	debug       = flag.Bool("debug", false, "Enable debug output")
+	urlString = flag.String("url", "http://am.localtest.me:8080/am", "URL of AM or Gateway")
+	realm     = flag.String("realm", "/", "AM Realm")
+	audience  = flag.String("audience", "/", "JWT audience")
+	regTree   = flag.String("reg-tree", "oauth-reg-tree", "Registration tree")
+	authTree  = flag.String("auth-tree", "oauth-auth-tree", "Authentication tree")
+	iss       = flag.String("iss", "https://soft-pub.example.com", "The software publisher issuer.")
+	debug     = flag.Bool("debug", false, "Enable debug output")
 )
 
 // softwareStatementRegistration registers and authenticates a Thing with AM, using the Software Statement registration

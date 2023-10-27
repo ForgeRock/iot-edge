@@ -34,7 +34,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil"
 	"github.com/ForgeRock/iot-edge/v7/tests/internal/anvil/am"
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 var deviceCodeRegex = regexp.MustCompile(`{.*"user_code":"\w*".*}`)

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-FROM golang:1.19-bullseye
+FROM golang:1.21-bullseye
 
 WORKDIR "/go/iot-edge"
 

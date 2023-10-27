@@ -31,7 +31,7 @@ import (
 	"github.com/ForgeRock/iot-edge/v7/internal/debug"
 	"github.com/ForgeRock/iot-edge/v7/internal/introspect"
 	"github.com/ForgeRock/iot-edge/v7/internal/jws"
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 const (
