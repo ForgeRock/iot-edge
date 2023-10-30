@@ -55,8 +55,8 @@ The example uses REST API calls rather than the IoT SDK as demonstrated by the [
 ForgeRock for a demonstration of the solution.*
 
 Follow the ForgeOps documentation to install the
-[third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
-[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/clusterinfo.html).
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.4/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.4/cdk/cloud/setup/gke/clusterinfo.html).
 
 Set the following environment variables:
 ```

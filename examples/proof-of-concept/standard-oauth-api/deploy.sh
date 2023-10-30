@@ -18,8 +18,13 @@ set -e
 #
 
 INITIAL_DIR=$(PWD)
-FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
+IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
+FORGEOPS_DIR="$IOT_EDGE_DIR"/deployments/forgeops
 CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
+
+rm -rf "$IOT_EDGE_DIR" && mkdir -p "$IOT_EDGE_DIR" && cd "$IOT_EDGE_DIR"
+git clone https://github.com/ForgeRock/iot-edge.git .
+git checkout release/v7.4.0
 
 cd "$FORGEOPS_DIR"
 ./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn

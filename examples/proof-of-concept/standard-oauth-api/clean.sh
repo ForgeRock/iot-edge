@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022 ForgeRock AS
+# Copyright 2022-2023 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,5 +17,7 @@ set -e
 # limitations under the License.
 #
 
-cd $(PWD)/../../../deployments/forgeops
+IOT_EDGE_DIR=$(PWD)/tmp/iot-edge
+FORGEOPS_DIR="$IOT_EDGE_DIR"/deployments/forgeops
+cd "$FORGEOPS_DIR"
 ./clean.sh
