@@ -18,7 +18,8 @@ set -e
 #
 
 POC_DIR=$(PWD)
-FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops
+IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
 
 echo "====================================================="
 echo "Shut down Mosquitto"
