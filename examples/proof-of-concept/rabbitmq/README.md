@@ -6,14 +6,14 @@ removing the need for these products to internally manage IoT identities.
 This PoC illustrates how access control within the [RabbitMQ](http://www.rabbitmq.com) message broker can be delegated to the ForgeRock platform,
 ensuring that only authenticated things can publish or subscribe to authorised topics.
 The PoC is built on top of
-[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.3/index.html) with added
-configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.2).
-RabbitMQ is configured to use the [OAuth 2.0 (JWT) Token Authorisation Backend](https://github.com/rabbitmq/rabbitmq-auth-backend-oauth2) 
+[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.4/index.html) with added
+configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.4).
+RabbitMQ is configured to use the [OAuth 2.0 (JWT) Token Authorisation Backend](https://www.rabbitmq.com/oauth2.html) 
 which ships with RabbitMQ since version 3.8. 
 The configuration changes can be summarised as:
 
 * ForgeRock Access Manager (AM) can issue client-based OAuth 2.0 access tokens with RabbitMQ specific 
-[scopes](https://github.com/rabbitmq/rabbitmq-auth-backend-oauth2#scope-to-permission-translation).
+[scopes](https://www.rabbitmq.com/oauth2.html#scope-translation).
 * RabbitMQ uses the OAuth 2.0 (JWT) Token Authorisation Backend for access control 
 and is provided with the following information from AM:
     * The name of the OAuth 2.0 client associated with things.
