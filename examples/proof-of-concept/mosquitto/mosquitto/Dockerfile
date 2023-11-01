@@ -1,8 +1,8 @@
-FROM golang:1.14-buster
+FROM golang:1.21-bullseye
 
 RUN apt-get update --yes && \
     apt-get install --yes \
-    curl \
+    wget \
     vim \
     build-essential \
     libjson-c-dev \
@@ -11,12 +11,8 @@ RUN apt-get update --yes && \
     apt-get clean --yes
 
 # download and install mosquitto
-RUN curl http://mosquitto.org/files/source/mosquitto-1.5.8.tar.gz | tar zxf - && \
+RUN wget http://mosquitto.org/files/source/mosquitto-1.5.8.tar.gz && tar zxf mosquitto-1.5.8.tar.gz && \
     cd mosquitto-1.5.8 && make && make install && cd - && rm -rf mosquitto-1.5.8
-
-# Install the cert
-ADD tmp/_wildcard.iam.example.com.pem /usr/local/share/ca-certificates/_wildcard.iam.example.com.crt
-RUN update-ca-certificates
 
 WORKDIR /mosquitto
 

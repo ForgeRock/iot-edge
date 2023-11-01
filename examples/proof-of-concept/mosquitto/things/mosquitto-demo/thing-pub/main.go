@@ -27,7 +27,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ForgeRock/iot-edge/v7/examples/secrets"
+	"github.com/ForgeRock/iot-edge/examples/secrets"
 	"github.com/ForgeRock/iot-edge/v7/pkg/builder"
 	"github.com/ForgeRock/iot-edge/v7/pkg/thing"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
