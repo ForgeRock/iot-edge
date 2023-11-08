@@ -1,0 +1,36 @@
+{
+  "metadata" : {
+    "realm" : null,
+    "entityType" : "ScriptingService",
+    "entityId" : "default/globalScripts/1bcb67da-7002-45af-a08b-43400a2fb695",
+    "uid" : "ou=1bcb67da-7002-45af-a08b-43400a2fb695,ou=globalScripts,ou=default,ou=GlobalConfig,ou=1.0,ou=ScriptingService,ou=services,ou=am-config",
+    "sunServiceID" : "globalScript",
+    "objectClass" : [
+      "top",
+      "sunServiceComponent"
+    ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "createdBy" : "id=dsameuser,ou=user,dc=openam,dc=forgerock,dc=org",
+    "lastModifiedDate" : "1699442919172",
+    "lastModifiedBy" : "id=dsameuser,ou=user,dc=openam,dc=forgerock,dc=org",
+    "_type" : {
+      "_id" : "ScriptingService",
+      "name" : "ScriptingService",
+      "collection" : false
+    },
+    "name" : "Custom OAuth2 Access Token Modification Script",
+    "context" : "OAUTH2_ACCESS_TOKEN_MODIFICATION",
+    "description" : "Custom global script for OAuth2 Access Token Modification",
+    "language" : "GROOVY",
+    "_id" : "default/globalScripts/1bcb67da-7002-45af-a08b-43400a2fb695",
+    "creationDate" : "1699442919172",
+    "script" : {
+      "$base64:encode" : {
+        "$inline" : "OAuth2AccessTokenModificationScript.groovy"
+      }
+    }
+  }
+}

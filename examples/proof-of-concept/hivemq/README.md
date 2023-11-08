@@ -5,8 +5,8 @@ The ForgeRock Identity Platform can issue OAuth 2.0 access tokens for authentica
 integration with OAuth 2.0 authorization servers for client authentication.
 
 The goal of this integration is to prove the aforementioned concept. It is built on top of
-[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.3/index.html) that is deployed to GCP
-with added configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.2). It uses the public
+[ForgeRock's ForgeOps CDK](https://backstage.forgerock.com/docs/forgeops/7.4/index.html) that is deployed to GCP
+with added configuration for [ForgeRock IoT](https://backstage.forgerock.com/docs/iot/7.4). It uses the public
 [HiveMQ Docker image](https://www.hivemq.com/docs/hivemq/4.4/user-guide/docker.html), which is configured to use the
 [Enterprise Security Extension](https://www.hivemq.com/docs/ese/4.4/enterprise-security-extension/ese-getting-started.html).
 
