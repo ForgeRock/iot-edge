@@ -45,10 +45,3 @@ echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$FORGEOPS_DIR"
 ./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
-
-echo "====================================================="
-echo "Build the custom node"
-echo "====================================================="
-cd "$CUSTOM_NODE_DIR"
-mvn clean install
-cp -rf target/est-node-1.0.0-SNAPSHOT.jar "$FORGEOPS_DIR/tmp/forgeops/docker/am"
