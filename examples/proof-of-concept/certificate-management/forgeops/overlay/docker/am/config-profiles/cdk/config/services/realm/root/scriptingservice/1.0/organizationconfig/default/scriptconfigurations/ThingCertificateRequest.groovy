@@ -26,11 +26,11 @@ import org.forgerock.http.header.AuthorizationHeader
 import org.forgerock.http.header.ContentTypeHeader
 import org.forgerock.http.header.GenericHeader
 import org.forgerock.http.protocol.Request
+import org.forgerock.util.encode.Base64
 import org.forgerock.openam.auth.node.api.Action
 import org.forgerock.openam.auth.node.api.NodeState
 
 import com.sun.identity.authentication.callbacks.HiddenValueCallback
-import sun.security.util.Pem
 
 outcome = "Success"
 NodeState state = nodeState
@@ -42,7 +42,7 @@ if (callbacks.isEmpty()) {
 }
 def csr = callbacks.get(0).getValue()
 
-def encodedCredentials = Base64.getEncoder().encode("estuser:estpwd".getBytes())
+def encodedCredentials = Base64.encode("estuser:estpwd".getBytes())
 def request = new Request()
 request.setUri("https://testrfc7030.com:8443/.well-known/est/simpleenroll")
 request.setMethod("POST")
@@ -55,12 +55,13 @@ request.setEntity(csr)
 def response = httpClient.send(request).get()
 String certString = response.getEntity().getString().replaceAll("\n", "")
 logger.message("Certificate: " + certString)
+byte[] formattedCertString = certString.replaceAll("\\s+", "").getBytes()
 
-CMSSignedData signedData = new CMSSignedData(Pem.decode(certString))
+CMSSignedData signedData = new CMSSignedData(Base64.decode(formattedCertString))
 X509CertificateHolder cert = signedData.getCertificates().getMatches(null).iterator().next()
 X509Certificate certificate = new JcaX509CertificateConverter().getCertificate(cert)
 def pem = "-----BEGIN CERTIFICATE-----\n" +
-        new String(Base64.getEncoder().encode(certificate.getEncoded())) +
+        Base64.encode(certificate.getEncoded()) +
         "\n-----END CERTIFICATE-----"
 
 def username = state.get("_id").asString()
