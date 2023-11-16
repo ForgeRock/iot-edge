@@ -17,15 +17,19 @@ set -e
 # limitations under the License.
 #
 
-HIVE_DIR=$(PWD)/tmp
 POC_DIR=$(PWD)
-FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops
+HIVEMQ_TAG=fr-hivemq
+IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
 
-rm -rf "$HIVE_DIR"
+echo "====================================================="
+echo "Shut down HiveMQ"
+echo "====================================================="
+HIVEMQ_CONTAINER_ID=$(docker ps -aqf ancestor=$HIVEMQ_TAG)
+docker stop "$HIVEMQ_CONTAINER_ID"
 
 echo "====================================================="
 echo "Delete all the GKE deployed components"
 echo "====================================================="
-rm -rf "$POC_DIR/forgeops/tmp"
 cd "$FORGEOPS_DIR"
 ./clean.sh

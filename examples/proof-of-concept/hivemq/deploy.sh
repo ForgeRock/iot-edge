@@ -17,11 +17,21 @@ set -e
 # limitations under the License.
 #
 
-FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
-HIVEMQ_DIR=$(PWD)/tmp/hivemq
-HIVEMQ_CONFIG=$(PWD)/broker
+POC_DIR=$(PWD)
+POC_TMP_DIR=$POC_DIR/tmp
+IOT_EDGE_DIR=$POC_TMP_DIR/iot-edge
+HIVEMQ_DIR=$POC_TMP_DIR/hivemq
+HIVEMQ_CONFIG=$POC_DIR/broker
 HIVEMQ_TAG=fr-hivemq
-CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
+CUSTOM_OVERLAY_DIR=$POC_DIR/forgeops/overlay
+
+echo "====================================================="
+echo "Clone IoT Edge directory"
+echo "====================================================="
+rm -rf "$IOT_EDGE_DIR" && mkdir -p "$IOT_EDGE_DIR" && cd "$IOT_EDGE_DIR"
+git clone https://github.com/ForgeRock/iot-edge.git .
+git checkout release/v7.4.0
 
 echo "====================================================="
 echo "Run ForgeOps CDK"

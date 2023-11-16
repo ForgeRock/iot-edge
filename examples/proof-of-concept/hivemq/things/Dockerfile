@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-FROM golang:1.19-buster
+FROM golang:1.21-bullseye
 
 WORKDIR /root/things
 
