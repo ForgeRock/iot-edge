@@ -16,7 +16,9 @@ set -e
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+POC_DIR=$(PWD)
+FORGEOPS_DIR=$POC_DIR/tmp/iot-edge/deployments/forgeops
 
-rm -rf "$(PWD)/forgeops/tmp"
-cd "$(PWD)/../../../deployments/forgeops"
+rm -rf "$POC_DIR/forgeops/tmp"
+cd "$FORGEOPS_DIR"
 ./clean.sh

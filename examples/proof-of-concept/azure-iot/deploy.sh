@@ -16,21 +16,28 @@ set -e
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+POC_DIR=$(PWD)
+IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
 CONNECTOR_DIR=$(PWD)/iot-hub-connector
 PLUGIN_DIR=$(PWD)/forgeops/tmp/idm
-DEPLOYMENT_DIR=$(PWD)/../../../deployments/forgeops
 OVERLAY_DIR=$(PWD)/forgeops/overlay
+
+echo "====================================================="
+echo "Clone IoT Edge directory"
+echo "====================================================="
+rm -rf "$IOT_EDGE_DIR" && mkdir -p "$IOT_EDGE_DIR" && cd "$IOT_EDGE_DIR"
+git clone https://github.com/ForgeRock/iot-edge.git .
+git checkout release/v7.4.0
 
 echo "====================================================="
 echo "Build the connector"
 echo "====================================================="
 cd "$CONNECTOR_DIR"
 ./build.sh "$PLUGIN_DIR"
-
+#
 echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
-cd "$DEPLOYMENT_DIR"
+cd "$FORGEOPS_DIR"
 ./deploy.sh "$OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
-
