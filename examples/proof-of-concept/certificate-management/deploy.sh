@@ -19,7 +19,7 @@ set -e
 
 POC_DIR=$(PWD)
 CUSTOM_NODE_DIR=$POC_DIR/auth-nodes
-PLUGIN_DIR=$POC_DIR/forgeops/tmp/am
+PLUGIN_DIR=$POC_DIR/forgeops/overlay/docker/am/tmp
 IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
 FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
 SCRIPTS_DIR=$POC_DIR/forgeops/scripts
@@ -44,4 +44,4 @@ echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$FORGEOPS_DIR"
-./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR"
