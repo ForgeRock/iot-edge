@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/dchest/uniuri v1.2.0
-	github.com/go-jose/go-jose/v3 v3.0.0
+	github.com/go-jose/go-jose/v3 v3.0.1
 	github.com/go-ocf/go-coap v0.0.0-20200325133359-298a26e4e9c8
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
