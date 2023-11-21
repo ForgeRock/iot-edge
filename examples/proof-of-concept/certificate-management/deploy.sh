@@ -44,4 +44,4 @@ echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$FORGEOPS_DIR"
-./deploy.sh "$CUSTOM_OVERLAY_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn
