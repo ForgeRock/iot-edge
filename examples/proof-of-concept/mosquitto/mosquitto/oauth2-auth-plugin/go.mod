@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-ocf/go-coap v0.0.0-20200325133359-298a26e4e9c8 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
