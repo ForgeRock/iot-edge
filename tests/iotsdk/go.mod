@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/ForgeRock/iot-edge/v7 v7.4.0
-	github.com/go-jose/go-jose/v3 v3.0.0
+	github.com/go-jose/go-jose/v3 v3.0.1
 )
 
 require (
