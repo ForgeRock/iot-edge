@@ -45,10 +45,10 @@ else
 fi
 
 CUSTOM_OVERLAY_DIR=$CONNECTOR_DIR/forgeops/overlay
-PLUGIN_DIR=$CONNECTOR_DIR/../forgeops/tmp/idm
+PLUGIN_DIR=$CONNECTOR_DIR/forgeops/overlay/docker/idm/tmp
 
 cd "$CONNECTOR_DIR"
-./deploy.sh
+./deploy.sh "$PLUGIN_DIR"
 
 echo "====================================================="
 echo "Deploy and configure AWS custom authorizer function"
@@ -60,4 +60,4 @@ echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$FORGEOPS_DIR"
-./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn
