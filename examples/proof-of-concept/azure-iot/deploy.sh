@@ -19,9 +19,9 @@ set -e
 POC_DIR=$(PWD)
 IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
 FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
-CONNECTOR_DIR=$(PWD)/iot-hub-connector
-PLUGIN_DIR=$(PWD)/forgeops/tmp/idm
-OVERLAY_DIR=$(PWD)/forgeops/overlay
+CONNECTOR_DIR=$POC_DIR/iot-hub-connector
+CUSTOM_OVERLAY_DIR=$POC_DIR/forgeops/overlay
+PLUGIN_DIR=$CUSTOM_OVERLAY_DIR/docker/idm/tmp
 
 echo "====================================================="
 echo "Clone IoT Edge directory"
@@ -40,4 +40,5 @@ echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
 cd "$FORGEOPS_DIR"
-./deploy.sh "$OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn
+
