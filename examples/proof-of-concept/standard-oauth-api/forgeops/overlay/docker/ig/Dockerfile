@@ -1,10 +1,10 @@
-FROM --platform=linux/amd64 gcr.io/forgerock-io/ig:2023.2.0-4f2fbbb612723e2381b77400d579d70b2bc8336d
+FROM --platform=linux/amd64 gcr.io/forgerock-io/ig:2023.9.0
 
 COPY debian-buster-sources.list /etc/apt/sources.list
 
 # Copy all config files into the docker image.
 # The default ig directory is /var/ig, and it expects subfolders config/ and scripts/ (if required)
 ARG CONFIG_PROFILE=cdk
-RUN echo "*** Building '${CONFIG_PROFILE}' profile ***"
+RUN echo "\033[0;36m*** Building '${CONFIG_PROFILE}' profile ***\033[0m"
 COPY --chown=forgerock:root config-profiles/${CONFIG_PROFILE}/ /var/ig
-COPY --chown=forgerock:root config-profiles /var/ig
+COPY --chown=forgerock:root . /var/ig

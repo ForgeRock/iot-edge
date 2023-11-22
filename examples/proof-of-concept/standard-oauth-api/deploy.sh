@@ -18,11 +18,23 @@ set -e
 #
 
 INITIAL_DIR=$(PWD)
-FORGEOPS_DIR=$(PWD)/../../../deployments/forgeops
-CUSTOM_OVERLAY_DIR=$(PWD)/forgeops/overlay
+IOT_EDGE_DIR=$INITIAL_DIR/tmp/iot-edge
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
+FORGEOPS_BIN_DIR=$FORGEOPS_DIR/tmp/forgeops/bin
+CUSTOM_OVERLAY_DIR=$INITIAL_DIR/forgeops/overlay
 
+echo "====================================================="
+echo "Clone IoT Edge directory"
+echo "====================================================="
+rm -rf "$IOT_EDGE_DIR" && mkdir -p "$IOT_EDGE_DIR" && cd "$IOT_EDGE_DIR"
+git clone https://github.com/ForgeRock/iot-edge.git .
+git checkout release/v7.4.0
+
+echo "====================================================="
+echo "Run ForgeOps CDK"
+echo "====================================================="
 cd "$FORGEOPS_DIR"
 ./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn
 
 cd "$INITIAL_DIR"
-./deploy-ig.sh "$FORGEOPS_DIR/tmp/forgeops/bin"
+./deploy-ig.sh "$FORGEOPS_BIN_DIR"
