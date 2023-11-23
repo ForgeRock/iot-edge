@@ -16,9 +16,17 @@ set -e
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+POC_DIR=$(PWD)
+IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
 LAMBDA_DIR=$(PWD)/custom-auth/lambda
-DEPLOYMENT_DIR=$(PWD)/../../../deployments/forgeops
+
+echo "====================================================="
+echo "Clone IoT Edge directory"
+echo "====================================================="
+rm -rf "$IOT_EDGE_DIR" && mkdir -p "$IOT_EDGE_DIR" && cd "$IOT_EDGE_DIR"
+git clone https://github.com/ForgeRock/iot-edge.git .
+git checkout release/v7.4.0
 
 if [ -n "$1" ]; then
   CONNECTOR_TYPE=$1
@@ -31,16 +39,16 @@ echo "====================================================="
 echo "Build and deploy the connector"
 echo "====================================================="
 if [ "$CONNECTOR_TYPE" = "scriptedrest" ]; then
-  CONNECTOR_DIR=$(PWD)/scriptedrest-connector
+  CONNECTOR_DIR=$POC_DIR/scriptedrest-connector
 else
-  CONNECTOR_DIR=$(PWD)/registry-connector
+  CONNECTOR_DIR=$POC_DIR/registry-connector
 fi
 
-OVERLAY_DIR=$CONNECTOR_DIR/forgeops/overlay
-PLUGIN_DIR=$CONNECTOR_DIR/../forgeops/tmp/idm
+CUSTOM_OVERLAY_DIR=$CONNECTOR_DIR/forgeops/overlay
+PLUGIN_DIR=$CONNECTOR_DIR/forgeops/overlay/docker/idm/tmp
 
 cd "$CONNECTOR_DIR"
-./deploy.sh
+./deploy.sh "$PLUGIN_DIR"
 
 echo "====================================================="
 echo "Deploy and configure AWS custom authorizer function"
@@ -51,5 +59,5 @@ cd "$LAMBDA_DIR"
 echo "====================================================="
 echo "Run ForgeOps CDK"
 echo "====================================================="
-cd "$DEPLOYMENT_DIR"
-./deploy.sh "$OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn "$PLUGIN_DIR"
+cd "$FORGEOPS_DIR"
+./deploy.sh "$CUSTOM_OVERLAY_DIR" 6KZjOxJU1xHGWHI0hrQT24Fn

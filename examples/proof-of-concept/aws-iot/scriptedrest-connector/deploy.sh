@@ -17,8 +17,11 @@ set -e
 # limitations under the License.
 #
 
-PLUGIN_DIR=$(PWD)/../forgeops/tmp/idm
 AWS_THING_NAME="f971a95b-2fc6-4ce2-aed6-84f8c6cf6b05"
+
+if [ -n "$1" ]; then
+  PLUGIN_DIR=$1
+fi
 
 # Build the connector
 ./build.sh "$PLUGIN_DIR"

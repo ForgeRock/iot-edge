@@ -17,7 +17,7 @@
 #
 
 POC_DIR=$(PWD)
-FORGEOPS_DIR=$POC_DIR/../../../deployments/forgeops
+FORGEOPS_DIR=$POC_DIR/tmp/iot-edge/deployments/forgeops
 
 if [ -n "$1" ]; then
   CONNECTOR_TYPE=$1
