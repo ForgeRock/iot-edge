@@ -26,7 +26,8 @@ if [ -z "$PLUGIN_DIR" ]; then
 exit 1
 fi
 
-CONNECTOR_DIR=$PLUGIN_DIR/connectors
+CDK_DIR=$PLUGIN_DIR/config-profiles/cdk
+CONNECTOR_DIR=$CDK_DIR/connectors
 
 mvn clean install
 rm -rf "$CONNECTOR_DIR" && mkdir -p "$CONNECTOR_DIR"
