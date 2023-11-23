@@ -26,7 +26,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +58,7 @@ import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.annotations.adapters.Password;
+import org.forgerock.util.encode.Base64;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -304,7 +304,7 @@ public class EstNode implements Node {
 
     private boolean configureRequest(Request request, String csr) {
         String credentials = config.estUsername() + ":" + new String(config.estPassword());
-        byte[] encodedCredentials = Base64.getEncoder().encode(credentials.getBytes());
+        String encodedCredentials = Base64.encode(credentials.getBytes());
 
         try {
             request.setUri(config.estUrl());
@@ -314,7 +314,7 @@ public class EstNode implements Node {
         }
 
         try {
-            request.addHeaders(AuthorizationHeader.valueOf("Basic " + new String(encodedCredentials)),
+            request.addHeaders(AuthorizationHeader.valueOf("Basic " + encodedCredentials),
                     ContentTypeHeader.valueOf("application/pkcs10"),
                     new GenericHeader("Content-Transfer-Encoding", "base64"));
         } catch (MalformedHeaderException e) {
@@ -403,7 +403,7 @@ public class EstNode implements Node {
                 .getBytes(StandardCharsets.ISO_8859_1);
 
         try {
-            signedData = new CMSSignedData(Base64.getDecoder().decode(certificateBytes));
+            signedData = new CMSSignedData(Base64.decode(certificateBytes));
         } catch (CMSException e) {
             logger.error("Failed to find certificate for the signer: " + e.getMessage());
             return null;
@@ -428,7 +428,7 @@ public class EstNode implements Node {
         String pem;
         try {
             pem = "-----BEGIN CERTIFICATE-----\n" +
-                    new String(Base64.getEncoder().encode(certificate.getEncoded())) +
+                    Base64.encode(certificate.getEncoded()) +
                     "\n-----END CERTIFICATE-----\n";
         } catch (CertificateEncodingException e) {
             logger.error("Failed to encode certificate: {}", e.getMessage());

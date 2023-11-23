@@ -17,6 +17,12 @@ set -e
 # limitations under the License.
 #
 
-rm -rf "$(PWD)/forgeops/tmp"
-cd "$(PWD)/../../../deployments/forgeops"
+POC_DIR=$(PWD)
+IOT_EDGE_DIR=$POC_DIR/tmp/iot-edge
+FORGEOPS_DIR=$IOT_EDGE_DIR/deployments/forgeops
+
+echo "====================================================="
+echo "Delete all the GKE deployed components"
+echo "====================================================="
+cd "$FORGEOPS_DIR"
 ./clean.sh
