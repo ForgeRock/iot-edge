@@ -22,8 +22,8 @@ OAuth 2.0 Dynamic Registration:
 
 OAuth 2.0 Client Credential Grant with JWT Bearer Auth:
 - The thing makes a standard OAuth 2.0 access token request using the
-  [Client Credentials Grant](https://backstage.forgerock.com/docs/am/7.1/oauth2-guide/oauth2-client-cred-grant.html)
-  and a [JWT Bearer Token for client authentication](https://backstage.forgerock.com/docs/am/7.1/oauth2-guide/client-auth-jwt.html).
+  [Client Credentials Grant](https://backstage.forgerock.com/docs/am/7.4/oauth2-guide/oauth2-client-cred-grant.html)
+  and a [JWT Bearer Token for client authentication](https://backstage.forgerock.com/docs/am/7.4/oauth2-guide/client-auth-jwt.html).
 - The API Gateway rewrites the request into the format expected by the AM's authentication endpoint for thing authentication.
 - AM verifies the Bearer JWT and responds with a session token.
 - The API Gateway uses the session token to
@@ -55,8 +55,8 @@ The example uses REST API calls rather than the IoT SDK as demonstrated by the [
 ForgeRock for a demonstration of the solution.*
 
 Follow the ForgeOps documentation to install the
-[third party software](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/sw.html) and
-[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.2/cdk/cloud/setup/gke/clusterinfo.html).
+[third party software](https://backstage.forgerock.com/docs/forgeops/7.4/cdk/cloud/setup/gke/sw.html) and
+[obtain the cluster details](https://backstage.forgerock.com/docs/forgeops/7.4/cdk/cloud/setup/gke/clusterinfo.html).
 
 Set the following environment variables:
 ```
