@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 gcr.io/forgerock-io/am-cdk:7.4.0
+FROM --platform=linux/amd64 gcr.io/engineering-devops/iot-ft/am-cdk:latest
+#FROM --platform=linux/amd64 gcr.io/forgerock-io/am-cdk:7.4.0
 
 ARG CONFIG_PROFILE=cdk
 RUN echo "\033[0;36m*** Building '${CONFIG_PROFILE}' profile ***\033[0m"

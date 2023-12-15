@@ -16,9 +16,8 @@
       "availabilityCheckTimeoutMilliSeconds": 2000,
       "connectionPoolSize": 50,
       "connectionSecurity": "ssl",
-      "heartBeatIntervalSeconds": 60,
-      "heartBeatTimeoutMilliSeconds": 3000,
-      "primaryLdapServers": [
+      "failoverLdapServers": [
+        [
         {
           "hostname": "&{openidm.repo.host}",
           "port": {
@@ -26,14 +25,25 @@
           }
         }
       ],
-      "secondaryLdapServers": [
+        [
         {
           "hostname": "&{openidm.repo.secondary.host|ds-idrepo-1.ds-idrepo}",
           "port": {
             "$int": "&{openidm.repo.port}"
           }
         }
+        ],
+        [
+          {
+            "hostname": "&{openidm.repo.tertiary.host|ds-idrepo-2.ds-idrepo}",
+            "port": {
+              "$int": "&{openidm.repo.port}"
+            }
+          }
       ]
+      ],
+      "heartBeatIntervalSeconds": 60,
+      "heartBeatTimeoutMilliSeconds": 3000
     },
     "root": {
       "authentication": {
@@ -322,10 +332,18 @@
             "type": "simple",
             "writability": "createOnly"
           },
+          "allowExpiredPasswordChanges": {
+            "ldapAttribute": "ds-cfg-allow-expired-password-changes",
+            "type": "simple"
+          },
           "defaultPasswordStorageScheme": {
             "isMultiValued": true,
             "isRequired": true,
             "ldapAttribute": "ds-cfg-default-password-storage-scheme",
+            "type": "simple"
+          },
+          "expirePasswordsWithoutWarning": {
+            "ldapAttribute": "ds-cfg-expire-passwords-without-warning",
             "type": "simple"
           },
           "maxPasswordAge": {
@@ -335,6 +353,10 @@
           "passwordAttribute": {
             "isRequired": true,
             "ldapAttribute": "ds-cfg-password-attribute",
+            "type": "simple"
+          },
+          "passwordExpirationInterval": {
+            "ldapAttribute": "ds-cfg-password-expiration-warning-interval",
             "type": "simple"
           },
           "passwordHistoryCount": {
@@ -593,7 +615,7 @@
         }
       },
       "locks": {
-        "dnTemplate": "ou=locks,ou=internal,dc=openidm,dc=forgerock,dc=io",
+        "dnTemplate": "ou=locks,dc=openidm,dc=forgerock,dc=io",
         "objectClasses": [
           "uidObject",
           "fr-idm-lock"
@@ -866,8 +888,72 @@
       "managed/*": {
         "dnTemplate": "ou=managed,dc=openidm,dc=forgerock,dc=io"
       },
+      "managed/application": {
+        "dnTemplate": "ou=application,ou=managed,dc=openidm,dc=forgerock,dc=io",
+        "jsonAttribute": "fr-idm-managed-application-json",
+        "jsonQueryEqualityMatchingRule": "caseIgnoreJsonQueryMatch",
+        "objectClasses": [
+          "uidObject",
+          "fr-idm-managed-application"
+        ],
+        "properties": {
+          "members": {
+            "isMultiValued": true,
+            "propertyName": "applications",
+            "resourcePath": "managed/user",
+            "type": "reverseReference"
+          },
+          "name": {
+            "ldapAttribute": "fr-idm-managed-application-name",
+            "type": "simple"
+          },
+          "owners": {
+            "isMultiValued": true,
+            "propertyName": "ownerOfApp",
+            "resourcePath": "managed/user",
+            "type": "reverseReference"
+          },
+          "roles": {
+            "isMultiValued": true,
+            "propertyName": "applications",
+            "resourcePath": "managed/role",
+            "type": "reverseReference"
+          }
+        }
+      },
+      "managed/assignment": {
+        "dnTemplate": "ou=assignment,ou=managed,dc=openidm,dc=forgerock,dc=io",
+        "jsonAttribute": "fr-idm-managed-assignment-json",
+        "jsonQueryEqualityMatchingRule": "caseIgnoreJsonQueryMatch",
+        "objectClasses": [
+          "uidObject",
+          "fr-idm-managed-assignment"
+        ],
+        "properties": {
+          "condition": {
+            "ldapAttribute": "fr-idm-assignment-condition",
+            "type": "simple"
+          },
+          "members": {
+            "isMultiValued": true,
+            "propertyName": "assignments",
+            "resourcePath": "managed/user",
+            "type": "reverseReference"
+          },
+          "roles": {
+            "isMultiValued": true,
+            "propertyName": "assignments",
+            "resourcePath": "managed/role",
+            "type": "reverseReference"
+          }
+        }
+      },
       "managed/group": {
         "dnTemplate": "ou=groups,ou=identities",
+        "idGenerator": {
+          "propertyName": "name",
+          "type": "property"
+        },
         "jsonAttribute": "fr-idm-managed-group-json",
         "jsonQueryEqualityMatchingRule": "caseIgnoreJsonQueryMatch",
         "namingStrategy": {
@@ -916,10 +1002,6 @@
           "fr-idm-managed-organization"
         ],
         "properties": {
-          "_id": {
-            "ldapAttribute": "uid",
-            "type": "simple"
-          },
           "admins": {
             "isMultiValued": true,
             "propertyName": "adminOfOrg",
@@ -965,6 +1047,20 @@
           "fr-idm-managed-role"
         ],
         "properties": {
+          "applications": {
+            "isMultiValued": true,
+            "ldapAttribute": "fr-idm-managed-role-applications",
+            "primaryKey": "uid",
+            "resourcePath": "managed/application",
+            "type": "reference"
+          },
+          "assignments": {
+            "isMultiValued": true,
+            "ldapAttribute": "fr-idm-managed-role-assignments",
+            "primaryKey": "uid",
+            "resourcePath": "managed/assignment",
+            "type": "reference"
+          },
           "members": {
             "isMultiValued": true,
             "propertyName": "roles",
@@ -1050,10 +1146,24 @@
             "ldapAttribute": "iplanet-am-user-alias-list",
             "type": "simple"
           },
+          "applications": {
+            "isMultiValued": true,
+            "ldapAttribute": "fr-idm-managed-application-member",
+            "primaryKey": "uid",
+            "resourcePath": "managed/application",
+            "type": "reference"
+          },
           "assignedDashboard": {
             "isMultiValued": true,
             "ldapAttribute": "assignedDashboard",
             "type": "simple"
+          },
+          "assignments": {
+            "isMultiValued": true,
+            "ldapAttribute": "fr-idm-managed-assignment-member",
+            "primaryKey": "uid",
+            "resourcePath": "managed/assignment",
+            "type": "reference"
           },
           "authzRoles": {
             "isMultiValued": true,
@@ -1086,6 +1196,11 @@
           "displayName": {
             "ldapAttribute": "displayName",
             "type": "simple"
+          },
+          "effectiveApplications": {
+            "isMultiValued": true,
+            "ldapAttribute": "fr-idm-effectiveApplications",
+            "type": "json"
           },
           "effectiveAssignments": {
             "isMultiValued": true,
@@ -1157,6 +1272,13 @@
             "ldapAttribute": "organizationName",
             "type": "simple"
           },
+          "ownerOfApp": {
+            "isMultiValued": true,
+            "ldapAttribute": "fr-idm-managed-application-owner",
+            "primaryKey": "uid",
+            "resourcePath": "managed/application",
+            "type": "reference"
+          },
           "ownerOfOrg": {
             "isMultiValued": true,
             "ldapAttribute": "fr-idm-managed-organization-owner",
@@ -1166,6 +1288,14 @@
           },
           "password": {
             "ldapAttribute": "userPassword",
+            "type": "simple"
+          },
+          "passwordExpirationTime": {
+            "ldapAttribute": "pwdExpirationTime",
+            "type": "simple"
+          },
+          "passwordLastChangedTime": {
+            "ldapAttribute": "pwdChangedTime",
             "type": "simple"
           },
           "postalAddress": {
@@ -1216,61 +1346,40 @@
         }
       },
       "managed/thing": {
-        "dnTemplate": "ou=people,ou=identities",
+        "dnTemplate": "ou=oauth2DynamicThings,ou=OrganizationConfig,ou=1.0,ou=AgentService,ou=services,ou=am-config",
         "jsonAttribute": "fr-idm-managed-thing-custom-attrs",
         "jsonQueryEqualityMatchingRule": "caseIgnoreJsonQueryMatch",
         "namingStrategy": {
-          "dnAttribute": "fr-idm-uuid",
-          "type": "clientDnNaming"
+          "type": "clientDnNaming",
+          "dnAttribute": "ou"
         },
         "nativeId": false,
         "objectClasses": [
-          "inetOrgPerson",
-          "fr-idm-managed-user-explicit",
-          "fr-iot",
-          "inetuser"
+          "organizationalunit",
+          "sunServiceComponent",
+          "uidObject",
+          "fr-iot"
         ],
         "properties": {
           "_id": {
-            "primaryKey": true,
             "type": "simple",
-            "ldapAttribute": "fr-idm-uuid"
+            "ldapAttribute": "uid",
+            "isRequired": true,
+            "writability": "createOnly"
           },
           "_rev": {
             "type": "simple",
             "ldapAttribute": "etag"
           },
-          "cn": {
+          "applicationType": {
             "type": "simple",
-            "ldapAttribute": "cn"
-          },
-          "sn": {
-            "type": "simple",
-            "ldapAttribute": "sn"
-          },
-          "uid": {
-            "type": "simple",
-            "ldapAttribute": "uid"
-          },
-          "password": {
-            "type": "simple",
-            "ldapAttribute": "userPassword"
-          },
-          "accountStatus": {
-            "type": "simple",
-            "ldapAttribute": "inetUserStatus"
+            "ldapAttribute": "sunserviceID",
+            "isRequired": true,
+            "writability": "createOnly"
           },
           "lastSync": {
             "type": "json",
             "ldapAttribute": "fr-idm-lastSync"
-          },
-          "thingType": {
-            "type": "simple",
-            "ldapAttribute": "thingType"
-          },
-          "thingKeys": {
-            "type": "simple",
-            "ldapAttribute": "thingKeys"
           },
           "thingConfig": {
             "type": "simple",
