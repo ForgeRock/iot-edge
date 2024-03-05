@@ -1346,7 +1346,7 @@
         }
       },
       "managed/thing": {
-        "dnTemplate": "ou=oauth2DynamicThings,ou=OrganizationConfig,ou=1.0,ou=AgentService,ou=services,ou=am-config",
+        "dnTemplate": "ou=oauth2Things,ou=OrganizationConfig,ou=1.0,ou=AgentService,ou=services,ou=am-config",
         "jsonAttribute": "fr-idm-managed-thing-custom-attrs",
         "jsonQueryEqualityMatchingRule": "caseIgnoreJsonQueryMatch",
         "namingStrategy": {

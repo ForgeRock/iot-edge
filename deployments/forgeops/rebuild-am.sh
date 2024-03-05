@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022-2023 ForgeRock AS
+# Copyright 2022-2024 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,8 +63,8 @@ echo "====================================================="
 echo "Deploy AM"
 echo "====================================================="
 
-docker tag gcr.io/forgerock-io/am-cdk/docker-build:latest gcr.io/engineering-devops/iot-ft/am-cdk:latest
-docker push gcr.io/engineering-devops/iot-ft/am-cdk:latest
+docker tag gcr.io/forgerock-io/am-cdk/docker-build:latest gcr.io/engineering-devops/$NAMESPACE/am-cdk:latest
+docker push gcr.io/engineering-devops/$NAMESPACE/am-cdk:latest
 
 cd "$FORGEOPS_DIR/bin"
 ./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"

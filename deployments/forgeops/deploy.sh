@@ -97,16 +97,16 @@ echo "====================================================="
 kubectl cp "$SCRIPTS_DIR/apply_schema.sh" ds-idrepo-0:/tmp
 kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"
 
-echo "====================================================="
-echo "Deploy AM"
-echo "====================================================="
-./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
-./forgeops delete am -y
-./forgeops install am --cdk
-
-echo "====================================================="
-echo "Build and Deploy IDM"
-echo "====================================================="
-./forgeops build idm --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
-./forgeops delete idm -y
-./forgeops install idm --cdk
+#echo "====================================================="
+#echo "Deploy AM"
+#echo "====================================================="
+#./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
+#./forgeops delete am -y
+#./forgeops install am --cdk
+#
+#echo "====================================================="
+#echo "Build and Deploy IDM"
+#echo "====================================================="
+#./forgeops build idm --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
+#./forgeops delete idm -y
+#./forgeops install idm --cdk

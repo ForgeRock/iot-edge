@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 gcr.io/engineering-devops/iot-ft/am-cdk:latest
+FROM --platform=linux/amd64 gcr.io/engineering-devops/iot-test/am-cdk:latest
 #FROM --platform=linux/amd64 gcr.io/forgerock-io/am-cdk:7.4.0
 
 ARG CONFIG_PROFILE=cdk

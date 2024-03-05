@@ -21,7 +21,7 @@ ldapmodify \
         --bindDN uid=admin \
         --bindPassword $(cat $DS_UID_ADMIN_PASSWORD_FILE) \
         --trustAll <<EOF
-dn: ou=oauth2DynamicThings,ou=OrganizationConfig,ou=1.0,ou=AgentService,ou=services,ou=am-config
+dn: ou=oauth2Things,ou=OrganizationConfig,ou=1.0,ou=AgentService,ou=services,ou=am-config
 objectclass: organizationalunit
 objectclass: sunServiceComponent
 objectclass: top

@@ -2561,7 +2561,7 @@
           "applicationType" : {
             "title" : "Application Type",
             "description" : "Application Type",
-            "default": "OAuth2Client",
+            "default": "OAuth2Thing",
             "viewable" : false,
             "type" : "string",
             "searchable" : false,
