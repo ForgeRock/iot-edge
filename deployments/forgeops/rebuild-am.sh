@@ -63,10 +63,11 @@ echo "====================================================="
 echo "Deploy AM"
 echo "====================================================="
 
-docker tag gcr.io/forgerock-io/am-cdk/docker-build:latest gcr.io/engineering-devops/$NAMESPACE/am-cdk:latest
-docker push gcr.io/engineering-devops/$NAMESPACE/am-cdk:latest
+# docker tag gcr.io/forgerock-io/am-cdk/docker-build:latest gcr.io/engineering-devops/$NAMESPACE/am-cdk:latest
+# docker push gcr.io/engineering-devops/$NAMESPACE/am-cdk:latest
 
 cd "$FORGEOPS_DIR/bin"
+#./config export am "$CONFIG_PROFILE" --sort
 ./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
 ./forgeops delete am -y
 ./forgeops install am --cdk

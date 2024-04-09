@@ -2558,16 +2558,6 @@
               }
             ]
           },
-          "applicationType" : {
-            "title" : "Application Type",
-            "description" : "Application Type",
-            "default": "OAuth2Thing",
-            "viewable" : false,
-            "type" : "string",
-            "searchable" : false,
-            "userEditable" : false,
-            "isPersonal" : false
-          },
           "authzRoles" : {
             "description" : "Authorization Roles",
             "title" : "Authorization Roles",

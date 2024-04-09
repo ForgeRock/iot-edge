@@ -1292,11 +1292,13 @@
           },
           "passwordExpirationTime": {
             "ldapAttribute": "pwdExpirationTime",
-            "type": "simple"
+            "type": "simple",
+            "writability": "readOnlyDiscardWrites"
           },
           "passwordLastChangedTime": {
             "ldapAttribute": "pwdChangedTime",
-            "type": "simple"
+            "type": "simple",
+            "writability": "readOnlyDiscardWrites"
           },
           "postalAddress": {
             "ldapAttribute": "street",
@@ -1370,12 +1372,6 @@
           "_rev": {
             "type": "simple",
             "ldapAttribute": "etag"
-          },
-          "applicationType": {
-            "type": "simple",
-            "ldapAttribute": "sunserviceID",
-            "isRequired": true,
-            "writability": "createOnly"
           },
           "lastSync": {
             "type": "json",

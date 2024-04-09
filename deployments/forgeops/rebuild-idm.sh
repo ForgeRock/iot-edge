@@ -63,6 +63,7 @@ echo "====================================================="
 echo "Build and Deploy IDM"
 echo "====================================================="
 cd "$FORGEOPS_DIR/bin"
+#./config export idm "$CONFIG_PROFILE" --sort
 ./forgeops build idm --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
 ./forgeops delete idm -y
 ./forgeops install idm --cdk
