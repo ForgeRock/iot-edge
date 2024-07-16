@@ -1,5 +1,5 @@
 #
-# Copyright 2022-2023 ForgeRock AS
+# Copyright 2022-2024 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ ldapmodify \
         --bindDN uid=admin \
         --bindPassword $(cat $DS_UID_ADMIN_PASSWORD_FILE) \
         --trustAll <<EOF
+dn:ou=things,ou=identities
+objectclass: organizationalunit
+objectclass: top
+
 dn: cn=schema
 changetype: modify
 add: attributeTypes

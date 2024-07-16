@@ -1,10 +1,15 @@
-FROM --platform=linux/amd64 gcr.io/forgerock-io/am-cdk:7.4.0
+#FROM gcr.io/forgerock-io/am-cdk/pit1:7.6.0-latest-postcommit
+FROM --platform=linux/amd64 gcr.io/forgerock-io/am-cdk/pull-requests:7.6.0-PR-21681-5-ac5b06d5649ebd203e4571cf8a84d90c3434c591
 
-ARG CONFIG_PROFILE=cdk
+ARG CONFIG_PROFILE=default
 RUN echo "\033[0;36m*** Building '${CONFIG_PROFILE}' profile ***\033[0m"
 COPY  --chown=forgerock:root config-profiles/${CONFIG_PROFILE}/ /home/forgerock/openam/
 
 COPY --chown=forgerock:root *.sh /home/forgerock/
+
+RUN mkdir -p /home/forgerock/logging
+
+ENV CATALINA_OPTS="${CATALINA_OPTS} -Dlogback.configurationFile=/home/forgerock/logging/logback.xml"
 
 WORKDIR /home/forgerock
 

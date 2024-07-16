@@ -2,7 +2,7 @@
 set -e
 
 #
-# Copyright 2022-2023 ForgeRock AS
+# Copyright 2022-2024 ForgeRock AS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ set -e
 FORGEOPS_DIR=$(PWD)/tmp/forgeops
 SCRIPTS_DIR=$(PWD)/scripts
 BASE_OVERLAY_DIR=$(PWD)/overlay
-CONFIG_PROFILE=cdk
 
 if [[ -z "$NAMESPACE" || -z "$FQDN" || -z "$CLUSTER" || -z "$ZONE" || -z "$PROJECT" || -z "$CONTAINER_REGISTRY" ]]; then
   echo "NAMESPACE, FQDN, CLUSTER, ZONE, PROJECT and CONTAINER_REGISTRY variables must be set"
@@ -51,6 +50,7 @@ echo "ZONE=$ZONE"
 echo "NAMESPACE=$NAMESPACE"
 echo "FQDN=$FQDN"
 echo "CONTAINER_REGISTRY=$CONTAINER_REGISTRY"
+echo "CONFIG_PROFILE=$CONFIG_PROFILE"
 
 echo "====================================================="
 echo "Configure GCP SDK"
@@ -62,7 +62,6 @@ echo "Clone ForgeOps"
 echo "====================================================="
 rm -rf "$FORGEOPS_DIR" && mkdir -p "$FORGEOPS_DIR" && cd "$FORGEOPS_DIR"
 git clone https://github.com/ForgeRock/forgeops.git .
-git checkout release/7.4-20231003
 
 echo "====================================================="
 echo "Overlay base and custom files"
@@ -84,12 +83,19 @@ echo "====================================================="
 if [ -n "$PLATFORM_PASSWORD" ]; then
   kubectl create secret generic am-env-secrets --from-literal=AM_PASSWORDS_AMADMIN_CLEAR="$PLATFORM_PASSWORD" || true
 fi
+if [ -n "$DS_PASSWORD" ]; then
+  kubectl create secret generic ds-passwords --from-literal=dirmanager.pw="$DS_PASSWORD" || true
+  kubectl create secret generic ds-env-secrets \
+    --from-literal=AM_STORES_APPLICATION_PASSWORD="$DS_PASSWORD" \
+    --from-literal=AM_STORES_CTS_PASSWORD="$DS_PASSWORD" \
+    --from-literal=AM_STORES_USER_PASSWORD="$DS_PASSWORD" || true
+fi
 
 echo "====================================================="
 echo "Installing the Platform"
 echo "====================================================="
 cd "$FORGEOPS_DIR/bin"
-./forgeops install --cdk --fqdn "$FQDN"
+./forgeops install --fqdn "$FQDN" --namespace $NAMESPACE
 
 echo "====================================================="
 echo "Applying custom DS schema"
@@ -98,15 +104,15 @@ kubectl cp "$SCRIPTS_DIR/apply_schema.sh" ds-idrepo-0:/tmp
 kubectl exec ds-idrepo-0 -- /bin/bash -c "/tmp/apply_schema.sh"
 
 echo "====================================================="
-echo "Deploy AM"
-echo "====================================================="
-./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
-./forgeops delete am -y
-./forgeops install am --cdk
-
-echo "====================================================="
 echo "Build and Deploy IDM"
 echo "====================================================="
 ./forgeops build idm --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
 ./forgeops delete idm -y
-./forgeops install idm --cdk
+./forgeops install idm --config-profile "$CONFIG_PROFILE"
+
+echo "====================================================="
+echo "Deploy AM"
+echo "====================================================="
+./forgeops build am --config-profile "$CONFIG_PROFILE" --push-to "$CONTAINER_REGISTRY"
+./forgeops delete am -y
+./forgeops install am --config-profile "$CONFIG_PROFILE"

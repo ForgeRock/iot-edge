@@ -1,0 +1,30 @@
+{
+  "data": {
+    "_id": "default",
+    "_type": {
+      "_id": "IotService",
+      "collection": false,
+      "name": "IotService"
+    },
+    "enableOAuth2Things": true,
+    "oauth2ThingsDataStore": "oauth2thing-store",
+    "oauth2ThingsDn": "ou=things,ou=identities",
+    "oauth2ThingsNamingAttribute": "uid",
+    "oauth2ThingsIdentityObjectName": "managed/thing"
+  },
+  "metadata": {
+    "entityId": "default",
+    "entityType": "IotService",
+    "objectClass": [
+      "sunServiceComponent",
+      "top"
+    ],
+    "ou": [
+      "default"
+    ],
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": null,
+    "uid": "ou=default,ou=OrganizationConfig,ou=1.0,ou=IotService,ou=services,ou=am-config"
+  }
+}

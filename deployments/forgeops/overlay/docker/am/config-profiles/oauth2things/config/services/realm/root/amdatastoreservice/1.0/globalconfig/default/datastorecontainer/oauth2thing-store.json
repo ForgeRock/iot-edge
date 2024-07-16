@@ -1,0 +1,38 @@
+{
+  "data": {
+    "_id": "default/dataStoreContainer/oauth2thing-store",
+    "_type": {
+      "_id": "amDataStoreService",
+      "collection": false,
+      "name": "amDataStoreService"
+    },
+    "affinityEnabled": false,
+    "bindDN": "&{am.stores.user.username}",
+    "bindPassword": "&{am.stores.user.password}",
+    "dataStoreEnabled": true,
+    "mtlsEnabled": false,
+    "serverUrls": {
+      "$list": "&{am.stores.user.servers}"
+    },
+    "useSsl": {
+      "$bool" : "&{am.stores.ssl.enabled}"
+    },
+    "useStartTLS": false,
+    "identityStore": true
+  },
+  "metadata": {
+    "entityId": "default/dataStoreContainer/oauth2thing-store",
+    "entityType": "amDataStoreService",
+    "objectClass": [
+      "sunServiceComponent",
+      "top"
+    ],
+    "ou": [
+      "oauth2thing-store"
+    ],
+    "pathParams": {},
+    "realm": null,
+    "sunServiceID": "config",
+    "uid": "ou=oauth2thing-store,ou=dataStoreContainer,ou=default,ou=GlobalConfig,ou=1.0,ou=amDataStoreService,ou=services,ou=am-config"
+  }
+}
