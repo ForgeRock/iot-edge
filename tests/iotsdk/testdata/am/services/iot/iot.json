@@ -3,5 +3,6 @@
   "oauthClientName": "forgerock-iot-oauth2-client",
   "createOAuthClient": true,
   "createOAuthJwtIssuer": true,
-  "attributeAllowlist": ["thingConfig", "thingType", "thingProperties"]
+  "attributeAllowlist": ["thingConfig", "thingType", "thingProperties"],
+  "addIdentityAttributes": true
 }

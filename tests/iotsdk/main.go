@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 ForgeRock AS
+ * Copyright 2020-2024 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,40 +56,21 @@ const (
 	jwtRegWithPoPTree                                = "JWTRegWithPoP"
 	jwtRegWithPoPWithCertTree                        = "JWTRegWithPoPWithCert"
 	userPwdAuthTree                                  = "AnvilUserPwd"
+
+	PassString = "\033[1;32mPASS\033[0m"
+	FailString = "\033[1;31mFAIL\033[0m"
 )
 
 var secretsPath = execDir + "/debug/keys/.secrets"
 
-// define the full test set
-var tests = []anvil.SDKTest{
+var iotTests = []anvil.SDKTest{
 	&AuthenticateThingJWT{},
 	&AuthenticateThingJWTBearer{},
 	&AuthenticateThingJWTNonDefaultKID{},
-	&AuthenticateWithoutConfirmationKey{},
 	&AuthenticateWithCustomClaims{},
 	&AuthenticateWithCustomClaimsJWTBearer{},
-	&AuthenticateWithIncorrectCustomClaim{},
-	&AuthenticateWithUserPwd{},
-	&AuthenticateThingThroughGateway{},
-	&AuthenticateThingThroughGatewayWithJWTBearer{},
-	&AuthenticateWithIncorrectPwd{},
-	&RegisterDeviceCert{alg: jose.ES256},
-	&RegisterDeviceCert{alg: jose.ES384},
-	&RegisterDeviceCert{alg: jose.ES512},
-	//&RegisterDeviceCert{alg: jose.EdDSA},
-	&RegisterDeviceCert{alg: jose.PS256},
-	&RegisterDeviceCert{alg: jose.PS384},
-	&RegisterDeviceCert{alg: jose.PS512},
-	&RegisterDeviceCertJWTBearer{},
 	&RegisterDeviceWithAttributes{},
-	&RegisterDeviceWithoutCert{},
 	&RegisterServiceCert{},
-	&RegisterDeviceNoKeyID{},
-	&RegisterDeviceNoKey{},
-	&RegisterDeviceSoftState{},
-	&RegisterDevicePopAndSoftState{},
-	&RegisterDevicePop{},
-	&RegisterDevicePopAndCert{},
 	&AccessTokenWithExactScopes{},
 	&AccessTokenWithASubsetOfScopes{},
 	&AccessTokenWithUnsupportedScopes{},
@@ -117,25 +98,14 @@ var tests = []anvil.SDKTest{
 	&SimpleThingExample{},
 	&SimpleThingExampleTags{limitedTags: false},
 	&SimpleThingExampleTags{limitedTags: true},
-	&CertRegistrationExample{},
-	&PoPRegistrationExample{},
-	&PoPSwStmtRegistrationExample{},
-	&SwStmtRegistrationExample{},
 	&DeviceTokenExample{},
 	&GatewayAppAuth{},
 	&GatewayAppAuthNonDefaultKID{},
-	&GatewayAppReg{},
 	&AttributesWithNoFilter{},
 	&AttributesWithFilter{},
 	&AttributesWithNonRestrictedToken{},
 	&AttributesExpiredSession{},
-	&SessionValid{},
-	&SessionInvalid{},
-	&SessionLogout{},
 	&UnrestrictedSessionTokenAfterAuthentication{},
-	&UnrestrictedSessionTokenAfterRegistration{},
-	//&SessionValidWithRestrictedToken{}, // OPENAM-19492
-	&SessionLogoutWithRestrictedToken{},
 	&UserTokenAllow{},
 	&UserTokenDeny{},
 	&UserTokenWithUnsupportedScopes{},
@@ -147,6 +117,41 @@ var tests = []anvil.SDKTest{
 	&UserTokenRefreshWithIncreasedScope{},
 	&AccessTokenRefresh{},
 	&UnauthorisedAccessTokenRefresh{},
+}
+
+var thingsTests = []anvil.SDKTest{
+	&AuthenticateWithoutConfirmationKey{},
+	&AuthenticateWithIncorrectCustomClaim{},
+	&AuthenticateWithUserPwd{},
+	&AuthenticateThingThroughGateway{},
+	&AuthenticateThingThroughGatewayWithJWTBearer{},
+	&AuthenticateWithIncorrectPwd{},
+	&RegisterDeviceCert{alg: jose.ES256},
+	&RegisterDeviceCert{alg: jose.ES384},
+	&RegisterDeviceCert{alg: jose.ES512},
+	//&RegisterDeviceCert{alg: jose.EdDSA},
+	&RegisterDeviceCert{alg: jose.PS256},
+	&RegisterDeviceCert{alg: jose.PS384},
+	&RegisterDeviceCert{alg: jose.PS512},
+	&RegisterDeviceCertJWTBearer{},
+	&RegisterDeviceWithoutCert{},
+	&RegisterDeviceNoKeyID{},
+	&RegisterDeviceNoKey{},
+	&RegisterDeviceSoftState{},
+	&RegisterDevicePopAndSoftState{},
+	&RegisterDevicePop{},
+	&RegisterDevicePopAndCert{},
+	&CertRegistrationExample{},
+	&PoPRegistrationExample{},
+	&PoPSwStmtRegistrationExample{},
+	&SwStmtRegistrationExample{},
+	&GatewayAppReg{},
+	&SessionValid{},
+	&SessionInvalid{},
+	&SessionLogout{},
+	&UnrestrictedSessionTokenAfterRegistration{},
+	//&SessionValidWithRestrictedToken{}, // OPENAM-19492
+	&SessionLogoutWithRestrictedToken{},
 	&AccessTokenAfterDynamicRegistration{},
 }
 
@@ -201,7 +206,11 @@ func runAllTestsForContext(testCtx anvil.TestState) (result bool) {
 	debug.Logger = log.New(&sdkDebug, "", log.Ltime|log.Lmicroseconds|log.Lshortfile)
 	anvil.DebugLogger = log.New(&anvilDebug, "", log.Ltime|log.Lmicroseconds|log.Lshortfile)
 
-	for _, test := range tests {
+	allTests := thingsTests
+	if !testCtx.EnableOAuth2Things() {
+		allTests = append(iotTests, allTests...)
+	}
+	for _, test := range allTests {
 		sdkDebug.Reset()
 		anvilDebug.Reset()
 		start := time.Now()
@@ -232,32 +241,39 @@ func (i realmInfo) String() string {
 	return fmt.Sprintf("%s (%s)", s, extra)
 }
 
-func runAllTestsForRealm(realm realmInfo) (result bool, err error) {
+func runAllTestsForRealm(realm realmInfo, enableOAuth2Things bool) (result bool, err error) {
 	fmt.Printf("\n\n-- Running Tests in %s --\n\n", realm)
 
 	fmt.Printf("-- Running AM Connection Tests --\n\n")
 
-	result = runAllTestsForContext(anvil.NewTestState(nil, realm.u, realm.name, realm.path, realm.dnsConfigured))
+	result = runAllTestsForContext(
+		anvil.NewTestState(nil, realm.u, realm.name, realm.path, realm.dnsConfigured, enableOAuth2Things),
+	)
 
-	fmt.Printf("\n-- Running IoT Gateway COAP Connection Tests --\n\n")
+	if !enableOAuth2Things {
+		fmt.Printf("\n-- Running IoT Gateway COAP Connection Tests --\n\n")
 
-	// run the IoT Gateway
-	gateway, err := anvil.TestGateway(realm.u, realm.name, realm.path, jwtAuthWithPoPTree, realm.dnsConfigured)
-	if err != nil {
-		return false, err
-	}
-	err = gateway.Initialise()
-	if err != nil {
-		return false, err
-	}
-	gatewayKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	err = gateway.StartCOAPServer("127.0.0.1:0", gatewayKey)
-	if err != nil {
-		return false, err
-	}
-	defer gateway.ShutdownCOAPServer()
+		// run the IoT Gateway
+		gateway, err := anvil.TestGateway(realm.u, realm.name, realm.path, jwtAuthWithPoPTree, realm.dnsConfigured)
+		if err != nil {
+			return false, err
+		}
+		err = gateway.Initialise()
+		if err != nil {
+			return false, err
+		}
+		gatewayKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		err = gateway.StartCOAPServer("127.0.0.1:0", gatewayKey)
+		if err != nil {
+			return false, err
+		}
+		defer gateway.ShutdownCOAPServer()
 
-	result = runAllTestsForContext(anvil.NewTestState(gateway, realm.u, realm.name, realm.path, realm.dnsConfigured)) && result
+		result = runAllTestsForContext(
+			anvil.NewTestState(gateway, realm.u, realm.name, realm.path, realm.dnsConfigured, enableOAuth2Things,
+		)) && result
+	}
+
 	return result, nil
 }
 
@@ -333,16 +349,47 @@ func runAMTests() (err error) {
 		}
 	}()
 
-	allPass := true
+	fmt.Printf("\n\n-- OAuth2 Things is disabled --")
+	thingsDisabledPass := true
 	for _, r := range realms {
-		pass, err := runAllTestsForRealm(r)
-		allPass = allPass && pass
+		pass, err := runAllTestsForRealm(r, false)
+		thingsDisabledPass = thingsDisabledPass && pass
 		if err != nil {
 			return err
 		}
 	}
-
-	if !allPass {
+	var resultStr string
+	if thingsDisabledPass {
+		resultStr = PassString
+	} else {
+		resultStr = FailString
+	}
+	fmt.Printf("\n\nTEST RUN RESULT: %s", resultStr)
+	fmt.Printf("\n\n----------------------------------------------------------------------")
+	fmt.Printf("\n\n-- OAuth2 Things is enabled --")
+	thingsEnabledPass := true
+	for _, r := range realms {
+		err = anvil.ModifyIotService(r.name, true)
+		if err != nil {
+			return err
+		}
+		err = anvil.CreateAgentGroup(r.name, testdataDir)
+		if err != nil {
+			return err
+		}
+		pass, err := runAllTestsForRealm(r, true)
+		thingsEnabledPass = thingsEnabledPass && pass
+		if err != nil {
+			return err
+		}
+	}
+	if thingsEnabledPass {
+		resultStr = PassString
+	} else {
+		resultStr = FailString
+	}
+	fmt.Printf("\n\nTEST RUN RESULT: %s", resultStr)
+	if !thingsEnabledPass || !thingsDisabledPass {
 		return fmt.Errorf("test FAILURE")
 	}
 	return nil
@@ -363,7 +410,7 @@ func runPlatformTests() (err error) {
 		name:        anvil.RootRealm,
 		path:        anvil.RootRealm,
 		u:           u,
-	})
+	}, false)
 	if err != nil {
 		return err
 	}
@@ -417,8 +464,8 @@ var (
 func main() {
 	flag.Parse()
 	if err := runTests(); err != nil {
-		anvil.ProgressLogger.Fatalf("\n%s %s", anvil.FailString, err)
+		anvil.ProgressLogger.Fatalf("\n\nOVERALL RESULT: %s %s", anvil.FailString, err)
 	}
-	anvil.ProgressLogger.Println("\n", anvil.PassString)
+	anvil.ProgressLogger.Println("\n\nOVERALL RESULT: ", anvil.PassString)
 	os.Exit(0)
 }
