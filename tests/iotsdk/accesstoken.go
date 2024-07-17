@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 ForgeRock AS
+ * Copyright 2020-2024 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ func (t *AccessTokenWithExactScopes) Run(state anvil.TestState, data anvil.Thing
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.ID, "publish", "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, state.EnableOAuth2Things(), "publish", "subscribe")
 }
 
 // AccessTokenWithASubsetOfScopes requests an access token for a thing with specified scopes. The scopes are a
@@ -91,7 +91,7 @@ func (t *AccessTokenWithASubsetOfScopes) Run(state anvil.TestState, data anvil.T
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.ID, "publish")
+	return verifyAccessTokenResponse(response, data.Id.ID, state.EnableOAuth2Things(), "publish")
 }
 
 // AccessTokenWithUnsupportedScopes requests an access token for a thing with specified scopes. The scopes do not
@@ -156,7 +156,7 @@ func (t *AccessTokenWithNoScopes) Run(state anvil.TestState, data anvil.ThingDat
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.ID, "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, state.EnableOAuth2Things(), "subscribe")
 }
 
 func (t *AccessTokenWithNoScopes) NameSuffix() string {
@@ -194,10 +194,11 @@ func (t *AccessTokenFromCustomClient) Run(state anvil.TestState, data anvil.Thin
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.ID, "create", "modify", "delete")
+	return verifyAccessTokenResponse(response, data.Id.ID, state.EnableOAuth2Things(), "create", "modify", "delete")
 }
 
-func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject string, requestedScopes ...string) bool {
+func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject string, enableOAuth2Things bool,
+	requestedScopes ...string) bool {
 	token, err := response.AccessToken()
 	if err != nil {
 		anvil.DebugLogger.Println(err)
@@ -216,7 +217,12 @@ func verifyAccessTokenResponse(response thing.AccessTokenResponse, subject strin
 		anvil.DebugLogger.Println(err)
 		return false
 	}
-	compoundSub := "(usr!" + subject + ")"
+	var compoundSub string
+	if enableOAuth2Things {
+		compoundSub = "(age!" + subject + ")"
+	} else {
+		compoundSub = "(usr!" + subject + ")"
+	}
 	if claims.Subject != subject && claims.Subject != compoundSub {
 		anvil.DebugLogger.Printf("access token sub, %s, not equal to thing ID, %s, or compound ID, %s\n",
 			claims.Subject, subject, compoundSub)
@@ -306,7 +312,7 @@ func (a AccessTokenWithExactScopesNonRestricted) Run(state anvil.TestState, data
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.ID, "publish", "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, state.EnableOAuth2Things(), "publish", "subscribe")
 }
 
 // AccessTokenWithNoScopesNonRestricted requests an access token with no scopes using a non-restricted session token
@@ -338,7 +344,7 @@ func (a AccessTokenWithNoScopesNonRestricted) Run(state anvil.TestState, data an
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, data.Id.ID, "subscribe")
+	return verifyAccessTokenResponse(response, data.Id.ID, state.EnableOAuth2Things(), "subscribe")
 }
 
 // AccessTokenExpiredSession requests an access token after the current session has been 'expired'
@@ -410,7 +416,7 @@ func (t *AccessTokenRefresh) Run(state anvil.TestState, data anvil.ThingData) bo
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	if !verifyAccessTokenResponse(accessToken, data.Id.ID, scope...) {
+	if !verifyAccessTokenResponse(accessToken, data.Id.ID, state.EnableOAuth2Things(), scope...) {
 		return false
 	}
 	refreshToken, err := accessToken.RefreshToken()
@@ -423,7 +429,7 @@ func (t *AccessTokenRefresh) Run(state anvil.TestState, data anvil.ThingData) bo
 		anvil.DebugLogger.Println("failed to refresh access token", err)
 		return false
 	}
-	return verifyAccessTokenResponse(newAccessToken, data.Id.ID, scope...)
+	return verifyAccessTokenResponse(newAccessToken, data.Id.ID, state.EnableOAuth2Things(), scope...)
 }
 
 // UnauthorisedAccessTokenRefresh requests an access and refresh token for a device A and then tries to use the refresh
@@ -473,7 +479,7 @@ func (t *UnauthorisedAccessTokenRefresh) Run(state anvil.TestState, aData anvil.
 		anvil.DebugLogger.Println("access token request failed", err)
 		return false
 	}
-	if !verifyAccessTokenResponse(accessToken, aData.Id.ID, scope...) {
+	if !verifyAccessTokenResponse(accessToken, aData.Id.ID, state.EnableOAuth2Things(), scope...) {
 		return false
 	}
 	refreshToken, err := accessToken.RefreshToken()
@@ -540,5 +546,5 @@ func (t *AccessTokenAfterDynamicRegistration) Run(state anvil.TestState, data an
 		anvil.DebugLogger.Println("_id not found in attributes", err)
 		return false
 	}
-	return verifyAccessTokenResponse(response, deviceID, scope...)
+	return verifyAccessTokenResponse(response, deviceID, state.EnableOAuth2Things(), scope...)
 }

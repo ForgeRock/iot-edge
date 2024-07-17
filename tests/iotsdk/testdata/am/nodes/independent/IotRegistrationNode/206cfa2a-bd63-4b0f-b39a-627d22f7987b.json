@@ -6,6 +6,7 @@
   "allowKeyRotation": false,
   "jwtRegistrationMethod" : "POP_WITH_SOFTWARE_STATEMENT",
   "defaultAttributeValues" : {
+    "group": "oauth2things"
   },
   "_id": "206cfa2a-bd63-4b0f-b39a-627d22f7987b"
 }

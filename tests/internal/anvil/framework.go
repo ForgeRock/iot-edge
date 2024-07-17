@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 ForgeRock AS
+ * Copyright 2020-2024 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,6 +219,12 @@ func ConfigureTestRealm(realm string, testDataDir string) (err error) {
 
 // RestoreTestRealm restores the configuration of the realm to a pre-test state
 func RestoreTestRealm(realm string, testDataDir string) (err error) {
+	// delete the OAuth 2.0 Thing agent group
+	err = am.DeleteAgentGroup(realm, "OAuth2Thing/oauth2things")
+	if err != nil {
+		return err
+	}
+
 	// delete the various services
 	err = forAllJSONFilesInDirectory(
 		filepath.Join(testDataDir, "services"),
@@ -229,18 +235,17 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 		return err
 	}
 
-	// delete the OAuth 2.0 agents
-	for _, agent := range []string{
-		"OAuth2Client/forgerock-iot-oauth2-client",
+	agents := []string{"OAuth2Client/forgerock-iot-oauth2-client",
 		"OAuth2Client/thing-oauth2-client",
-		"TrustedJwtIssuer/forgerock-iot-jwt-issuer",
 		"SoftwarePublisher/iot-software-publisher",
-	} {
+		"TrustedJwtIssuer/forgerock-iot-jwt-issuer",
+	}
+	// delete the OAuth 2.0 agents
+	for _, agent := range agents {
 		err = am.DeleteAgent(realm, agent)
 		if err != nil {
 			return err
 		}
-
 	}
 
 	// remove the trees
@@ -265,6 +270,12 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	return nil
 }
 
+func CreateAgentGroup(realm string, testDataDir string) (err error) {
+	err = am.CreateAgentGroup(realm, "OAuth2Thing/oauth2things",
+		filepath.Join(testDataDir, "agentgroups/oauth2things.json"))
+	return err
+}
+
 // URL returns an AM URL that points at the given sub-domain
 func URL(subDomain string) *url.URL {
 	u, _ := url.Parse(am.URL(subDomain))
@@ -278,6 +289,7 @@ func BaseURL() *url.URL {
 }
 
 const oauth2Service = "oauth-oidc"
+const iotService = "iot"
 
 func subConfig(config map[string]json.RawMessage, key string) (sub map[string]json.RawMessage, err error) {
 	value, ok := config[key]
@@ -311,6 +323,29 @@ func ClientSignedTokenType(alg jose.SignatureAlgorithm) AccessTokenType {
 		name: "ClientSigned" + string(alg),
 		alg:  alg,
 	}
+}
+
+// ModifyIotService updates the OAuth2 Things configuration for the IoT service
+func ModifyIotService(realm string, enableOAuth2Things bool) (err error) {
+	original, err := am.GetService(realm, iotService)
+	if err != nil {
+		return err
+	}
+	var config map[string]json.RawMessage
+	err = json.Unmarshal(original, &config)
+	if err != nil {
+		return err
+	}
+	config["enableOAuth2Things"], _ = json.Marshal(enableOAuth2Things)
+	config["createOAuthClient"], _ = json.Marshal(!enableOAuth2Things)
+	config["createOAuthJwtIssuer"], _ = json.Marshal(!enableOAuth2Things)
+	config["addIdentityAttributes"], _ = json.Marshal(!enableOAuth2Things)
+	newConfig, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	_, err = am.UpdateService(realm, iotService, bytes.NewReader(newConfig))
+	return err
 }
 
 // ModifyOAuth2Provider changes the OAuth 2.0 access tokens issued by AM
@@ -535,27 +570,29 @@ type ThingData struct {
 
 // TestState contains client and realm data required to run a test
 type TestState struct {
-	clientType    string
-	gateway       *gateway.Gateway
-	realm         string
-	realmPath     string
-	amURL         *url.URL
-	dnsConfigured bool
+	clientType         string
+	gateway            *gateway.Gateway
+	realm              string
+	realmPath          string
+	amURL              *url.URL
+	dnsConfigured      bool
+	enableOAuth2Things bool
 }
 
 // NewTestState will create a new TestState instance with the given properties
-func NewTestState(gateway *gateway.Gateway, amURL *url.URL, realm, realmPath string, dns bool) TestState {
+func NewTestState(gateway *gateway.Gateway, amURL *url.URL, realm, realmPath string, dns bool, enableOAuth2Things bool) TestState {
 	clientType := AMClientType
 	if gateway != nil {
 		clientType = GatewayClientType
 	}
 	return TestState{
-		clientType:    clientType,
-		gateway:       gateway,
-		realm:         realm,
-		realmPath:     realmPath,
-		amURL:         amURL,
-		dnsConfigured: dns,
+		clientType:         clientType,
+		gateway:            gateway,
+		realm:              realm,
+		realmPath:          realmPath,
+		amURL:              amURL,
+		dnsConfigured:      dns,
+		enableOAuth2Things: enableOAuth2Things,
 	}
 }
 
@@ -606,6 +643,11 @@ func (t *TestState) DNSConfigured() bool {
 // AMURL returns the URL of the AM server as a string
 func (t *TestState) AMURL() string {
 	return t.amURL.String()
+}
+
+// EnableOAuth2Things will be true if OAuth 2.0 Things is enabled
+func (t *TestState) EnableOAuth2Things() bool {
+	return t.enableOAuth2Things
 }
 
 func (t *TestState) String() string {

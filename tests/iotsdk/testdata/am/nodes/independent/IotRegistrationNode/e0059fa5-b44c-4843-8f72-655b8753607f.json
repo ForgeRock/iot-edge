@@ -5,7 +5,8 @@
   "createIdentity": true,
   "allowKeyRotation": false,
   "jwtRegistrationMethod" : "POP_WITHOUT_TRUST",
-  "defaultAttributeValues" : {
+  "defaultAttributeValues": {
+    "group": "oauth2things"
   },
   "_id": "e0059fa5-b44c-4843-8f72-655b8753607f"
 }
