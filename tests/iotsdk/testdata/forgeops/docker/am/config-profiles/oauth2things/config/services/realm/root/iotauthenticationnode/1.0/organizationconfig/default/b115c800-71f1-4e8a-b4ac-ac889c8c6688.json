@@ -1,0 +1,23 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "IotAuthenticationNode",
+    "entityId" : "default/b115c800-71f1-4e8a-b4ac-ac889c8c6688",
+    "uid" : "ou=b115c800-71f1-4e8a-b4ac-ac889c8c6688,ou=default,ou=OrganizationConfig,ou=1.0,ou=IotAuthenticationNode,ou=services,ou=am-config",
+    "sunServiceID" : "instance",
+    "objectClass" : [ "top", "sunServiceComponent" ],
+    "pathParams" : { },
+    "ou" : null
+  },
+  "data" : {
+    "_id" : "default/b115c800-71f1-4e8a-b4ac-ac889c8c6688",
+    "jwtAuthenticationMethod" : "PROOF_OF_POSSESSION",
+    "issueRestrictedToken" : false,
+    "additionalAudienceValues" : [ ],
+    "_type" : {
+      "_id" : "IotAuthenticationNode",
+      "name" : "IotAuthenticationNode",
+      "collection" : false
+    }
+  }
+}

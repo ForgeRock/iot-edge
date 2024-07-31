@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 ForgeRock AS
+ * Copyright 2020-2024 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -494,6 +494,27 @@ func CreateAgent(realm, agentName, payloadPath string) (err error) {
 func DeleteAgent(realm string, agentName string) (err error) {
 	_, err = crestDelete(
 		fmt.Sprintf("%s/json/realm-config/agents/%s?realm=%s", AMURL, agentName, realm),
+		realmConfigEndpointVersion)
+	return err
+}
+
+// CreateAgentGroup creates an agent group (OAuth 2.0 Client, JWT Issuer etc) in the realm
+func CreateAgentGroup(realm, agentGroupName, payloadPath string) (err error) {
+	b, err := os.ReadFile(payloadPath)
+	if err != nil {
+		return err
+	}
+	_, err = putCreate(
+		fmt.Sprintf("%s/json/realm-config/agents/groups/%s?realm=%s", AMURL, agentGroupName, realm),
+		realmConfigEndpointVersion,
+		bytes.NewReader(b))
+	return err
+}
+
+// DeleteAgentGroup deletes the agent group from the realm
+func DeleteAgentGroup(realm string, agentGroupName string) (err error) {
+	_, err = crestDelete(
+		fmt.Sprintf("%s/json/realm-config/agents/groups/%s?realm=%s", AMURL, agentGroupName, realm),
 		realmConfigEndpointVersion)
 	return err
 }

@@ -1,0 +1,49 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "entityType" : "authenticationTreesService",
+    "entityId" : "default/JWTRegWithSoftState",
+    "uid" : "ou=JWTRegWithSoftState,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config",
+    "sunServiceID" : "tree",
+    "objectClass" : [ "top", "sunServiceComponent" ],
+    "pathParams" : { },
+    "ou" : [ "JWTRegWithSoftState" ]
+  },
+  "data" : {
+    "_id": "default/JWTRegWithSoftState",
+    "_type": {
+      "_id": "authenticationTreesService",
+      "name": "authenticationTreesService",
+      "collection": false
+    },
+    "uiConfig": {},
+    "staticNodes": {
+      "startNode": {
+        "x": 50,
+        "y": 58.5
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 518,
+        "y": 178
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 520,
+        "y": 118
+      }
+    },
+    "entryNodeId": "709b5e06-a085-4bbe-b4a0-8a0e00f78127",
+    "nodes": {
+      "709b5e06-a085-4bbe-b4a0-8a0e00f78127": {
+        "displayName": "Register Thing",
+        "nodeType": "IotRegistrationNode",
+        "x": 344,
+        "y": 20,
+        "connections": {
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    },
+    "identityResource" : "managed/thing"
+  }
+}

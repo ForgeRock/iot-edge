@@ -1,0 +1,16 @@
+{
+  "coreOAuth2ClientConfig": {
+    "scopes": [
+      "publish",
+      "subscribe"
+    ],
+    "defaultScopes": [
+      "publish"
+    ]
+  },
+  "advancedOAuth2ClientConfig": {
+    "grantTypes": [
+      "client_credentials"
+    ]
+  }
+}

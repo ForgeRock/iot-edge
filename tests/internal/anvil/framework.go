@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 ForgeRock AS
+ * Copyright 2020-2024 ForgeRock AS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,6 +265,12 @@ func RestoreTestRealm(realm string, testDataDir string) (err error) {
 	return nil
 }
 
+func CreateAgentGroup(realm string, testDataDir string) (err error) {
+	err = am.CreateAgentGroup(realm, "OAuth2Thing/oauth2things",
+		filepath.Join(testDataDir, "agentgroups/oauth2things.json"))
+	return err
+}
+
 // URL returns an AM URL that points at the given sub-domain
 func URL(subDomain string) *url.URL {
 	u, _ := url.Parse(am.URL(subDomain))
@@ -362,6 +368,20 @@ func ModifyOAuth2Provider(realm string, tokenType AccessTokenType) (original []b
 	}
 	_, err = am.UpdateService(realm, oauth2Service, bytes.NewReader(newConfig))
 	return original, err
+}
+
+func IsOAuth2ThingsEnabled(realm string) (enableOAuth2Things bool, err error) {
+	iotService, err := am.GetService(realm, "iot")
+	if err != nil {
+		return false, err
+	}
+	var config map[string]json.RawMessage
+	err = json.Unmarshal(iotService, &config)
+	if err != nil {
+		return false, err
+	}
+	err = json.Unmarshal(config["enableOAuth2Things"], &enableOAuth2Things)
+	return enableOAuth2Things, err
 }
 
 // RestoreOAuth2Service restores the OAut 2.0 service using the supplied config
@@ -535,28 +555,35 @@ type ThingData struct {
 
 // TestState contains client and realm data required to run a test
 type TestState struct {
-	clientType    string
-	gateway       *gateway.Gateway
-	realm         string
-	realmPath     string
-	amURL         *url.URL
-	dnsConfigured bool
+	clientType         string
+	gateway            *gateway.Gateway
+	realm              string
+	realmPath          string
+	amURL              *url.URL
+	dnsConfigured      bool
+	enableOAuth2Things bool
 }
 
 // NewTestState will create a new TestState instance with the given properties
-func NewTestState(gateway *gateway.Gateway, amURL *url.URL, realm, realmPath string, dns bool) TestState {
+func NewTestState(gateway *gateway.Gateway, amURL *url.URL, realm, realmPath string, dns bool,
+	enableOAuth2Things bool) TestState {
 	clientType := AMClientType
 	if gateway != nil {
 		clientType = GatewayClientType
 	}
 	return TestState{
-		clientType:    clientType,
-		gateway:       gateway,
-		realm:         realm,
-		realmPath:     realmPath,
-		amURL:         amURL,
-		dnsConfigured: dns,
+		clientType:         clientType,
+		gateway:            gateway,
+		realm:              realm,
+		realmPath:          realmPath,
+		amURL:              amURL,
+		dnsConfigured:      dns,
+		enableOAuth2Things: enableOAuth2Things,
 	}
+}
+
+func (t *TestState) EnableOAuth2Things() bool {
+	return t.enableOAuth2Things
 }
 
 // SetGatewayTree sets the auth tree used by the test IoT Gateway
