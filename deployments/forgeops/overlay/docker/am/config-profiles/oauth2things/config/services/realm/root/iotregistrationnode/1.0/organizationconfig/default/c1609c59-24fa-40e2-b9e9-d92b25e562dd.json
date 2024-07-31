@@ -1,0 +1,39 @@
+{
+  "data": {
+    "_id": "default/c1609c59-24fa-40e2-b9e9-d92b25e562dd",
+    "_type": {
+      "_id": "IotRegistrationNode",
+      "collection": false,
+      "name": "IotRegistrationNode"
+    },
+    "allowAttributeOverwrite": false,
+    "allowKeyRotation": false,
+    "claimToAttributeMapping": {
+      "sub": "uid",
+      "thingProperties": "thingProperties",
+      "thingType": "thingType"
+    },
+    "createIdentity": true,
+    "defaultAttributeValues": {
+      "thingType": "device"
+    },
+    "jwtRegistrationMethod": "POP_WITH_CERTIFICATE",
+    "nameValidationRegex": ".*[\\*\\(\\)&!].*",
+    "verifySubject": true
+  },
+  "metadata": {
+    "entityId": "default/c1609c59-24fa-40e2-b9e9-d92b25e562dd",
+    "entityType": "IotRegistrationNode",
+    "objectClass": [
+      "sunServiceComponent",
+      "top"
+    ],
+    "ou": [
+      "c1609c59-24fa-40e2-b9e9-d92b25e562dd"
+    ],
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": "instance",
+    "uid": "ou=c1609c59-24fa-40e2-b9e9-d92b25e562dd,ou=default,ou=OrganizationConfig,ou=1.0,ou=IotRegistrationNode,ou=services,ou=am-config"
+  }
+}

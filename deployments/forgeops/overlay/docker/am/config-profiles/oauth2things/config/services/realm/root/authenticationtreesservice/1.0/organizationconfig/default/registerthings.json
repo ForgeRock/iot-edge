@@ -1,0 +1,68 @@
+{
+  "data": {
+    "_id": "default/RegisterThings",
+    "_type": {
+      "_id": "authenticationTreesService",
+      "collection": false,
+      "name": "authenticationTreesService"
+    },
+    "description": null,
+    "entryNodeId": "71059997-639b-4aff-94f4-0077af877088",
+    "identityResource": "managed/thing",
+    "nodes": {
+      "71059997-639b-4aff-94f4-0077af877088": {
+        "connections": {
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "register": "c1609c59-24fa-40e2-b9e9-d92b25e562dd",
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        },
+        "displayName": "Authenticate Thing",
+        "nodeType": "IotAuthenticationNode",
+        "x": 210,
+        "y": 125
+      },
+      "c1609c59-24fa-40e2-b9e9-d92b25e562dd": {
+        "connections": {
+          "failure": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        },
+        "displayName": "Register Thing",
+        "nodeType": "IotRegistrationNode",
+        "x": 443,
+        "y": 137.5
+      }
+    },
+    "staticNodes": {
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 673,
+        "y": 80
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 673,
+        "y": 230
+      },
+      "startNode": {
+        "x": 70,
+        "y": 155
+      }
+    },
+    "uiConfig": {
+      "categories": "[]"
+    }
+  },
+  "metadata": {
+    "entityId": "default/RegisterThings",
+    "entityType": "authenticationTreesService",
+    "objectClass": [
+      "sunServiceComponent",
+      "top"
+    ],
+    "ou": [
+      "RegisterThings"
+    ],
+    "pathParams": {},
+    "realm": "/",
+    "sunServiceID": "tree",
+    "uid": "ou=RegisterThings,ou=default,ou=OrganizationConfig,ou=1.0,ou=authenticationTreesService,ou=services,ou=am-config"
+  }
+}
